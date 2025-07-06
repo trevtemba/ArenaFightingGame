@@ -11,7 +11,7 @@ local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr)
 	local enemy = enemyTemplate:Clone()
 	local enemyObj = Enemy.new()
 	local plrPos = plr.character:GetPivot().Position
-	
+
 	enemy.Parent = workspace
 	--wait(1)
 	enemyObj:Init(level, enemyType, enemy)
@@ -21,7 +21,6 @@ local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr)
 	local lookAtCFrame = CFrame.lookAt(spawnPosition, plrPos)
 	enemy:PivotTo(lookAtCFrame)
 
-	
 	enemyObj:SetTarget(plr)
 	enemyObj:StartAI()
 end
@@ -35,7 +34,7 @@ function EnemyManager.SpawnS1Enemies(spawns, plr)
 		spawnEnemy(meleeTemplate, "melee", spawns[i], 1, plr)
 	end
 
-	---- last 2 are ranged
+	-- last 2 are ranged
 	for i = 4, 5 do
 		spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr)
 	end

@@ -75,7 +75,6 @@ end
 
 -- Register players
 for _, plr in ipairs(joinedPlayers) do
-
 	local champion, rig = ChampionFactory.newChampion(selectedChampions[plr.UserId])
 
 	rig:SetPrimaryPartCFrame(plr.Character.PrimaryPart.CFrame)
@@ -90,4 +89,4 @@ print(gameInstance.players)
 
 print(gameInstance.portal)
 
-gameInstance:Run() 
+gameInstance:Run()

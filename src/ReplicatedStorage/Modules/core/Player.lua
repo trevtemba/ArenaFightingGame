@@ -11,9 +11,8 @@ local Player = {}
 Player.__index = Player
 
 function Player.new(plr, champion, rig)
-
 	local self = setmetatable({}, Player)
-	
+
 	-- Game properties
 	self.userId = plr.UserId
 	self.name = plr.Name
@@ -23,12 +22,12 @@ function Player.new(plr, champion, rig)
 	self.character = rig
 	self.ranged = champion.ranged
 	self.alive = true
-	
+
 	--Modules
 	self.animationHandler = nil
 	self.fxHandler = nil
 	self.combatHandler = nil
-	
+
 	-- Runtime-modifiable stats
 	self.stats = {
 		durability = champion.durability,
@@ -58,12 +57,12 @@ function Player.new(plr, champion, rig)
 		knocked = false,
 	}
 	self.statusEffects = {
-		["stunned"] = {duration = 2, expiresAt = os.clock() + 2},
-		["burning"] = {duration = 5, dps = 10},
+		["stunned"] = { duration = 2, expiresAt = os.clock() + 2 },
+		["burning"] = { duration = 5, dps = 10 },
 	}
-	
+
 	self:Initialize()
-	
+
 	return self
 end
 
@@ -74,19 +73,17 @@ end
 function Player:Impact()
 	self.state.stunned = true
 	local track1 = "impactleft"
-	local track2 = "impactright"	
-	
+	local track2 = "impactright"
+
 	-- Randomly choose one of the impact animations
 	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 
 	if chosenTrack then
-
 		self.animationHandler:Play(chosenTrack, 0.1, 2)
 		self.fxHandler:PlaySound("impact")
 		self.fxHandler:PlayParticle("impact")
 		self.animationHandler:ConnectStopped(chosenTrack, function()
 			self.state.stunned = false
-			print(self.state.stunned)
 		end)
 	end
 end
@@ -108,17 +105,15 @@ end
 -- TODO
 
 function Player:Initialize()
-	
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
 	self.combatHandler = CombatHandler.new(self)
-	
+
 	-- setup ragdoll
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
 	humanoid.BreakJointsOnDeath = false
-	
 end
 
 function Player:GetStat(stat)
