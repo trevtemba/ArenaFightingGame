@@ -1,6 +1,8 @@
 local module = {}
 
 local debrisService = game:GetService("Debris")
+local RagdollHandler = require(game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("core"):WaitForChild("RagdollHandler"))
+
 local tweenService = game:GetService('TweenService')
 local tweenInfoMoveChar = TweenInfo.new(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 0)
 
@@ -31,11 +33,11 @@ function module.knockbackPlayer(enemyChar)
 	lv.VectorVelocity = (HumanoidRootPart.Position - enemyChar:FindFirstChild("HumanoidRootPart").Position).Unit * Vector3.new(60, 0, 60) + Vector3.new(0, 40)
 	lv.Attachment0 = att
 	
-	ragdollModule.Start()
+	RagdollHandler.Start()
 	game.Debris:AddItem(att, 0.1)
 	
 	task.delay(1, function()
-		ragdollModule.Stop()
+		RagdollHandler.Stop()
 	end)
 	
 end

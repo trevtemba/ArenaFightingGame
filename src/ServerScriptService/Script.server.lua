@@ -4,7 +4,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local core = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("core")
 local remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
 
-
 local Game = require(core:WaitForChild("Game"))
 local Player = require(core:WaitForChild("Player"))
 local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
@@ -41,8 +40,6 @@ while #joinedPlayers < MAX_PLAYERS do
 end
 
 print("All players have joined. Initializing game...")
-
--- champ select logic
 
 -- Listen for client picks
 ChampionSelectedEvent.OnServerEvent:Connect(function(plr, championName)
@@ -92,6 +89,5 @@ end
 print(gameInstance.players)
 
 print(gameInstance.portal)
--- Start game logic
 
 gameInstance:Run() 

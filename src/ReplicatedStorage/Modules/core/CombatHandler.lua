@@ -6,11 +6,11 @@ CombatHandler.__index = CombatHandler
 
 function CombatHandler.new(owner)
 	local self = setmetatable({}, CombatHandler)
-	self.owner = owner -- reference to the player or npc that owns this handler
+	self.owner = owner -- Reference to the player or npc that owns this handler
 	self.ownerHumanoid = owner.character:FindFirstChildOfClass("Humanoid")
 	self.combo = 1
 	self.maxCombo = 3
-	self.comboResetTime = 1.5 -- seconds to reset combo
+	self.comboResetTime = 1.5 -- Seconds to reset combo
 	self.lastAttackTime = 0
 	
 	return self
@@ -69,14 +69,13 @@ function CombatHandler:ApplyDamage(target)
 	self.owner.fxHandler:PlaySound("slash")
 end
 
--- 🟥 Handle taking damage
 function CombatHandler:TakeDamage(damage, pierce, stunTime)
-	
+
 	self:Stun(stunTime)
 	local durability = self.owner.stats["durability"]
 	local multiplier =	nil
 	local totalDamage = nil
-	
+
 	if durability > pierce then
 		multiplier = (durability - pierce) / 100
 		totalDamage = damage - (damage * multiplier)
@@ -88,7 +87,7 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime)
 	end
 	
 	if self.owner.state.blocking then
-		totalDamage = totalDamage * 0.1 -- example block reduction
+		totalDamage = totalDamage * 0.1
 	end
 
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
@@ -122,7 +121,6 @@ function CombatHandler:Knock()
 	self.owner.state["knocked"] = true
 end
 
--- 💀 Handle death
 function CombatHandler:Die()
 	self.owner.alive = false
 	self.owner.animationHandler:Play("death")
