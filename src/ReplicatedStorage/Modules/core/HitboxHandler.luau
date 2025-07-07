@@ -1,9 +1,11 @@
-local HitboxModule = {}
 local ServerStorage = game:GetService("ServerStorage")
 local Debris = game:GetService("Debris")
+local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 
-local DEBUG = false
+local DEBUG = true
+
+local HitboxModule = {}
 
 function HitboxModule:CreatePlrHitbox(params)
 	assert(params.attacker, "Hitbox requires attacker")
@@ -35,10 +37,15 @@ function HitboxModule:CreatePlrHitbox(params)
 	for _, part in ipairs(parts) do
 		local model = part:FindFirstAncestorOfClass("Model")
 		if model and not hitOnce[model] then
-			local target = params.attacker:GetTargetFromCharacter(model)
-			if target and target ~= params.attacker then
+			local entity = nil
+			if CollectionService:HasTag(model, "Enemy") then
+				entity = params.attacker:GetEnemyFromCharacter(model)
+			else
+				entity = params.attacker:GetPlayerFromCharacter(model)
+			end
+			if entity and entity ~= params.attacker then
 				hitOnce[model] = true
-				params.onHit(target)
+				params.onHit(entity)
 			end
 		end
 	end

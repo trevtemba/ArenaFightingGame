@@ -1,18 +1,22 @@
 local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
+local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local StunModule = require(script.Parent:WaitForChild("stunHandler"))
+
+local ServerStorage = game:GetService("ServerStorage")
+local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
 
 local CombatHandler = {}
 CombatHandler.__index = CombatHandler
 
-function CombatHandler.new(owner)
+function CombatHandler.new(owner, entityType)
 	local self = setmetatable({}, CombatHandler)
 	self.owner = owner -- Reference to the player or npc that owns this handler
-	self.ownerHumanoid = owner.character and owner.character:FindFirstChildOfClass("Humanoid") or owner.humanoid
+	self.ownerHumanoid = owner.character:FindFirstChildOfClass("Humanoid")
 	self.combo = 1
-	self.maxCombo = 4
+	self.maxCombo = 3
 	self.comboResetTime = 1.5 -- Seconds to reset combo
 	self.lastAttackTime = 0
-
+	self.entityType = entityType
 	return self
 end
 
@@ -20,7 +24,7 @@ function CombatHandler:CanAttack()
 	return self.owner.alive and not self.owner.state.attacking and not self.owner.state.stunned
 end
 
-function CombatHandler:Attack(target)
+function CombatHandler:Attack()
 	if not self:CanAttack() then
 		return
 	end
@@ -40,8 +44,21 @@ function CombatHandler:Attack(target)
 	self.owner.animationHandler:Play(animName, 0.1, 2)
 
 	-- Deal damage on hit marker
-	self.owner.animationHandler:ConnectMarker(animName, "Hitbox", function()
-		self:ApplyDamage(target)
+	self.owner.animationHandler:ConnectMarker(animName, "fire", function()
+		local hitboxSize = ServerStorage:WaitForChild("meleeHitbox").Size
+
+		local params = {
+			attacker = self.owner,
+			onHit = function(entity)
+				self:ApplyDamage(entity)
+			end,
+			hitboxTemplate = "meleeHitbox",
+			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
+			size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.owner.stats.range),
+			duration = 0.15,
+		}
+
+		HitboxHandler:CreatePlrHitbox(params)
 	end)
 
 	-- Reset attacking state when animation ends
@@ -57,22 +74,22 @@ function CombatHandler:Attack(target)
 	end)
 end
 
-function CombatHandler:ApplyDamage(target)
-	if not target or not target.combatHandler then
+function CombatHandler:ApplyDamage(entity)
+	if not entity or not entity.combatHandler then
 		return
 	end
 
 	local base = self.owner.stats.attackDmg or 10
 	local pierce = self.owner.stats.pierce or 0
-	local durability = target:GetStat("durability") or 0
-	local dmg = math.max(0, base - math.max(0, durability - pierce))
-
-	target:TakeDamage(dmg, pierce)
-	self.owner.fxHandler:PlaySound("slash")
+	local dmg = base -- TODO: add crit functionality
+	entity:TakeDamage(dmg, pierce)
+	self.owner.fxHandler:PlaySound("attack")
 end
 
 function CombatHandler:TakeDamage(damage, pierce, stunTime)
-	self:Stun(stunTime)
+	if self.entityType == "Player" then
+		self:Stun(stunTime)
+	end
 	local durability = self.owner.stats["durability"]
 	local multiplier = nil
 	local totalDamage = nil
@@ -118,7 +135,11 @@ end
 
 function CombatHandler:Knock()
 	RagdollHandler:Ragdoll(self.owner.character)
-	self.owner.state["knocked"] = true
+	if self.entityType == "Player" then
+		self.owner.state["knocked"] = true
+	else
+		self.owner:SetState("knocked")
+	end
 end
 
 function CombatHandler:Die()

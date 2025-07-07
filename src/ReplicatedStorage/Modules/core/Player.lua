@@ -55,6 +55,7 @@ function Player.new(plr, champion, rig)
 		channeling = false,
 		knocked = false,
 	}
+	self.currentEnemies = {}
 	self.statusEffects = {
 		["stunned"] = { duration = 2, expiresAt = os.clock() + 2 },
 		["burning"] = { duration = 5, dps = 10 },
@@ -107,7 +108,7 @@ function Player:Initialize()
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
-	self.combatHandler = CombatHandler.new(self)
+	self.combatHandler = CombatHandler.new(self, "Player")
 
 	-- setup ragdoll
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
@@ -149,15 +150,30 @@ function Player:BindCharacterEvents()
 	end
 end
 
-function Player:GetTargetFromCharacter(model)
+function Player:SetEnemyTable(enemies)
+	self.currentEnemies = enemies
+	print(self.currentEnemies)
+end
+
+function Player:GetPlayerFromCharacter(character)
 	local gameInstance = Game:GetInstance()
 
 	for _, player in pairs(gameInstance:Get("alivePlayers")) do
-		if player.character == model then
+		if player.character == character then
 			return player
 		end
 	end
 	return nil
+end
+
+function Player:GetEnemyFromCharacter(character)
+	local enemy = self.currentEnemies[character]
+
+	if enemy then
+		return self.currentEnemies[character]
+	else
+		print("Could not get enemy from Enemy rig")
+	end
 end
 
 return Player

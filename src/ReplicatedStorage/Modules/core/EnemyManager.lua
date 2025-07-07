@@ -48,6 +48,7 @@ function EnemyManager.SpawnS1Enemies(spawns, plr)
 	-- for i = 4, 5 do
 	-- 	spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr)
 	-- end
+	plr:SetEnemyTable(enemyMap)
 end
 
 function EnemyManager:GetEnemyFromCharacter(character)

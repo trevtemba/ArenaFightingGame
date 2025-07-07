@@ -3,6 +3,7 @@ local ServerStorage = game:GetService("ServerStorage")
 -- local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
+local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 
 local RunService = game:GetService("RunService")
@@ -14,6 +15,8 @@ local STATES = {
 	Idle = "idle",
 	Chasing = "chasing",
 	Attacking = "attacking",
+	Stunned = "stunned",
+	Knocked = "knocked",
 	Dead = "dead",
 }
 
@@ -118,7 +121,7 @@ function Enemy.new()
 
 	-- PROPERTIES
 	self.name = ""
-	self.model = nil
+	self.character = nil
 	self.humanoid = nil
 	self.target = nil
 	self.alive = false
@@ -139,6 +142,8 @@ function Enemy.new()
 	-- HANDLERS
 	self.combatHandler = nil
 	self.fxHandler = nil
+	self.animationHandler = nil
+
 	-- ASSETS
 	self.animations = {}
 	self.sounds = {}
@@ -148,6 +153,7 @@ function Enemy.new()
 	-- STATES
 	self.attacking = false
 	self.state = "idle"
+	self.stunned = false
 	self.damageDebounce = false
 	self.lastAttackTime = 0
 
@@ -163,7 +169,7 @@ end
 -- INITIALIZATION --
 
 function Enemy:Init(stage, enemyType, rig)
-	self.model = rig
+	self.character = rig
 	self.humanoid = rig:FindFirstChild("Humanoid")
 	self.alive = true
 
@@ -245,8 +251,10 @@ function Enemy:Init(stage, enemyType, rig)
 	self.overlapParams.MaxParts = 10
 	self:SetState(STATES.Idle)
 
-	self.combatHandler = CombatHandler.new(self)
-	self.fxHandler = FXHandler.new(self.model)
+	self.combatHandler = CombatHandler.new(self, "Enemy")
+	self.fxHandler = FXHandler.new(self.character)
+	self.animationHandler = AnimationHandler.new(self.character)
+
 	print(string.format("✅ Built stage %d %s enemy (%s)", stage, enemyType, self.name))
 	print(self)
 end
@@ -268,7 +276,7 @@ function Enemy:Update()
 		return
 	end
 
-	local hrp = self.model:FindFirstChild("HumanoidRootPart")
+	local hrp = self.character:FindFirstChild("HumanoidRootPart")
 	local targetHRP = self.target.character:FindFirstChild("HumanoidRootPart")
 	if not hrp or not targetHRP then
 		return
@@ -276,7 +284,7 @@ function Enemy:Update()
 
 	if self.target.state["knocked"] == true then
 		self:SetState("idle")
-		self.model.Humanoid:MoveTo(hrp.Position)
+		self.character.Humanoid:MoveTo(hrp.Position)
 		return
 	end
 
@@ -285,7 +293,7 @@ function Enemy:Update()
 	if distance > self.stats["range"] then
 		self:SetState("chasing")
 		self:StopFacing()
-		self.model.Humanoid:MoveTo(targetHRP.Position)
+		self.character.Humanoid:MoveTo(targetHRP.Position)
 	else
 		local now = os.clock()
 		if not self.lastAttackTime then
@@ -296,7 +304,7 @@ function Enemy:Update()
 			self:StartFacing()
 			self.lastAttackTime = now
 			self:SetState("attacking")
-			self.model.Humanoid:MoveTo(hrp.Position) -- stop movement
+			self.character.Humanoid:MoveTo(hrp.Position) -- stop movement
 		end
 	end
 end
@@ -325,7 +333,7 @@ function Enemy:EvaluateNextState()
 		return
 	end
 
-	local hrp = self.model:FindFirstChild("HumanoidRootPart")
+	local hrp = self.character:FindFirstChild("HumanoidRootPart")
 	local targetHRP = self.target.character:FindFirstChild("HumanoidRootPart")
 	if not hrp or not targetHRP then
 		return
@@ -333,7 +341,7 @@ function Enemy:EvaluateNextState()
 
 	if self.target.state["knocked"] == true then
 		self:SetState("idle")
-		self.model.Humanoid:MoveTo(hrp.Position)
+		self.character.Humanoid:MoveTo(hrp.Position)
 		return
 	end
 
@@ -364,6 +372,10 @@ function Enemy:SetState(newState)
 			anim:Stop()
 		end
 		self:PlayAnimation("attack", false)
+	elseif newState == "stunned" then
+		-- todo
+	elseif newState == "knocked" then
+		-- todo 2
 	elseif newState == "dead" then
 		self:PlayAnimation("death", false)
 	end
@@ -377,11 +389,11 @@ function Enemy:StartFacing()
 	end
 
 	self._facingConn = RunService.Heartbeat:Connect(function()
-		if not self.target or not self.target.character or not self.model or not self.alive then
+		if not self.target or not self.target.character or not self.character or not self.alive then
 			return
 		end
 
-		local npcCF = self.model:GetPivot()
+		local npcCF = self.character:GetPivot()
 		local npcPos = npcCF.Position
 		local targetPos = self.target.character:GetPivot().Position
 		targetPos = Vector3.new(targetPos.X, npcPos.Y, targetPos.Z)
@@ -389,7 +401,7 @@ function Enemy:StartFacing()
 		local goalCF = CFrame.lookAt(npcPos, targetPos)
 		local lerpCF = npcCF:Lerp(goalCF, 0.05)
 
-		self.model:PivotTo(lerpCF)
+		self.character:PivotTo(lerpCF)
 	end)
 end
 
@@ -465,6 +477,25 @@ function Enemy:StopAnimation(animName)
 	end
 end
 
+function Enemy:Impact()
+	--todo add stunned to state machine for proper implementation
+	self:SetState("stunned")
+	local track1 = "impactleft"
+	local track2 = "impactright"
+
+	-- Randomly choose one of the impact animations
+	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+
+	if chosenTrack then
+		self.animationHandler:Play(chosenTrack, 0.1, 2)
+		self.fxHandler:PlaySound("impact")
+		self.fxHandler:PlayParticle("impact")
+		self.animationHandler:ConnectStopped(chosenTrack, function()
+			self.stunned = false
+		end)
+	end
+end
+
 -- ATTACKS --
 
 function Enemy:MeleeAttack()
@@ -491,7 +522,7 @@ function Enemy:MeleeAttack()
 			end)
 		end,
 		hitboxTemplate = "meleeHitbox",
-		cframe = self.model.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
+		cframe = self.character.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
 		size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.stats["range"]),
 		duration = 0.15,
 	}
@@ -503,7 +534,7 @@ function Enemy:RangedAttack()
 		attacker = self,
 		target = self.target,
 		projectileTemplate = self.vfx["Projectile"],
-		origin = self.model.PrimaryPart.Position,
+		origin = self.character.PrimaryPart.Position,
 		targetPosition = self.target.character:WaitForChild("HumanoidRootPart").Position,
 		range = self.stats["range"] + 10,
 		speed = 100,
@@ -573,7 +604,11 @@ function Enemy:PlayParticle(particleName)
 end
 
 function Enemy:GetStat(stat)
-	return self[stat]
+	if self.stats[stat] == nil then
+		return
+	end
+
+	return self.stats[stat]
 end
 
 function Enemy:Destroy()

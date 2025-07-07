@@ -105,7 +105,7 @@ function Game:GetInstance()
 end
 
 function Game:Get(property)
-	return game[property]
+	return self[property]
 end
 
 function Game:RegisterPlayer(playerObj)
