@@ -11,13 +11,13 @@ function FXHandler.new(rig)
 		sounds = {},
 		particles = {},
 	}
-	
+
 	for _, sound in pairs(rig:FindFirstChild("Sounds"):GetChildren()) do
 		if sound:IsA("Sound") then
 			self.fx.sounds[sound.Name] = sound
 		end
-	end	
-	
+	end
+
 	for _, particle in pairs(rig:FindFirstChild("VFX"):FindFirstChild("Particles"):GetChildren()) do
 		if particle:IsA("Part") then
 			self.fx.particles[particle.Name] = particle
@@ -29,7 +29,7 @@ function FXHandler.new(rig)
 			end
 		end
 	end
-	
+
 	return self
 end
 
@@ -43,22 +43,16 @@ end
 function FXHandler:PlayParticle(particleName)
 	local particleInstance = self.fx.particles[particleName]
 
-	for i, v in pairs(particleInstance:GetDescendants()) do
-
-		if (v:IsA("ParticleEmitter")) then
-
-			if (v:GetAttribute("instant") == true) then
-
-				v:Emit(v:GetAttribute("emitCount"))	
-
+	for _, v in pairs(particleInstance:GetDescendants()) do
+		if v:IsA("ParticleEmitter") then
+			if v:GetAttribute("instant") == true then
+				v:Emit(v:GetAttribute("emitCount"))
 			else
-
 				v.Enabled = true
 
 				task.delay(0.75, function()
 					v.Enabled = false
 				end)
-
 			end
 		end
 	end
@@ -78,4 +72,3 @@ function FXHandler:Cleanup()
 end
 
 return FXHandler
-

@@ -2,6 +2,8 @@ local ServerStorage = game:GetService("ServerStorage")
 -- local TweenService = game:GetService("TweenService")
 -- local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
+local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
+local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 
 local RunService = game:GetService("RunService")
 
@@ -17,20 +19,92 @@ local STATES = {
 
 local EnemyConfig = {
 	[1] = {
-		melee = { name = "Ranger", health = 150, damage = 10, pierce = 0, range = 4, cooldown = 1, speed = 18 },
-		ranged = { name = "Archer", health = 75, damage = 20, pierce = 0, range = 50, cooldown = 1, speed = 15 },
+		melee = {
+			name = "Ranger",
+			health = 150,
+			durability = 0,
+			damage = 10,
+			pierce = 0,
+			range = 4,
+			cooldown = 1,
+			speed = 18,
+		},
+		ranged = {
+			name = "Archer",
+			health = 75,
+			durability = 0,
+			damage = 20,
+			pierce = 0,
+			range = 50,
+			cooldown = 1,
+			speed = 15,
+		},
 	},
 	[2] = {
-		melee = { name = "Knight", health = 200, damage = 25, pierce = 0, range = 5, cooldown = 1, speed = 18 },
-		ranged = { name = "Crossbowman", health = 100, damage = 30, pierce = 0, range = 20, cooldown = 1, speed = 18 },
+		melee = {
+			name = "Knight",
+			health = 200,
+			durability = 0,
+			damage = 25,
+			pierce = 0,
+			range = 5,
+			cooldown = 1,
+			speed = 18,
+		},
+		ranged = {
+			name = "Crossbowman",
+			health = 100,
+			durability = 0,
+			damage = 30,
+			pierce = 0,
+			range = 20,
+			cooldown = 1,
+			speed = 18,
+		},
 	},
 	[3] = {
-		melee = { name = "Brute", health = 300, damage = 35, pierce = 0, range = 5, cooldown = 1, speed = 18 },
-		ranged = { name = "Sniper", health = 150, damage = 40, pierce = 0, range = 25, cooldown = 1, speed = 18 },
+		melee = {
+			name = "Brute",
+			health = 300,
+			durability = 0,
+			damage = 35,
+			pierce = 0,
+			range = 5,
+			cooldown = 1,
+			speed = 18,
+		},
+		ranged = {
+			name = "Sniper",
+			health = 150,
+			durability = 0,
+			damage = 40,
+			pierce = 0,
+			range = 25,
+			cooldown = 1,
+			speed = 18,
+		},
 	},
 	[4] = {
-		melee = { name = "Champion", health = 400, damage = 45, pierce = 0, range = 5, cooldown = 1, speed = 18 },
-		ranged = { name = "Sorcerer", health = 250, damage = 50, pierce = 0, range = 25, cooldown = 1, speed = 18 },
+		melee = {
+			name = "Champion",
+			health = 400,
+			durability = 0,
+			damage = 45,
+			pierce = 0,
+			range = 5,
+			cooldown = 1,
+			speed = 18,
+		},
+		ranged = {
+			name = "Sorcerer",
+			health = 250,
+			durability = 0,
+			damage = 50,
+			pierce = 0,
+			range = 25,
+			cooldown = 1,
+			speed = 18,
+		},
 	},
 }
 
@@ -44,19 +118,27 @@ function Enemy.new()
 
 	-- PROPERTIES
 	self.name = ""
-	self.health = 100
-	self.damage = 5
-	self.pierce = 0
-	self.range = 5
-	self.attackCooldown = 0
 	self.model = nil
 	self.humanoid = nil
 	self.target = nil
-	self.ranged = false
-	self.speed = 20
 	self.alive = false
 	self.active = false
+	self.stats = {
+		durability = 0,
+		damage = 0,
+		pierce = 0,
+		range = 0,
+		attackCooldown = 1,
+		speed = 18,
+	}
 
+	-- COMBAT STATE
+	self.maxHP = 100
+	self.currentHP = 100
+
+	-- HANDLERS
+	self.combatHandler = nil
+	self.fxHandler = nil
 	-- ASSETS
 	self.animations = {}
 	self.sounds = {}
@@ -92,17 +174,20 @@ function Enemy:Init(stage, enemyType, rig)
 	end
 
 	self.name = config.name
-	self.health = config.health
-	self.damage = config.damage
-	self.pierce = config.pierce
-	self.range = config.range or 5
-	self.ranged = config.range > 15 and true or false
-	self.speed = config.speed
+	self.currentHP = config.health
+	self.maxHP = config.health
 	self.humanoid.WalkSpeed = config.speed
-	self.attackCooldown = config.cooldown
+
+	self.stats["durability"] = config.durability
+	self.stats["damage"] = config.damage
+	self.stats["pierce"] = config.pierce
+	self.stats["range"] = config.range or 5
+	self.stats["attackCooldown"] = config.cooldown
+	self.stats["speed"] = config.speed
+	self.stats["ranged"] = config.range > 15 and true or false
 
 	if self.humanoid then
-		self.humanoid.Health = self.health
+		self.humanoid.Health = self.maxHP
 	end
 
 	-- load anims
@@ -142,11 +227,11 @@ function Enemy:Init(stage, enemyType, rig)
 	end
 
 	-- load hitbox
-	if self.range < 15 then -- Melee
+	if self.stats["ranged"] == false then -- Melee
 		local template = ServerStorage:FindFirstChild("meleeHitbox")
 		if template then
 			local hitbox = template:Clone()
-			hitbox.Size = Vector3.new(hitbox.Size.X, hitbox.Size.Y, self.range)
+			hitbox.Size = Vector3.new(hitbox.Size.X, hitbox.Size.Y, self.stats["range"])
 			hitbox.Parent = workspace
 			self.hitbox = hitbox
 		else
@@ -160,7 +245,10 @@ function Enemy:Init(stage, enemyType, rig)
 	self.overlapParams.MaxParts = 10
 	self:SetState(STATES.Idle)
 
+	self.combatHandler = CombatHandler.new(self)
+	self.fxHandler = FXHandler.new(self.model)
 	print(string.format("✅ Built stage %d %s enemy (%s)", stage, enemyType, self.name))
+	print(self)
 end
 
 function Enemy:PreloadAnimations()
@@ -194,7 +282,7 @@ function Enemy:Update()
 
 	local distance = (hrp.Position - targetHRP.Position).Magnitude
 
-	if distance > self.range then
+	if distance > self.stats["range"] then
 		self:SetState("chasing")
 		self:StopFacing()
 		self.model.Humanoid:MoveTo(targetHRP.Position)
@@ -204,7 +292,7 @@ function Enemy:Update()
 			self.lastAttackTime = 0
 		end
 
-		if now - self.lastAttackTime >= self.attackCooldown then
+		if now - self.lastAttackTime >= self.stats["attackCooldown"] then
 			self:StartFacing()
 			self.lastAttackTime = now
 			self:SetState("attacking")
@@ -251,7 +339,7 @@ function Enemy:EvaluateNextState()
 
 	local distance = (hrp.Position - targetHRP.Position).Magnitude
 
-	if distance > self.range then
+	if distance > self.stats["range"] then
 		self:SetState(STATES.Chasing)
 	else
 		self.state = STATES.Idle
@@ -340,14 +428,14 @@ function Enemy:PlayAnimation(animName, shouldLoop)
 	animTrack:Play(0.1)
 
 	if animName == "run" then
-		animTrack:AdjustSpeed(self.speed / DEFAULT_WALKSPEED)
+		animTrack:AdjustSpeed(self.stats["speed"] / DEFAULT_WALKSPEED)
 	end
 
 	if animName == "attack" then
 		self.attacking = true
 		self:PlaySound("attack", false)
 
-		if not self.ranged then
+		if not self.stats["ranged"] then
 			self.trail.Enabled = true
 			task.delay(0.3, function()
 				self:StopFacing()
@@ -386,16 +474,16 @@ function Enemy:MeleeAttack()
 		attacker = self,
 		target = self.target,
 		onHit = function(target)
-			target:TakeDamage(self.damage, self.pierce, ATTACK_STUN_TIME)
+			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME)
 			self.damageDebounce = true
 			print(
 				self.name
 					.. " hit "
 					.. target.name
 					.. " for "
-					.. self.damage
+					.. self.stats["damage"]
 					.. " damage! ("
-					.. self.pierce
+					.. self.stats["pierce"]
 					.. " pierce)"
 			)
 			task.delay(0.4, function()
@@ -404,7 +492,7 @@ function Enemy:MeleeAttack()
 		end,
 		hitboxTemplate = "meleeHitbox",
 		cframe = self.model.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
-		size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.range),
+		size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.stats["range"]),
 		duration = 0.15,
 	}
 	HitboxHandler:CreateNPCHitbox(params)
@@ -417,20 +505,20 @@ function Enemy:RangedAttack()
 		projectileTemplate = self.vfx["Projectile"],
 		origin = self.model.PrimaryPart.Position,
 		targetPosition = self.target.character:WaitForChild("HumanoidRootPart").Position,
-		range = self.range + 10,
+		range = self.stats["range"] + 10,
 		speed = 100,
 		hitRadius = 2,
 		onHit = function(target)
-			target:TakeDamage(self.damage, self.pierce, ATTACK_STUN_TIME)
+			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME)
 			self.damageDebounce = true
 			print(
 				self.name
 					.. " hit "
 					.. target.name
 					.. " for "
-					.. self.damage
+					.. self.stats["damage"]
 					.. " damage! ("
-					.. self.pierce
+					.. self.stats["pierce"]
 					.. " pierce)"
 			)
 			task.delay(0.4, function()
@@ -442,6 +530,13 @@ function Enemy:RangedAttack()
 		end,
 	}
 	HitboxHandler:CreateNPCProjectile(params)
+end
+
+function Enemy:TakeDamage(amount, pierce, stunTime)
+	if self.combatHandler then
+		self.combatHandler:TakeDamage(amount, pierce, stunTime)
+	end
+	self:Impact()
 end
 
 function Enemy:FadeOutProjectile(projectile)

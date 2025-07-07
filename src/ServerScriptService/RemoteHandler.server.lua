@@ -1,0 +1,18 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Modules = ReplicatedStorage:WaitForChild("Modules")
+local Core = Modules:WaitForChild("core")
+
+local PlayerHandler = require(Core:WaitForChild("PlayerHandler"))
+
+local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local ServerEvents = RemoteEvents:WaitForChild("Server")
+
+ServerEvents:WaitForChild("OnAttack").OnServerEvent:Connect(function(plr)
+	PlayerHandler.OnAttack(plr)
+end)
+ServerEvents:WaitForChild("OnBlock").OnServerEvent:Connect(function(plr)
+	PlayerHandler.OnBlock(plr)
+end)
+-- ServerEvents.Cast.OnServerEvent:Connect(PlayerHandler.OnCast)
+-- ServerEvents.Dash.OnServerEvent:Connect(PlayerHandler.OnDash)
+-- ServerEvents.Pickup.OnServerEvent:Connect(PlayerHandler.OnPickup)

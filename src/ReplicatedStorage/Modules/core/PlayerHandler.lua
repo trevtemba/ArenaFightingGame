@@ -3,6 +3,7 @@ local Game = require(script.Parent.Game)
 local PlayerHandler = {}
 
 function PlayerHandler.OnAttack(plr)
+	print("in player handler")
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
 		playerObj:Attack()
@@ -31,4 +32,3 @@ function PlayerHandler.OnPickup(plr, orbId)
 end
 
 return PlayerHandler
-

@@ -20,15 +20,16 @@ local debounces = {
 }
 
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
-	if debounces["attack"] then
+	if debounces["attack"] == true then
 		return
 	end
 
 	debounces["attack"] = true
 
-	local remote = ServerEvents:FindFirstChild("OnAttack")
+	local remote = ServerEvents:WaitForChild("OnAttack")
 	if remote then
-		remote:FireServer()
+		remote:FireServer(player)
+		print("attack fired")
 	end
 
 	task.delay(0.3, function()
