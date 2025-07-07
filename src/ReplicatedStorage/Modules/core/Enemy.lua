@@ -5,7 +5,6 @@ local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 
 local RunService = game:GetService("RunService")
 
-local DEBUG = false
 local ATTACK_STUN_TIME = 0.25
 local DEFAULT_WALKSPEED = 18
 

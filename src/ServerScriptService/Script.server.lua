@@ -2,12 +2,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local core = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("core")
-local remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
+local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local ServerEvents = RemoteEvents:WaitForChild("Server")
 
 local Game = require(core:WaitForChild("Game"))
 local Player = require(core:WaitForChild("Player"))
 local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
-local ChampionSelectedEvent = remotes:WaitForChild("ChampSelect")
+local ChampionSelectedEvent = ServerEvents:WaitForChild("ChampSelect")
 local gameInstance = Game:GetInstance()
 
 local MAX_PLAYERS = 1
@@ -79,6 +80,7 @@ for _, plr in ipairs(joinedPlayers) do
 
 	rig:SetPrimaryPartCFrame(plr.Character.PrimaryPart.CFrame)
 	plr.Character = rig
+
 	rig.Parent = workspace:WaitForChild("Players")
 
 	local playerObj = Player.new(plr, champion, rig)

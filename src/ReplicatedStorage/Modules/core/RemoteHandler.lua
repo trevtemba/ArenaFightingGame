@@ -1,10 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PlayerHandler = require(ReplicatedStorage.Modules.core.PlayerHandler)
 
-local remotes = ReplicatedStorage:WaitForChild("RemoteEvents")
+local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local ServerEvents = RemoteEvents:WaitForChild("Server")
 
-remotes.Attack.OnServerEvent:Connect(PlayerHandler.OnAttack)
-remotes.Cast.OnServerEvent:Connect(PlayerHandler.OnCast)
-remotes.Dash.OnServerEvent:Connect(PlayerHandler.OnDash)
-remotes.Pickup.OnServerEvent:Connect(PlayerHandler.OnPickup)
-
+ServerEvents.Attack.OnServerEvent:Connect(PlayerHandler.OnAttack)
+ServerEvents.Cast.OnServerEvent:Connect(PlayerHandler.OnCast)
+ServerEvents.Dash.OnServerEvent:Connect(PlayerHandler.OnDash)
+ServerEvents.Pickup.OnServerEvent:Connect(PlayerHandler.OnPickup)

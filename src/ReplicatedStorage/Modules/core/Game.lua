@@ -4,10 +4,10 @@ local portalMsg = {
 	"Extra augment round",
 	"All mythic augments",
 	"Artifact start",
-	"Bonus loot PvE"
+	"Bonus loot PvE",
 }
 
-local roundSequence = {1, 1, 3, 2, 2, 4, 2, 1, 3, 2, 2, 4, 2, 1, 3, 2, 2, 4, 2, 1, 2, 2, 4, 2, 1, 2, 2, 4}
+local roundSequence = { 1, 1, 3, 2, 2, 4, 2, 1, 3, 2, 2, 4, 2, 1, 3, 2, 2, 4, 2, 1, 2, 2, 4, 2, 1, 2, 2, 4 }
 
 local Game = {}
 
@@ -19,9 +19,9 @@ function Game.new(players)
 	if instance then
 		return instance
 	end
-	
+
 	local self = setmetatable({}, Game)
-	self.players = {}  -- List of Player objects
+	self.players = {} -- List of Player objects
 	self.alivePlayers = {}
 	self.characterToPlayer = {}
 	self.roundQueue = roundSequence -- e.g., {1, 2, 2, 3, 4} where 1 = PvE, 2 = PvP, etc.
@@ -29,7 +29,7 @@ function Game.new(players)
 	self.currentRound = nil
 	self.stage = 1
 	self.portal = portalMsg[math.random(1, #portalMsg)]
-	
+
 	instance = self
 	return self
 end
@@ -73,21 +73,21 @@ function Game:Run()
 
 		-- Start round
 		self:NextRound()
-		
+
 		if self.currentRoundIndex == 3 then
 			self.stage += 1
 			print(string.format("Start of stage %d", self.stage))
-		elseif self.currentRoundIndex == 9 then
-			self.stage += 1
-			print(string.format("Start of stage %d", self.stage))
-		elseif self.currentRoundIndex == 15 then
-			self.stage += 1
-			print(string.format("Start of stage %d", self.stage))
-		elseif self.currentRoundIndex == 21 then
-			self.stage += 1
-			print(string.format("Start of stage %d", self.stage))
+			-- elseif self.currentRoundIndex == 9 then
+			-- 	self.stage += 1
+			-- 	print(string.format("Start of stage %d", self.stage))
+			-- elseif self.currentRoundIndex == 15 then
+			-- 	self.stage += 1
+			-- 	print(string.format("Start of stage %d", self.stage))
+			-- elseif self.currentRoundIndex == 21 then
+			-- 	self.stage += 1
+			-- 	print(string.format("Start of stage %d", self.stage))
 		end
-		
+
 		local round = self.currentRound
 
 		-- Drive the timer manually

@@ -1,4 +1,3 @@
-local WeldHelper = require(script.Parent:WaitForChild("WeldHelper"))
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))

@@ -16,8 +16,6 @@ function HitboxModule:CreatePlrHitbox(params)
 	end
 
 	local hitbox = template:Clone()
-	hitbox.Anchored = true
-	hitbox.CanCollide = false
 	hitbox.Transparency = DEBUG and 0.5 or 1
 	hitbox.Size = params.size or hitbox.Size
 	hitbox.CFrame = params.cframe or CFrame.identity
@@ -124,10 +122,10 @@ function HitboxModule:CreateNPCProjectile(params)
 		projectile.CFrame = projectile.CFrame + (direction * step)
 
 		if targetPart and (targetPart.Position - projectile.Position).Magnitude <= hitRadius then
-			connection:Disconnect()
-			projectile:Destroy()
 			local humanoid = targetChar:FindFirstChildOfClass("Humanoid")
 			if humanoid and humanoid.Health > 0 then
+				connection:Disconnect()
+				projectile:Destroy()
 				params.onHit(params.target)
 			end
 		elseif travelled >= maxRange then
