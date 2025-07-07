@@ -2,6 +2,8 @@
 local AnimationHandler = {}
 AnimationHandler.__index = AnimationHandler
 
+local DEFAULT_WALKSPEED = 18
+
 function AnimationHandler.new(rig)
 	local self = setmetatable({}, AnimationHandler)
 	self.animator = rig:FindFirstChild("Humanoid"):FindFirstChildOfClass("Animator")
@@ -11,11 +13,11 @@ function AnimationHandler.new(rig)
 		if anim:IsA("Animation") then
 			local animTrack = self.animator:LoadAnimation(anim)
 			local name = anim.Name
-			
+
 			self.animations[name] = {
 				track = animTrack,
 				stoppedConn = nil, -- single .Stopped connection
-				markerConns = {}   -- [markerName] = connection
+				markerConns = {}, -- [markerName] = connection
 			}
 			animTrack:Play()
 			animTrack:Stop()
@@ -32,6 +34,14 @@ function AnimationHandler:Play(name, fadeTime, weight)
 	end
 end
 
+function AnimationHandler:PlayRun(speed, fadeTime, weight)
+	local animData = self.animations["run"]
+	if animData then
+		animData.track:Play(fadeTime or 0.1, weight or 1)
+		animData.track:AdjustSpeed(speed / DEFAULT_WALKSPEED)
+	end
+end
+
 function AnimationHandler:ConnectStopped(name, callback)
 	local animData = self.animations[name]
 	if animData then
@@ -44,7 +54,6 @@ function AnimationHandler:ConnectStopped(name, callback)
 		animData.stoppedConn = animData.track.Stopped:Connect(callback)
 	end
 end
-
 
 function AnimationHandler:ConnectMarker(name, markerName, callback)
 	local animData = self.animations[name]
@@ -103,7 +112,4 @@ function AnimationHandler:Cleanup()
 	end
 end
 
-
 return AnimationHandler
-
-

@@ -10,6 +10,7 @@ function FXHandler.new(rig)
 	self.fx = {
 		sounds = {},
 		particles = {},
+		projectiles = {},
 	}
 
 	for _, sound in pairs(rig:FindFirstChild("Sounds"):GetChildren()) do
@@ -27,6 +28,12 @@ function FXHandler.new(rig)
 				particle.Parent = self.rig
 				WeldHelper.WeldParts(particle, hrp)
 			end
+		end
+	end
+
+	for _, vfx in pairs(rig:FindFirstChild("VFX"):GetChildren()) do
+		if vfx:IsA("Part") then
+			self.fx.projectiles[vfx.Name] = vfx
 		end
 	end
 
@@ -69,6 +76,10 @@ function FXHandler:Cleanup()
 			child:Destroy()
 		end
 	end
+end
+
+function FXHandler:GetProjectile(name)
+	return self.fx.projectiles[name]
 end
 
 return FXHandler

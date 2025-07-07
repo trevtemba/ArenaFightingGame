@@ -3,7 +3,7 @@ local Debris = game:GetService("Debris")
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 
-local DEBUG = true
+local DEBUG = false
 
 local HitboxModule = {}
 

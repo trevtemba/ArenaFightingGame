@@ -9,7 +9,6 @@ local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local RunService = game:GetService("RunService")
 
 local ATTACK_STUN_TIME = 0.25
-local DEFAULT_WALKSPEED = 18
 
 local STATES = {
 	Idle = "idle",
@@ -145,22 +144,17 @@ function Enemy.new()
 	self.animationHandler = nil
 
 	-- ASSETS
-	self.animations = {}
-	self.sounds = {}
-	self.vfx = {}
 	self.trail = nil
 
 	-- STATES
 	self.attacking = false
-	self.state = "idle"
-	self.stunned = false
+	self.state = STATES.Idle
 	self.damageDebounce = false
 	self.lastAttackTime = 0
 
 	-- INTERNALS
 	self.hitbox = nil
-	self.overlapParams = nil
-	self._animConn = nil
+	self._stunEndTime = nil
 	self._facingConn = nil
 
 	return self
@@ -172,6 +166,12 @@ function Enemy:Init(stage, enemyType, rig)
 	self.character = rig
 	self.humanoid = rig:FindFirstChild("Humanoid")
 	self.alive = true
+
+	local trail = rig:FindFirstChild("VFX"):FindFirstChild("Trail")
+
+	if trail then
+		self.trail = trail
+	end
 
 	local config = EnemyConfig[stage] and EnemyConfig[stage][enemyType]
 	if not config then
@@ -196,42 +196,6 @@ function Enemy:Init(stage, enemyType, rig)
 		self.humanoid.Health = self.maxHP
 	end
 
-	-- load anims
-	local animFolder = rig:FindFirstChild("Animations")
-	local animator = self.humanoid:FindFirstChildOfClass("Animator")
-
-	if animFolder then
-		for _, anim in pairs(animFolder:GetChildren()) do
-			if anim:IsA("Animation") then
-				self.animations[anim.Name] = animator:LoadAnimation(anim)
-			end
-		end
-	end
-
-	-- load sounds
-	local soundFolder = rig:FindFirstChild("Sounds")
-
-	if soundFolder then
-		for _, sound in pairs(soundFolder:GetChildren()) do
-			if sound:IsA("Sound") then
-				self.sounds[sound.Name] = sound
-			end
-		end
-	end
-
-	-- load vfx
-	local vfxFolder = rig:FindFirstChild("VFX")
-
-	if vfxFolder then
-		for _, vfx in pairs(vfxFolder:GetChildren()) do
-			if vfx:IsA("Trail") then
-				self.trail = vfx
-			else
-				self.vfx[vfx.Name] = vfx
-			end
-		end
-	end
-
 	-- load hitbox
 	if self.stats["ranged"] == false then -- Melee
 		local template = ServerStorage:FindFirstChild("meleeHitbox")
@@ -245,28 +209,17 @@ function Enemy:Init(stage, enemyType, rig)
 		end
 	end
 
-	self.overlapParams = OverlapParams.new()
-	self.overlapParams.FilterType = Enum.RaycastFilterType.Include
-	self.overlapParams.FilterDescendantsInstances = {} -- set when targeting
-	self.overlapParams.MaxParts = 10
-	self:SetState(STATES.Idle)
-
 	self.combatHandler = CombatHandler.new(self, "Enemy")
 	self.fxHandler = FXHandler.new(self.character)
 	self.animationHandler = AnimationHandler.new(self.character)
+
+	self:SetState(STATES.Idle)
 
 	print(string.format("✅ Built stage %d %s enemy (%s)", stage, enemyType, self.name))
 	print(self)
 end
 
-function Enemy:PreloadAnimations()
-	for _, anim in pairs(self.animations) do
-		anim:Play(0)
-		anim:Stop()
-	end
-end
-
--- AI/STATE --
+-- STATE --
 
 function Enemy:Update()
 	if not self.alive or not self.active then
@@ -274,6 +227,13 @@ function Enemy:Update()
 	end
 	if not self.target or not self.target.character then
 		return
+	end
+	if self.state == STATES.Knocked then
+		return
+	end
+
+	while self.state == STATES.Stunned do
+		task.wait(0.2)
 	end
 
 	local hrp = self.character:FindFirstChild("HumanoidRootPart")
@@ -283,7 +243,7 @@ function Enemy:Update()
 	end
 
 	if self.target.state["knocked"] == true then
-		self:SetState("idle")
+		self:SetState(STATES.Idle)
 		self.character.Humanoid:MoveTo(hrp.Position)
 		return
 	end
@@ -291,7 +251,7 @@ function Enemy:Update()
 	local distance = (hrp.Position - targetHRP.Position).Magnitude
 
 	if distance > self.stats["range"] then
-		self:SetState("chasing")
+		self:SetState(STATES.Chasing)
 		self:StopFacing()
 		self.character.Humanoid:MoveTo(targetHRP.Position)
 	else
@@ -303,34 +263,22 @@ function Enemy:Update()
 		if now - self.lastAttackTime >= self.stats["attackCooldown"] then
 			self:StartFacing()
 			self.lastAttackTime = now
-			self:SetState("attacking")
+			self:SetState(STATES.Attacking)
 			self.character.Humanoid:MoveTo(hrp.Position) -- stop movement
 		end
 	end
 end
 
-function Enemy:SetTarget(targetPlayer)
-	self.target = targetPlayer
-	self.active = true
-	if targetPlayer and targetPlayer.character then
-		--print(targetPlayer.character)
-
-		self.overlapParams.FilterDescendantsInstances = { targetPlayer.character }
-	end
-end
-
-function Enemy:StartAI()
-	task.spawn(function()
-		while self.alive and self.active do
-			self:Update()
-			task.wait(0.2)
-		end
-	end)
-end
-
 function Enemy:EvaluateNextState()
-	if not self.target or not self.target.character or self.target.state["knocked"] == true then
+	if not self.target or not self.target.character then
 		return
+	end
+	if self.state == STATES.Knocked then
+		return
+	end
+
+	while self.state == STATES.Stunned do
+		task.wait(0.2)
 	end
 
 	local hrp = self.character:FindFirstChild("HumanoidRootPart")
@@ -340,7 +288,7 @@ function Enemy:EvaluateNextState()
 	end
 
 	if self.target.state["knocked"] == true then
-		self:SetState("idle")
+		self:SetState(STATES.Idle)
 		self.character.Humanoid:MoveTo(hrp.Position)
 		return
 	end
@@ -356,32 +304,122 @@ function Enemy:EvaluateNextState()
 	end
 end
 
-function Enemy:SetState(newState)
-	if self.state == newState and newState ~= "idle" then
+function Enemy:SetState(newState, stunDuration)
+	if self.state == newState and (newState ~= STATES.Idle and newState ~= STATES.Stunned) then
 		return
 	end
 	self.state = newState
+	self:StateHandler(newState, stunDuration)
+end
 
-	if newState == "idle" then
-		self:PlayAnimation("idle", true)
-	elseif newState == "chasing" then
-		self:PlayAnimation("run", true)
-	elseif newState == "attacking" then
-		-- Stop all current animations
-		for _, anim in pairs(self.animations) do
-			anim:Stop()
+function Enemy:StateHandler(stateName, stunDuration)
+	if self.attacking == true and stateName ~= STATES.Stunned then
+		while self.attacking == true do
+			task.wait(0.1)
 		end
-		self:PlayAnimation("attack", false)
-	elseif newState == "stunned" then
-		-- todo
-	elseif newState == "knocked" then
-		-- todo 2
-	elseif newState == "dead" then
-		self:PlayAnimation("death", false)
+	end
+
+	if stateName == STATES.Idle then
+		self:Idle()
+	end
+	if stateName == STATES.Chasing then
+		self:Chase()
+	end
+	if stateName == STATES.Attacking then
+		self:Attack()
+	end
+	if stateName == STATES.Stunned then
+		self:Stun(stunDuration or 0.75)
+	end
+	if stateName == STATES.Dead then
+		self:Die()
 	end
 end
 
--- MOVEMENT/ANIMATION --
+function Enemy:Idle()
+	print("idling")
+	self.animationHandler:StopAll()
+	self.animationHandler:Play("idle")
+end
+
+function Enemy:Chase()
+	print("chasing")
+	self.animationHandler:Stop("idle")
+	self.animationHandler:PlayRun(self.stats.speed)
+end
+
+function Enemy:Attack()
+	print("attacking")
+	self.attacking = true
+	self.animationHandler:StopAll()
+	self.animationHandler:Play("attack", 0.1)
+	self.fxHandler:PlaySound("attack")
+
+	if self.stats.ranged == false then
+		self.trail.Enabled = true
+		self.animationHandler:ConnectMarker("attack", "fire", function()
+			print("attack fired")
+			self:StopFacing()
+			self:MeleeAttack()
+		end)
+	else
+		self.animationHandler:ConnectMarker("attack", "fire", function()
+			self:StopFacing()
+			self:RangedAttack()
+		end)
+	end
+
+	self.animationHandler:ConnectStopped("attack", function()
+		if self.trail then
+			self.trail.Enabled = false
+		end
+		self.attacking = false
+		self:EvaluateNextState()
+	end)
+end
+
+function Enemy:Stun(duration)
+	print("stunned")
+	duration = duration or 1.5
+
+	if self.state == STATES.Dead or self.state == STATES.Knocked then
+		return
+	end
+
+	local now = os.clock()
+	self._stunEndTime = now + duration
+
+	self.character.Humanoid:MoveTo(self.character.HumanoidRootPart.Position)
+	self:Flinch()
+
+	task.delay(duration, function()
+		-- Only reset if no newer stun has occurred
+		if os.clock() >= self._stunEndTime and self.state == STATES.Stunned then
+			self.state = ""
+			self:EvaluateNextState()
+		end
+	end)
+end
+
+function Enemy:Die()
+	--todo
+end
+
+-- AI LOGIC
+
+function Enemy:SetTarget(targetPlayer)
+	self.target = targetPlayer
+	self.active = true
+end
+
+function Enemy:StartAI()
+	task.spawn(function()
+		while self.alive and self.active do
+			self:Update()
+			task.wait(0.2)
+		end
+	end)
+end
 
 function Enemy:StartFacing()
 	if self._facingConn then
@@ -409,90 +447,6 @@ function Enemy:StopFacing()
 	if self._facingConn then
 		self._facingConn:Disconnect()
 		self._facingConn = nil
-	end
-end
-
-function Enemy:PlayAnimation(animName, shouldLoop)
-	if self.attacking then
-		while self.attacking do
-			task.wait(0.1)
-		end
-	end
-
-	local animTrack = self.animations[animName]
-	if not animTrack then
-		warn("Animation '" .. animName .. "' not found for enemy " .. self.name)
-		return
-	end
-
-	animTrack.Looped = shouldLoop or false
-
-	-- disconnect previous attack marker connection
-	if self._animConn then
-		self._animConn:Disconnect()
-		self._animConn = nil
-	end
-
-	if animName == "idle" then
-		self:StopAnimation("run")
-	end
-
-	animTrack:Play(0.1)
-
-	if animName == "run" then
-		animTrack:AdjustSpeed(self.stats["speed"] / DEFAULT_WALKSPEED)
-	end
-
-	if animName == "attack" then
-		self.attacking = true
-		self:PlaySound("attack", false)
-
-		if not self.stats["ranged"] then
-			self.trail.Enabled = true
-			task.delay(0.3, function()
-				self:StopFacing()
-				self:MeleeAttack()
-			end)
-		else
-			task.delay(0.3, function()
-				self:PlayParticle("Fire")
-				self:StopFacing()
-				self:RangedAttack()
-			end)
-		end
-		animTrack.Stopped:Once(function()
-			if self.trail then
-				self.trail.Enabled = false
-			end
-			self.attacking = false
-			self:EvaluateNextState()
-		end)
-	end
-end
-
-function Enemy:StopAnimation(animName)
-	local anim = self.animations[animName]
-	if anim then
-		anim:Stop()
-	end
-end
-
-function Enemy:Impact()
-	--todo add stunned to state machine for proper implementation
-	self:SetState("stunned")
-	local track1 = "impactleft"
-	local track2 = "impactright"
-
-	-- Randomly choose one of the impact animations
-	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
-
-	if chosenTrack then
-		self.animationHandler:Play(chosenTrack, 0.1, 2)
-		self.fxHandler:PlaySound("impact")
-		self.fxHandler:PlayParticle("impact")
-		self.animationHandler:ConnectStopped(chosenTrack, function()
-			self.stunned = false
-		end)
 	end
 end
 
@@ -533,7 +487,7 @@ function Enemy:RangedAttack()
 	local params = {
 		attacker = self,
 		target = self.target,
-		projectileTemplate = self.vfx["Projectile"],
+		projectileTemplate = self.fxHandler:GetProjectile("Projectile"),
 		origin = self.character.PrimaryPart.Position,
 		targetPosition = self.target.character:WaitForChild("HumanoidRootPart").Position,
 		range = self.stats["range"] + 10,
@@ -560,6 +514,7 @@ function Enemy:RangedAttack()
 			self:FadeOutProjectile(projectile)
 		end,
 	}
+	self.fxHandler:PlayParticle("Fire")
 	HitboxHandler:CreateNPCProjectile(params)
 end
 
@@ -567,7 +522,21 @@ function Enemy:TakeDamage(amount, pierce, stunTime)
 	if self.combatHandler then
 		self.combatHandler:TakeDamage(amount, pierce, stunTime)
 	end
-	self:Impact()
+end
+
+function Enemy:Flinch()
+	self.animationHandler:StopAll()
+	local track1 = "impactleft"
+	local track2 = "impactright"
+
+	-- Randomly choose one of the impact animations
+	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+
+	if chosenTrack then
+		self.animationHandler:Play(chosenTrack, 0.1, 2)
+		self.fxHandler:PlaySound("impact")
+		self.fxHandler:PlayParticle("impact")
+	end
 end
 
 function Enemy:FadeOutProjectile(projectile)
@@ -576,31 +545,6 @@ function Enemy:FadeOutProjectile(projectile)
 	tween.Completed:Connect(function()
 		projectile:Destroy()
 	end)
-end
-
-function Enemy:PlaySound(soundName, shouldLoop)
-	local soundTrack = self.sounds[soundName]
-	soundTrack.Looped = shouldLoop
-
-	soundTrack:Play()
-end
-
-function Enemy:PlayParticle(particleName)
-	local particleInstance = self.vfx[particleName]
-
-	for _, v in pairs(particleInstance:GetDescendants()) do
-		if v:IsA("ParticleEmitter") then
-			if v:GetAttribute("instant") == true then
-				v:Emit(v:GetAttribute("emitCount"))
-			else
-				v.Enabled = true
-
-				task.delay(0.75, function()
-					v.Enabled = false
-				end)
-			end
-		end
-	end
 end
 
 function Enemy:GetStat(stat)

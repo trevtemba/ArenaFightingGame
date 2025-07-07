@@ -82,13 +82,15 @@ function CombatHandler:ApplyDamage(entity)
 	local base = self.owner.stats.attackDmg or 10
 	local pierce = self.owner.stats.pierce or 0
 	local dmg = base -- TODO: add crit functionality
-	entity:TakeDamage(dmg, pierce)
+	entity:TakeDamage(dmg, pierce, 0.75)
 	self.owner.fxHandler:PlaySound("attack")
 end
 
 function CombatHandler:TakeDamage(damage, pierce, stunTime)
 	if self.entityType == "Player" then
 		self:Stun(stunTime)
+	elseif self.entityType == "Enemy" then
+		self.owner:SetState("stunned", stunTime)
 	end
 	local durability = self.owner.stats["durability"]
 	local multiplier = nil

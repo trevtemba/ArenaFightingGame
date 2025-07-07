@@ -20,7 +20,6 @@ local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr)
 
 	-- Build enemy
 	enemyObj:Init(level, enemyType, enemy)
-	enemyObj:PreloadAnimations()
 
 	--Tag it and put in reverse lookup table
 	CollectionService:AddTag(enemy, "Enemy")
@@ -39,15 +38,16 @@ function EnemyManager.SpawnS1Enemies(spawns, plr)
 	local meleeTemplate = enemies:WaitForChild("s1melee")
 	local rangedTemplate = enemies:WaitForChild("s1ranged")
 
-	-- first 3 are melee
-	for i = 1, 1 do
-		spawnEnemy(meleeTemplate, "melee", spawns[i], 1, plr)
+	-- -- first 3 are melee
+	-- for i = 1, 3 do
+	-- 	spawnEnemy(meleeTemplate, "melee", spawns[i], 1, plr)
+	-- end
+
+	-- last 2 are ranged
+	for i = 4, 4 do
+		spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr)
 	end
 
-	-- -- last 2 are ranged
-	-- for i = 4, 5 do
-	-- 	spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr)
-	-- end
 	plr:SetEnemyTable(enemyMap)
 end
 
