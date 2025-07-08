@@ -5,6 +5,7 @@ local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
+local EnemyData = require(script.Parent.Parent:WaitForChild("data"):WaitForChild("EnemyData"))
 
 local RunService = game:GetService("RunService")
 
@@ -17,97 +18,6 @@ local STATES = {
 	Stunned = "stunned",
 	Knocked = "knocked",
 	Dead = "dead",
-}
-
-local EnemyConfig = {
-	[1] = {
-		melee = {
-			name = "Ranger",
-			health = 150,
-			durability = 0,
-			damage = 10,
-			pierce = 0,
-			range = 4,
-			cooldown = 1,
-			speed = 18,
-		},
-		ranged = {
-			name = "Archer",
-			health = 75,
-			durability = 0,
-			damage = 20,
-			pierce = 0,
-			range = 50,
-			cooldown = 1,
-			speed = 15,
-		},
-	},
-	[2] = {
-		melee = {
-			name = "Knight",
-			health = 200,
-			durability = 0,
-			damage = 25,
-			pierce = 0,
-			range = 5,
-			cooldown = 1,
-			speed = 18,
-		},
-		ranged = {
-			name = "Crossbowman",
-			health = 100,
-			durability = 0,
-			damage = 30,
-			pierce = 0,
-			range = 20,
-			cooldown = 1,
-			speed = 18,
-		},
-	},
-	[3] = {
-		melee = {
-			name = "Brute",
-			health = 300,
-			durability = 0,
-			damage = 35,
-			pierce = 0,
-			range = 5,
-			cooldown = 1,
-			speed = 18,
-		},
-		ranged = {
-			name = "Sniper",
-			health = 150,
-			durability = 0,
-			damage = 40,
-			pierce = 0,
-			range = 25,
-			cooldown = 1,
-			speed = 18,
-		},
-	},
-	[4] = {
-		melee = {
-			name = "Champion",
-			health = 400,
-			durability = 0,
-			damage = 45,
-			pierce = 0,
-			range = 5,
-			cooldown = 1,
-			speed = 18,
-		},
-		ranged = {
-			name = "Sorcerer",
-			health = 250,
-			durability = 0,
-			damage = 50,
-			pierce = 0,
-			range = 25,
-			cooldown = 1,
-			speed = 18,
-		},
-	},
 }
 
 local Enemy = {}
@@ -173,7 +83,7 @@ function Enemy:Init(stage, enemyType, rig)
 		self.trail = trail
 	end
 
-	local config = EnemyConfig[stage] and EnemyConfig[stage][enemyType]
+	local config = EnemyData[stage] and EnemyData[stage][enemyType]
 	if not config then
 		warn(string.format("Invalid enemy config for stage %s, type %s", stage, enemyType))
 		return
@@ -459,7 +369,7 @@ function Enemy:MeleeAttack()
 		attacker = self,
 		target = self.target,
 		onHit = function(target)
-			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME)
+			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME, true)
 			self.damageDebounce = true
 			print(
 				self.name
@@ -494,7 +404,7 @@ function Enemy:RangedAttack()
 		speed = 100,
 		hitRadius = 2,
 		onHit = function(target)
-			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME)
+			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME, true)
 			self.damageDebounce = true
 			print(
 				self.name

@@ -3,10 +3,15 @@ local Game = require(script.Parent.Game)
 local PlayerHandler = {}
 
 function PlayerHandler.OnAttack(plr)
-	print("in player handler")
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
 		playerObj:Attack()
+	end
+end
+function PlayerHandler.OnBlock(plr)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:Block()
 	end
 end
 

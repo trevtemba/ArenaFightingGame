@@ -45,6 +45,7 @@ function Player.new(plr, champion, rig)
 	self.currentHP = champion.hp
 	self.maxEnergy = champion.energy
 	self.currentEnergy = champion.energy
+	self.speed = 18
 	self.cooldowns = champion.cooldowns
 	self.state = {
 		blocking = false,
@@ -66,87 +67,43 @@ function Player.new(plr, champion, rig)
 	return self
 end
 
-function Player:Damage(roundNum, enemyHP)
-	self.health = self.health - (roundNum + enemyHP / 10)
-end
-
-function Player:Impact()
-	self.state.stunned = true
-	local track1 = "impactleft"
-	local track2 = "impactright"
-
-	-- Randomly choose one of the impact animations
-	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
-
-	if chosenTrack then
-		self.animationHandler:Play(chosenTrack, 0.1, 2)
-		self.fxHandler:PlaySound("impact")
-		self.fxHandler:PlayParticle("impact")
-		self.animationHandler:ConnectStopped(chosenTrack, function()
-			self.state.stunned = false
-		end)
-	end
-end
-
---TODO
-function Player:Attack(target)
-	if self.combatHandler then
-		self.combatHandler:Attack(target)
-	end
-end
-
-function Player:TakeDamage(amount, pierce, stunTime)
-	if self.combatHandler then
-		self.combatHandler:TakeDamage(amount, pierce, stunTime)
-	end
-	self:Impact()
-end
-
--- TODO
-
 function Player:Initialize()
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
 	self.combatHandler = CombatHandler.new(self, "Player")
 
-	-- setup ragdoll
+	-- setup ragdoll and walkspeed
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
 	humanoid.BreakJointsOnDeath = false
+
+	self:SyncWalkspeed()
 end
 
-function Player:GetStat(stat)
-	-- First check dynamic player-modified stats
-	if self.stats and self.stats[stat] ~= nil then
-		return self.stats[stat]
-	end
-
-	-- Fall back to champion base stat
-	return self.champion and self.champion:GetStat(stat)
+function Player:Damage(roundNum, enemyHP)
+	self.health = self.health - (roundNum + enemyHP / 10)
 end
 
-function Player:BindCharacterEvents()
-	local gameInstance = Game:GetInstance()
-
-	-- Update reverse lookup map
-	gameInstance:UnregisterCharacter(self.character)
-	gameInstance:RegisterPlayer(self)
-
-	-- Rebind animation/FX handlers to new animator or character parts
-	if self.animationHandler then
-		self.animationHandler:SetCharacter(self.character)
+function Player:Attack(target)
+	if self.combatHandler then
+		self.combatHandler:Attack(target)
 	end
-	if self.fxHandler then
-		self.fxHandler:SetCharacter(self.character)
-	end
+end
 
-	-- Reconnect humanoid death listener
-	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid.Died:Connect(function()
-			self:OnDeath()
-		end)
+function Player:Block(target)
+	if self.combatHandler then
+		self.combatHandler:HandleBlock(target)
+	end
+end
+
+function Player:TakeDamage(amount, pierce, stunTime, blockable) --todo, enemyposition so we can make blocking only work if u are facing attacker
+	if self.combatHandler then
+		if self.state.blocking == true and blockable == true then
+			self.combatHandler:BlockDamage()
+		else
+			self.combatHandler:TakeDamage(amount, pierce, stunTime)
+		end
 	end
 end
 
@@ -176,4 +133,20 @@ function Player:GetEnemyFromCharacter(character)
 	end
 end
 
+function Player:GetStat(stat)
+	-- First check dynamic player-modified stats
+	if self.stats and self.stats[stat] ~= nil then
+		return self.stats[stat]
+	end
+
+	-- Fall back to champion base stat
+	return self.champion and self.champion:GetStat(stat)
+end
+
+function Player:SyncWalkspeed()
+	if self.speed then
+		local humanoid = self.character:FindFirstChildOfClass("Humanoid")
+		humanoid.WalkSpeed = self.speed
+	end
+end
 return Player

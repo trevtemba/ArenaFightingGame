@@ -16,6 +16,7 @@ local switchContext = ClientEvents:WaitForChild("switchContext")
 local debounces = {
 	attack = false,
 	heavyAttack = false,
+	block = false,
 	dodge = false,
 }
 
@@ -38,11 +39,25 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("Block").Pressed:Connect(function()
-	print("f clicked while in combat")
+	if debounces["block"] == true then
+		return
+	end
+
+	debounces["block"] = true
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		remote:FireServer()
-		print("Block event fired")
+	end
+
+	task.delay(0.3, function()
+		debounces["block"] = false
+	end)
+end)
+
+CombatContext:WaitForChild("Block").Released:Connect(function()
+	local remote = ServerEvents:FindFirstChild("OnBlock")
+	if remote then
+		remote:FireServer()
 	end
 end)
 
