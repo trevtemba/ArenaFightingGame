@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CamModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -12,6 +13,7 @@ local ServerEvents = RemoteEvents:WaitForChild("Server")
 local CombatContext = PlayerGui:WaitForChild("Combat")
 
 local switchContext = ClientEvents:WaitForChild("switchContext")
+local flinchEvent = ClientEvents:WaitForChild("flinch")
 
 local debounces = {
 	attack = false,
@@ -33,7 +35,7 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 		print("attack fired")
 	end
 
-	task.delay(0.3, function()
+	task.delay(0.2, function()
 		debounces["attack"] = false
 	end)
 end)
@@ -77,4 +79,8 @@ end
 switchContext.OnClientEvent:Connect(function(contextName)
 	switchToContext(contextName)
 	print("Binds are now in " .. contextName .. " context!")
+end)
+
+flinchEvent.OnClientEvent:Connect(function(duration)
+	CamModule.CameraShakeHeavy(player.Character, duration)
 end)

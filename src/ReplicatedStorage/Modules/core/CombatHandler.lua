@@ -4,7 +4,12 @@ local StunModule = require(script.Parent:WaitForChild("stunHandler"))
 local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 
 local ServerStorage = game:GetService("ServerStorage")
+local Players = game:GetService("Players")
+
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
+
+local flinchEvent =
+	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("flinch")
 
 local CombatHandler = {}
 CombatHandler.__index = CombatHandler
@@ -13,8 +18,9 @@ function CombatHandler.new(owner, entityType)
 	local self = setmetatable({}, CombatHandler)
 	self.owner = owner -- Reference to the player or npc that owns this handler
 	self.ownerHumanoid = owner.character:FindFirstChildOfClass("Humanoid")
+	self.attackCooldown = owner.stats.attackCooldown
 	self.combo = 1
-	self.maxCombo = 3
+	self.maxCombo = 4
 	self.comboResetTime = 1.5 -- Seconds to reset combo
 	self.lastAttackTime = 0
 	self.entityType = entityType
@@ -22,16 +28,25 @@ function CombatHandler.new(owner, entityType)
 end
 
 function CombatHandler:CanAttack()
-	return self.owner.alive and not self.owner.state.attacking and not self.owner.state.stunned
+	local now = os.clock()
+	local timeSinceLastAttack = now - self.lastAttackTime
+
+	return self.owner.alive
+		and not self.owner.state.attacking
+		and not self.owner.state.stunned
+		and timeSinceLastAttack >= self.owner.stats.attackCooldown
 end
 
 function CombatHandler:CanBlock()
-	return self.owner.alive and not self.owner.state.attacking and not self.owner.state.stunned
+	return self.owner.alive == true and self.owner.state.attacking == false and self.owner.state.stunned == false
 end
 
 function CombatHandler:Attack()
 	if not self:CanAttack() then
 		return
+	end
+	if self.owner.state.blocking == true then
+		self.owner.state.blocking = false
 	end
 
 	local now = os.clock()
@@ -42,10 +57,13 @@ function CombatHandler:Attack()
 	end
 
 	local animName = "m" .. tostring(self.combo)
-	self.lastAttackTime = now
+	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 3)
+
 	self.owner.state.attacking = true
+	self.lastAttackTime = now
 
 	-- Play animation
+	self.owner.animationHandler:StopAll()
 	self.owner.animationHandler:Play(animName, 0.1, 2)
 
 	-- Deal damage on hit marker
@@ -66,8 +84,8 @@ function CombatHandler:Attack()
 		HitboxHandler:CreatePlrHitbox(params)
 	end)
 
-	-- Reset attacking state when animation ends
-	self.owner.animationHandler:ConnectStopped(animName, function()
+	-- Reset attacking state after attack cooldown
+	task.delay(cooldown, function()
 		self.owner.state.attacking = false
 
 		-- Increment combo or loop back
@@ -113,10 +131,8 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime)
 		self:Flinch()
 	elseif self.entityType == "Enemy" then
 		self.owner:SetState("stunned", stunTime)
+		self.owner:Flinch()
 	end
-
-	self.owner.fxHandler:PlaySound("impact")
-	self.owner.fxHandler:PlayParticle("impact")
 
 	local durability = self.owner.stats["durability"]
 	local multiplier = nil
@@ -173,8 +189,10 @@ function CombatHandler:Flinch()
 
 	if chosenTrack then
 		self.owner.animationHandler:Play(chosenTrack, 0.1, 2)
+		flinchEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), 0.75)
 		self.owner.fxHandler:PlaySound("impact")
 		self.owner.fxHandler:PlayParticle("impact")
+		print("ahhhhhh")
 	end
 end
 

@@ -14,9 +14,8 @@ local blur = game.Lighting:WaitForChild("Blur")
 local selectBtn = script.Parent
 local startPrompt = playerGui:WaitForChild("startPrompt")
 
-local camModule =
-	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("frontend"):WaitForChild("cameraModule"))
-local uiModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("frontend"):WaitForChild("guiModule"))
+local camModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
+local uiModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("guiModule"))
 
 local CHAMP_NAME = "Dante"
 

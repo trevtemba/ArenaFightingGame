@@ -65,21 +65,16 @@ function FXHandler:PlayParticle(particleName)
 	end
 end
 
-function FXHandler:SetCharacter(newChar)
-	self.rig = newChar
+function FXHandler:GetProjectile(name)
+	return self.fx.projectiles[name]
 end
 
--- 🔴 Cleanup all attached FX (optional, for hard resets)
 function FXHandler:Cleanup()
 	for _, child in ipairs(self.rig:GetChildren()) do
 		if child:IsA("Sound") or child:IsA("ParticleEmitter") then
 			child:Destroy()
 		end
 	end
-end
-
-function FXHandler:GetProjectile(name)
-	return self.fx.projectiles[name]
 end
 
 return FXHandler
