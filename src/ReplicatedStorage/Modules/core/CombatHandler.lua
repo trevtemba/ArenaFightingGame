@@ -1,7 +1,6 @@
 local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local StunModule = require(script.Parent:WaitForChild("stunHandler"))
-local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
@@ -10,6 +9,9 @@ local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
 
 local flinchEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("flinch")
+
+local attackEvent =
+	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
 
 local CombatHandler = {}
 CombatHandler.__index = CombatHandler
@@ -20,11 +22,25 @@ function CombatHandler.new(owner, entityType)
 	self.ownerHumanoid = owner.character:FindFirstChildOfClass("Humanoid")
 	self.attackCooldown = owner.stats.attackCooldown
 	self.combo = 1
-	self.maxCombo = 4
+	self.maxCombo = 5
 	self.comboResetTime = 1.5 -- Seconds to reset combo
 	self.lastAttackTime = 0
+	self.bufferedAttack = false
+	self.bufferDuration = owner.stats.attackCooldown
 	self.entityType = entityType
 	return self
+end
+
+function CombatHandler:HandleAttackInput()
+	if self:CanAttack() then
+		self:Attack()
+	else
+		self.bufferedAttack = true
+
+		task.delay(self.bufferDuration, function()
+			self.bufferedAttack = false
+		end)
+	end
 end
 
 function CombatHandler:CanAttack()
@@ -56,6 +72,8 @@ function CombatHandler:Attack()
 		self.combo = 1
 	end
 
+	attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "FOVZoom", 0.25, 0.5, 10)
+
 	local animName = "m" .. tostring(self.combo)
 	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 3)
 
@@ -64,7 +82,8 @@ function CombatHandler:Attack()
 
 	-- Play animation
 	self.owner.animationHandler:StopAll()
-	self.owner.animationHandler:Play(animName, 0.1, 2)
+	self.owner.animationHandler:Play(animName, 0, 4, 1, false)
+	self:M1Slow(5, 0.75)
 
 	-- Deal damage on hit marker
 	self.owner.animationHandler:ConnectMarker(animName, "fire", function()
@@ -84,15 +103,19 @@ function CombatHandler:Attack()
 		HitboxHandler:CreatePlrHitbox(params)
 	end)
 
-	-- Reset attacking state after attack cooldown
 	task.delay(cooldown, function()
 		self.owner.state.attacking = false
 
-		-- Increment combo or loop back
 		if self.combo < self.maxCombo then
 			self.combo += 1
 		else
 			self.combo = 1
+		end
+
+		-- if buffered attack, immediately attack
+		if self.bufferedAttack and self:CanAttack() then
+			self.bufferedAttack = false
+			self:Attack()
 		end
 	end)
 end
@@ -104,11 +127,11 @@ function CombatHandler:HandleBlock()
 
 	if self.owner.state.blocking == false then
 		self.owner.state.blocking = true
-		PhysicsHandler.changeWalkspeed(self.ownerHumanoid, 5)
+		self.owner.physicsHandler:SetWalkspeed(5)
 		self.owner.animationHandler:Play("block")
 	else
 		self.owner.state.blocking = false
-		PhysicsHandler.changeWalkspeed(self.ownerHumanoid, self.owner.speed)
+		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
 		self.owner.animationHandler:Stop("block")
 	end
 end
@@ -121,7 +144,10 @@ function CombatHandler:ApplyDamage(entity, blockable)
 	local base = self.owner.stats.attackDmg or 10
 	local pierce = self.owner.stats.pierce or 0
 	local dmg = base -- TODO: add crit functionality
-	entity:TakeDamage(dmg, pierce, 0.75, blockable)
+	entity:TakeDamage(dmg, pierce, 1, blockable)
+	if self.combo == self.maxCombo then
+		entity.physicsHandler:Knockback(self.owner.character, 40)
+	end
 	self.owner.fxHandler:PlaySound("attack")
 end
 
@@ -194,6 +220,13 @@ function CombatHandler:Flinch()
 		self.owner.fxHandler:PlayParticle("impact")
 		print("ahhhhhh")
 	end
+end
+
+function CombatHandler:M1Slow(speed, attackSpeed)
+	self.owner.physicsHandler:SetWalkspeed(speed)
+	task.delay(attackSpeed, function()
+		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
+	end)
 end
 
 function CombatHandler:Knock()

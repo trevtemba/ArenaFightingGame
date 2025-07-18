@@ -1,51 +1,80 @@
-local module = {}
+local PhysicsHandler = {}
+PhysicsHandler.__index = PhysicsHandler
 
-local debrisService = game:GetService("Debris")
+local Debris = game:GetService("Debris")
+local TweenService = game:GetService("TweenService")
+
 local RagdollHandler = require(
 	game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("core"):WaitForChild("RagdollHandler")
 )
 
-local tweenService = game:GetService("TweenService")
-local tweenInfoMoveChar = TweenInfo.new(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 0)
+local tweenInfoMoveChar = TweenInfo.new(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
 
--- function module.movePlayerForward(distance)
--- 	local tween = tweenService:Create(
--- 		HumanoidRootPart,
--- 		tweenInfoMoveChar,
--- 		{ CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 0, -distance) }
--- 	)
--- 	tween:Play()
--- end
+function PhysicsHandler.new(rig)
+	local self = setmetatable({}, PhysicsHandler)
 
--- function module.movePlayerBackward(distance)
--- 	local tween = tweenService:Create(
--- 		HumanoidRootPart,
--- 		tweenInfoMoveChar,
--- 		{ CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 0, distance) }
--- 	)
--- 	tween:Play()
--- end
+	self.character = rig
+	self.hrp = rig:FindFirstChild("HumanoidRootPart")
+	self.humanoid = rig:FindFirstChildOfClass("Humanoid")
 
--- function module.knockbackPlayer(enemyChar)
--- 	local att = Instance.new("Attachment", HumanoidRootPart)
--- 	local lv = Instance.new("LinearVelocity", att)
-
--- 	lv.MaxForce = 9999999
--- 	lv.VectorVelocity = (HumanoidRootPart.Position - enemyChar:FindFirstChild("HumanoidRootPart").Position).Unit
--- 			* Vector3.new(60, 0, 60)
--- 		+ Vector3.new(0, 40)
--- 	lv.Attachment0 = att
-
--- 	RagdollHandler.Start()
--- 	game.Debris:AddItem(att, 0.1)
-
--- 	task.delay(1, function()
--- 		RagdollHandler.Stop()
--- 	end)
--- end
-
-function module.changeWalkspeed(humanoid, newSpeed)
-	humanoid.WalkSpeed = newSpeed
+	return self
 end
 
-return module
+function PhysicsHandler:TweenMove(distance)
+	if not self.hrp then
+		return
+	end
+
+	local goalCFrame = self.hrp.CFrame * CFrame.new(0, 0, -distance)
+	local tween = TweenService:Create(self.hrp, tweenInfoMoveChar, { CFrame = goalCFrame })
+	tween:Play()
+end
+
+function PhysicsHandler:TweenRetreat(distance)
+	if not self.hrp then
+		return
+	end
+
+	local goalCFrame = self.hrp.CFrame * CFrame.new(0, 0, distance)
+	local tween = TweenService:Create(self.hrp, tweenInfoMoveChar, { CFrame = goalCFrame })
+	tween:Play()
+end
+
+-- directional knockback (with ragdoll)
+function PhysicsHandler:Knockback(fromCharacter, power)
+	if not self.hrp or not fromCharacter then
+		return
+	end
+
+	local enemyHRP = fromCharacter:FindFirstChild("HumanoidRootPart")
+	if not enemyHRP then
+		return
+	end
+
+	local att = Instance.new("Attachment")
+	att.Name = "KnockbackAttachment"
+	att.Parent = self.hrp
+
+	local direction = (self.hrp.Position - enemyHRP.Position).Unit
+	local horizontalForce = direction * power
+	local upwardForce = Vector3.new(0, 20, 0)
+
+	local lv = Instance.new("LinearVelocity")
+	lv.Name = "KnockbackVelocity"
+	lv.Attachment0 = att
+	lv.MaxForce = math.huge
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.VectorVelocity = horizontalForce + upwardForce
+	lv.Parent = att
+
+	RagdollHandler:Ragdoll(self.character, 2)
+	Debris:AddItem(att, 0.1)
+end
+
+function PhysicsHandler:SetWalkspeed(speed)
+	if self.humanoid then
+		self.humanoid.WalkSpeed = speed
+	end
+end
+
+return PhysicsHandler

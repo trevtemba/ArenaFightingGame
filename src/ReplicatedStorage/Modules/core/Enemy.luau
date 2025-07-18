@@ -5,6 +5,8 @@ local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
+local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
+
 local EnemyData = require(script.Parent.Parent:WaitForChild("data"):WaitForChild("EnemyData"))
 
 local RunService = game:GetService("RunService")
@@ -52,6 +54,7 @@ function Enemy.new()
 	self.combatHandler = nil
 	self.fxHandler = nil
 	self.animationHandler = nil
+	self.physicsHandler = nil
 
 	-- ASSETS
 	self.trail = nil
@@ -122,6 +125,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.combatHandler = CombatHandler.new(self, "Enemy")
 	self.fxHandler = FXHandler.new(self.character)
 	self.animationHandler = AnimationHandler.new(self.character)
+	self.physicsHandler = PhysicsHandler.new(self.character)
 
 	self:SetState(STATES.Idle)
 
@@ -259,10 +263,15 @@ function Enemy:Chase()
 end
 
 function Enemy:Attack()
+	if self.state == STATES.Stunned then
+		return
+	end
+
 	print("attacking")
 	self.attacking = true
 	self.animationHandler:StopAll()
 	self.animationHandler:Play("attack", 0.1)
+	self.combatHandler:M1Slow(5, 0.75)
 	self.fxHandler:PlaySound("attack")
 
 	if self.stats.ranged == false then
@@ -444,9 +453,10 @@ function Enemy:Flinch()
 
 	if chosenTrack then
 		self.animationHandler:Play(chosenTrack, 0.1, 2)
-		self.fxHandler:PlaySound("impact")
-		self.fxHandler:PlayParticle("impact")
 	end
+	self.physicsHandler:TweenRetreat(2)
+	self.fxHandler:PlaySound("impact")
+	self.fxHandler:PlayParticle("impact")
 end
 
 function Enemy:FadeOutProjectile(projectile)

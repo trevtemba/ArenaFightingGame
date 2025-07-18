@@ -1,6 +1,7 @@
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
+local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 
 local Game = require(script.Parent:WaitForChild("Game"))
 
@@ -26,6 +27,7 @@ function Player.new(plr, champion, rig)
 	self.animationHandler = nil
 	self.fxHandler = nil
 	self.combatHandler = nil
+	self.physicsHandler = nil
 
 	-- Runtime-modifiable stats
 	self.stats = {
@@ -38,6 +40,7 @@ function Player.new(plr, champion, rig)
 		range = champion.range,
 		critChance = 0,
 		stunResist = 0,
+		speed = 18,
 	}
 
 	-- Combat state
@@ -45,7 +48,7 @@ function Player.new(plr, champion, rig)
 	self.currentHP = champion.hp
 	self.maxEnergy = champion.energy
 	self.currentEnergy = champion.energy
-	self.speed = 18
+
 	self.cooldowns = champion.cooldowns
 	self.state = {
 		blocking = false,
@@ -72,6 +75,7 @@ function Player:Initialize()
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
 	self.combatHandler = CombatHandler.new(self, "Player")
+	self.physicsHandler = PhysicsHandler.new(self.character)
 
 	-- setup ragdoll and walkspeed
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
@@ -87,7 +91,7 @@ end
 
 function Player:Attack(target)
 	if self.combatHandler then
-		self.combatHandler:Attack(target)
+		self.combatHandler:HandleAttackInput(target)
 	end
 end
 
@@ -144,9 +148,9 @@ function Player:GetStat(stat)
 end
 
 function Player:SyncWalkspeed()
-	if self.speed then
+	if self.stats.speed then
 		local humanoid = self.character:FindFirstChildOfClass("Humanoid")
-		humanoid.WalkSpeed = self.speed
+		humanoid.WalkSpeed = self.stats.speed
 	end
 end
 return Player

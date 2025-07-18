@@ -12,7 +12,7 @@ return {
 		},
 		ranged = {
 			name = "Archer",
-			health = 75,
+			health = 750,
 			durability = 0,
 			damage = 20,
 			pierce = 0,

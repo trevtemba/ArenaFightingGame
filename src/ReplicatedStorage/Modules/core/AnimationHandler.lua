@@ -27,10 +27,12 @@ function AnimationHandler.new(rig)
 	return self
 end
 
-function AnimationHandler:Play(name, fadeTime, weight)
+function AnimationHandler:Play(name, fadeTime, weight, speed, looped)
 	local animData = self.animations[name]
 	if animData then
 		animData.track:Play(fadeTime or 0.1, weight or 1)
+		animData.track:AdjustSpeed(speed or 1)
+		animData.track.Looped = looped or false
 	end
 end
 
