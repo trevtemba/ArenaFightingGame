@@ -72,7 +72,7 @@ function CombatHandler:Attack()
 		self.combo = 1
 	end
 
-	attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "FOVZoom", 0.25, 0.5, 10)
+	attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackFOV")
 
 	local animName = "m" .. tostring(self.combo)
 	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 3)
@@ -93,6 +93,7 @@ function CombatHandler:Attack()
 			attacker = self.owner,
 			onHit = function(entity)
 				self:ApplyDamage(entity, true)
+				attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackShake")
 			end,
 			hitboxTemplate = "meleeHitbox",
 			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
@@ -215,7 +216,7 @@ function CombatHandler:Flinch()
 
 	if chosenTrack then
 		self.owner.animationHandler:Play(chosenTrack, 0.1, 2)
-		flinchEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), 0.75)
+		flinchEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "impact")
 		self.owner.fxHandler:PlaySound("impact")
 		self.owner.fxHandler:PlayParticle("impact")
 		print("ahhhhhh")

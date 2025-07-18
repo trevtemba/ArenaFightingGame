@@ -1,6 +1,7 @@
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
+local MovementHandler = require(script.Parent:WaitForChild("MovementHandler"))
 local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 
 local Game = require(script.Parent:WaitForChild("Game"))
@@ -27,6 +28,7 @@ function Player.new(plr, champion, rig)
 	self.animationHandler = nil
 	self.fxHandler = nil
 	self.combatHandler = nil
+	self.movementHandler = nil
 	self.physicsHandler = nil
 
 	-- Runtime-modifiable stats
@@ -40,7 +42,7 @@ function Player.new(plr, champion, rig)
 		range = champion.range,
 		critChance = 0,
 		stunResist = 0,
-		speed = 18,
+		speed = 12,
 	}
 
 	-- Combat state
@@ -75,6 +77,7 @@ function Player:Initialize()
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
 	self.combatHandler = CombatHandler.new(self, "Player")
+	self.movementHandler = MovementHandler.new(self)
 	self.physicsHandler = PhysicsHandler.new(self.character)
 
 	-- setup ragdoll and walkspeed
@@ -98,6 +101,17 @@ end
 function Player:Block(target)
 	if self.combatHandler then
 		self.combatHandler:HandleBlock(target)
+	end
+end
+
+function Player:SprintHandler(sprintState)
+	print(sprintState)
+	if self.movementHandler then
+		if sprintState == "start" then
+			self.movementHandler:StartSprint()
+		elseif sprintState == "stop" then
+			self.movementHandler:StopSprint()
+		end
 	end
 end
 

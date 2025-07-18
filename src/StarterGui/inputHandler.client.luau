@@ -20,7 +20,46 @@ local debounces = {
 	heavyAttack = false,
 	block = false,
 	dodge = false,
+	sprint = false,
 }
+
+local runTick = 0
+local sprinting = false
+local doubleTapThreshold = 0.35
+
+CombatContext:WaitForChild("Sprint").Pressed:Connect(function()
+	local now = os.clock()
+
+	if now - runTick <= doubleTapThreshold then
+		if not debounces["sprint"] then
+			debounces["sprint"] = true
+
+			local remote = ServerEvents:WaitForChild("OnSprint")
+			if remote then
+				remote:FireServer("start")
+				sprinting = true
+			end
+
+			task.delay(0.1, function()
+				debounces["sprint"] = false
+			end)
+		end
+	end
+
+	runTick = now
+end)
+
+CombatContext:WaitForChild("Sprint").Released:Connect(function()
+	if sprinting == false then
+		return
+	end
+
+	local remote = ServerEvents:FindFirstChild("OnSprint")
+	if remote then
+		remote:FireServer("stop")
+		sprinting = false
+	end
+end)
 
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	if debounces["attack"] == true then
@@ -31,7 +70,7 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 
 	local remote = ServerEvents:WaitForChild("OnAttack")
 	if remote then
-		remote:FireServer(player)
+		remote:FireServer()
 		print("attack fired")
 	end
 
@@ -79,8 +118,4 @@ end
 switchContext.OnClientEvent:Connect(function(contextName)
 	switchToContext(contextName)
 	print("Binds are now in " .. contextName .. " context!")
-end)
-
-flinchEvent.OnClientEvent:Connect(function(duration)
-	CamModule.CameraShakeHeavy(player.Character, duration)
 end)

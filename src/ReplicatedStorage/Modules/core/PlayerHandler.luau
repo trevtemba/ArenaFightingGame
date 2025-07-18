@@ -8,10 +8,18 @@ function PlayerHandler.OnAttack(plr)
 		playerObj:Attack()
 	end
 end
+
 function PlayerHandler.OnBlock(plr)
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
 		playerObj:Block()
+	end
+end
+
+function PlayerHandler.OnSprint(plr, sprintState)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:SprintHandler(sprintState)
 	end
 end
 
