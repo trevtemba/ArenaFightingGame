@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local core = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("core")
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
@@ -11,7 +12,7 @@ local Player = require(core:WaitForChild("Player"))
 local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
 
 local ChampionSelectedEvent = ServerEvents:WaitForChild("ChampSelect")
-local CharLoadedEvent = ClientEvents:WaitForChild("charLoaded")
+
 local gameInstance = Game:GetInstance()
 
 local MAX_PLAYERS = 1
@@ -26,18 +27,6 @@ local joinedPlayers = {}
 local function onPlayerAdded(plr)
 	print(plr.Name .. " joined.")
 	table.insert(joinedPlayers, plr)
-end
-
--- Server-side
-local function onCharacterLoaded(plr)
-	local char = plr.Character or plr.CharacterAdded:Wait()
-
-	-- Wait for Animator or any other required parts
-	local humanoid = char:WaitForChild("Humanoid")
-	local animator = humanoid:WaitForChild("Animator") -- if needed for animations
-
-	-- Now safe to notify the client
-	ClientEvents:WaitForChild("charLoaded"):FireClient(plr)
 end
 
 -- Connect BEFORE checking current players
@@ -92,7 +81,7 @@ end
 -- Register players
 for _, plr in ipairs(joinedPlayers) do
 	local champion, rig = ChampionFactory.newChampion(selectedChampions[plr.UserId])
-
+	CollectionService:AddTag(rig, "player")
 	rig:SetPrimaryPartCFrame(plr.Character.PrimaryPart.CFrame)
 	plr.Character = rig
 
@@ -100,9 +89,6 @@ for _, plr in ipairs(joinedPlayers) do
 
 	local playerObj = Player.new(plr, champion, rig)
 	gameInstance:RegisterPlayer(playerObj)
-	task.delay(2, function()
-		CharLoadedEvent:FireClient(plr)
-	end)
 end
 
 print(gameInstance.players)

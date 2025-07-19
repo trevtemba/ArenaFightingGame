@@ -81,7 +81,7 @@ function CombatHandler:Attack()
 
 	-- Play animation
 	self.owner.animationHandler:StopAll()
-	self.owner.animationHandler:Play(animName, 0, 3, 1, false)
+	self.owner.animationHandler:Play(animName, 0, 3, 1, false, "Action3")
 
 	self:M1Slow(2)
 

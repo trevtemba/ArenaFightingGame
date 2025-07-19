@@ -35,13 +35,13 @@ function MovementHandler:StartSprint()
 	self.isSprinting = true
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "start")
 
-	if self.owner.animationHandler then
-		self.owner.animationHandler:Play("sprint", 0.2, 2, 1, true)
-		task.delay(0.1, function()
-			self.owner.animationHandler:Stop("walk")
-		end)
-		print("sprinting")
-	end
+	-- if self.owner.animationHandler then
+	-- 	self.owner.animationHandler:Play("sprint", 0.2, 2, 1, true)
+	-- 	task.delay(0.1, function()
+	-- 		self.owner.animationHandler:Stop("walk")
+	-- 	end)
+	-- 	print("sprinting")
+	-- end
 end
 
 function MovementHandler:StopSprint()
@@ -52,13 +52,13 @@ function MovementHandler:StopSprint()
 	self.isSprinting = false
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "stop")
 
-	if self.owner.animationHandler then
-		self.owner.animationHandler:Play("walk", 0.2, 2, 1, true)
-		task.delay(0.1, function()
-			self.owner.animationHandler:Stop("sprint")
-		end)
-		print("stopped sprinting")
-	end
+	-- if self.owner.animationHandler then
+	-- 	self.owner.animationHandler:Play("walk", 0.2, 2, 1, true)
+	-- 	task.delay(0.1, function()
+	-- 		self.owner.animationHandler:Stop("sprint")
+	-- 	end)
+	-- 	print("stopped sprinting")
+	-- end
 end
 
 -- === Dash === --

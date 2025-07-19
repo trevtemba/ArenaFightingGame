@@ -34,9 +34,12 @@ function animationModule.PreloadAll()
 	end
 end
 
-function animationModule.Play(animName, fadeTime, looped)
-	print("playing anim")
+function animationModule.Play(animName, fadeTime, looped, priority)
 	local animTrack = animations[animName]
+	print(animName)
+	if priority then
+		animTrack.Priority = Enum.AnimationPriority[priority]
+	end
 	if animTrack then
 		animTrack.Looped = looped or false
 		animTrack:Play(fadeTime)

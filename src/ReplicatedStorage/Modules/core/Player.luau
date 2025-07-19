@@ -105,7 +105,6 @@ function Player:Block(target)
 end
 
 function Player:SprintHandler(sprintState)
-	print(sprintState)
 	if self.movementHandler then
 		if sprintState == "start" then
 			self.movementHandler:StartSprint()

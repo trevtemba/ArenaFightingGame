@@ -1,9 +1,21 @@
 local module = {}
 
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local cameraInst = workspace:WaitForChild("Camera")
 local cameraPart = workspace:WaitForChild("MenuFolder"):WaitForChild("MenuCamera"):WaitForChild("menuCameraPart").CFrame
+
+local originalFOV = 70
+
+local sprintFOVChange = 10
+local sprintFOVTweenTime = 0.75
+
+local fovTween
+local bobConnection
+local bobAmplitude = 0.075 -- How far the camera bobs (height)
+local bobFrequency = 15 -- How fast the camera bobs
+local bobTime = 0
 
 function module.menuCam()
 	repeat
@@ -69,6 +81,53 @@ function module.CameraShakeLight(character, duration)
 
 		humanoid.CameraOffset = Vector3.new(0, 0, 0)
 	end)
+end
+
+function module.EnableSprintPOV()
+	fovTween = TweenService:Create(
+		game.Workspace.CurrentCamera,
+		TweenInfo.new(sprintFOVTweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ FieldOfView = originalFOV + sprintFOVChange }
+	)
+	fovTween:Play()
+
+	-- Start camera bobbing
+	if not bobConnection then
+		bobTime = 0
+		local camera = workspace.CurrentCamera
+
+		bobConnection = RunService.RenderStepped:Connect(function(dt)
+			bobTime += dt
+			local offsetY = math.sin(bobTime * bobFrequency) * bobAmplitude
+
+			-- Apply a small vertical offset relative to the camera's current rotation
+			camera.CFrame = camera.CFrame * CFrame.new(0, offsetY, 0)
+		end)
+	end
+
+	print("sprint zoom out")
+end
+
+function module.DisableSprintPOV()
+	local camera = game.Workspace.CurrentCamera
+	if camera.FieldOfView ~= originalFOV then
+		if fovTween then
+			fovTween:Cancel()
+		end
+		fovTween = TweenService:Create(
+			camera,
+			TweenInfo.new(sprintFOVTweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ FieldOfView = originalFOV }
+		)
+		fovTween:Play()
+
+		-- Stop bobbing
+		if bobConnection then
+			bobConnection:Disconnect()
+			bobConnection = nil
+		end
+	end
+	print("sprint zoom in")
 end
 
 function module.CameraSway(character, direction)

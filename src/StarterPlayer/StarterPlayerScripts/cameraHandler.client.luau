@@ -91,19 +91,19 @@ flinchEvent.OnClientEvent:Connect(function(effectType)
 	end
 end)
 
-sprintEvent.OnClientEvent:Connect(function(sprintState)
-	if sprintState == "start" then
-		fovTween = TweenService:Create(
-			camera,
-			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{ FieldOfView = originalFOV + fovChange }
-		)
-		fovTween:Play()
+-- sprintEvent.OnClientEvent:Connect(function(sprintState)
+-- 	if sprintState == "start" then
+-- 		fovTween = TweenService:Create(
+-- 			camera,
+-- 			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+-- 			{ FieldOfView = originalFOV + fovChange }
+-- 		)
+-- 		fovTween:Play()
 
-		-- camShake:Start()
-		-- camShake:ShakeSustain(CameraShaker.Presets.Impact)
-	elseif sprintState == "stop" then
-		resetFOV()
-		camShake:StopSustained(0.1)
-	end
-end)
+-- 		-- camShake:Start()
+-- 		-- camShake:ShakeSustain(CameraShaker.Presets.Impact)
+-- 	elseif sprintState == "stop" then
+-- 		resetFOV()
+-- 		camShake:StopSustained(0.1)
+-- 	end
+-- end)

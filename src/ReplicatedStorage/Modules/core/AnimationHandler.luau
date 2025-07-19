@@ -27,10 +27,13 @@ function AnimationHandler.new(rig)
 	return self
 end
 
-function AnimationHandler:Play(name, fadeTime, weight, speed, looped)
+function AnimationHandler:Play(name, fadeTime, weight, speed, looped, priority)
 	local animData = self.animations[name]
-	print(name)
+
 	if animData then
+		if priority then
+			animData.track.Priority = Enum.AnimationPriority[priority]
+		end
 		animData.track:Play(fadeTime or 0.1, weight or 1)
 		animData.track:AdjustSpeed(speed or 1)
 		animData.track.Looped = looped or false
