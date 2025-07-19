@@ -36,7 +36,7 @@ function MovementHandler:StartSprint()
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "start")
 
 	if self.owner.animationHandler then
-		self.owner.animationHandler:Play("sprint", 0.1, 2, 1, true)
+		self.owner.animationHandler:Play("sprint", 0.2, 2, 1, true)
 		task.delay(0.1, function()
 			self.owner.animationHandler:Stop("walk")
 		end)
@@ -53,7 +53,7 @@ function MovementHandler:StopSprint()
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "stop")
 
 	if self.owner.animationHandler then
-		self.owner.animationHandler:Play("walk", 0.1, 2, 1, true)
+		self.owner.animationHandler:Play("walk", 0.2, 2, 1, true)
 		task.delay(0.1, function()
 			self.owner.animationHandler:Stop("sprint")
 		end)
@@ -67,11 +67,11 @@ function MovementHandler:Dash()
 	if not self.hrp then
 		return
 	end
-	if tick() - self.lastDash < DASH_COOLDOWN then
+	if os.clock() - self.lastDash < DASH_COOLDOWN then
 		return
 	end
 
-	self.lastDash = tick()
+	self.lastDash = os.clock()
 
 	local direction = self.hrp.CFrame.LookVector * DASH_DISTANCE
 	local targetPosition = self.hrp.Position + direction

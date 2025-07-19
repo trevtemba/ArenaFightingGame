@@ -27,10 +27,10 @@ function module.CameraShakeHeavy(character, duration)
 	surfTest.Parent = humanoid
 
 	task.spawn(function()
-		local startTime = tick()
+		local startTime = os.clock()
 
 		repeat
-			local endTime = tick()
+			local endTime = os.clock()
 
 			local XOffset = math.random(-50, 50) / 1000
 			local YOffset = math.random(-50, 50) / 1000
@@ -52,10 +52,10 @@ function module.CameraShakeLight(character, duration)
 	surfTest.Parent = humanoid
 
 	task.spawn(function()
-		local startTime = tick()
+		local startTime = os.clock()
 
 		repeat
-			local endTime = tick()
+			local endTime = os.clock()
 
 			local XOffset = math.random(-50, 50) / 2000
 			local YOffset = math.random(-50, 50) / 2000

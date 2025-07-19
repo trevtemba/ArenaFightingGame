@@ -1,7 +1,7 @@
 -- AnimationHandler.lua
 local AnimationHandler = {}
 AnimationHandler.__index = AnimationHandler
-
+RunService = game:GetService("RunService")
 local DEFAULT_WALKSPEED = 18
 
 function AnimationHandler.new(rig)
@@ -29,11 +29,15 @@ end
 
 function AnimationHandler:Play(name, fadeTime, weight, speed, looped)
 	local animData = self.animations[name]
+	print(name)
 	if animData then
 		animData.track:Play(fadeTime or 0.1, weight or 1)
 		animData.track:AdjustSpeed(speed or 1)
 		animData.track.Looped = looped or false
+	else
+		return
 	end
+	return animData.track.Length
 end
 
 function AnimationHandler:PlayRun(speed, fadeTime, weight)

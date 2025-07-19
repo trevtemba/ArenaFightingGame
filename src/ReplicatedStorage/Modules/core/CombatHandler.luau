@@ -6,6 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
+local m1SlowDelay = 1
 
 local flinchEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("flinch")
@@ -72,8 +73,6 @@ function CombatHandler:Attack()
 		self.combo = 1
 	end
 
-	attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackFOV")
-
 	local animName = "m" .. tostring(self.combo)
 	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 3)
 
@@ -82,8 +81,9 @@ function CombatHandler:Attack()
 
 	-- Play animation
 	self.owner.animationHandler:StopAll()
-	self.owner.animationHandler:Play(animName, 0, 4, 1, false)
-	self:M1Slow(5, 0.75)
+	self.owner.animationHandler:Play(animName, 0, 3, 1, false)
+
+	self:M1Slow(2)
 
 	-- Deal damage on hit marker
 	self.owner.animationHandler:ConnectMarker(animName, "fire", function()
@@ -93,7 +93,8 @@ function CombatHandler:Attack()
 			attacker = self.owner,
 			onHit = function(entity)
 				self:ApplyDamage(entity, true)
-				attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackShake")
+				attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
+				self.owner.physicsHandler:TweenMove(1)
 			end,
 			hitboxTemplate = "meleeHitbox",
 			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
@@ -145,7 +146,8 @@ function CombatHandler:ApplyDamage(entity, blockable)
 	local base = self.owner.stats.attackDmg or 10
 	local pierce = self.owner.stats.pierce or 0
 	local dmg = base -- TODO: add crit functionality
-	entity:TakeDamage(dmg, pierce, 1, blockable)
+
+	entity:TakeDamage(dmg, pierce, 1, blockable, self.owner.character)
 	if self.combo == self.maxCombo then
 		entity.physicsHandler:Knockback(self.owner.character, 40)
 	end
@@ -223,9 +225,13 @@ function CombatHandler:Flinch()
 	end
 end
 
-function CombatHandler:M1Slow(speed, attackSpeed)
+function CombatHandler:M1Slow(speed)
 	self.owner.physicsHandler:SetWalkspeed(speed)
-	task.delay(attackSpeed, function()
+
+	task.spawn(function()
+		while os.clock() - self.lastAttackTime < m1SlowDelay do
+			task.wait(0.05)
+		end
 		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
 	end)
 end

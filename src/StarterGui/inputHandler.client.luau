@@ -1,5 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local CamModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
+local animationModule =
+	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("animationModule"))
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -11,9 +14,12 @@ local ServerEvents = RemoteEvents:WaitForChild("Server")
 
 -- Input Contexts
 local CombatContext = PlayerGui:WaitForChild("Combat")
+local CoreContext = PlayerGui:WaitForChild("Core")
+local ShiftlockedContext = PlayerGui:WaitForChild("Shiftlocked")
 
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local flinchEvent = ClientEvents:WaitForChild("flinch")
+local charLoaded = ClientEvents:WaitForChild("charLoaded")
 
 local debounces = {
 	attack = false,
@@ -21,35 +27,41 @@ local debounces = {
 	block = false,
 	dodge = false,
 	sprint = false,
+	walk = false,
 }
 
-local runTick = 0
+local walkTick = 0
+local walking = nil
 local sprinting = false
 local doubleTapThreshold = 0.35
 
-CombatContext:WaitForChild("Sprint").Pressed:Connect(function()
+local function processDebounce(name, duration)
+	debounces[name] = true
+
+	task.delay(duration, function()
+		debounces[name] = false
+	end)
+end
+
+CoreContext:WaitForChild("WalkForward").Pressed:Connect(function()
 	local now = os.clock()
 
-	if now - runTick <= doubleTapThreshold then
+	if now - walkTick <= doubleTapThreshold then
 		if not debounces["sprint"] then
-			debounces["sprint"] = true
+			processDebounce("sprint", 0.1)
 
 			local remote = ServerEvents:WaitForChild("OnSprint")
 			if remote then
 				remote:FireServer("start")
 				sprinting = true
 			end
-
-			task.delay(0.1, function()
-				debounces["sprint"] = false
-			end)
 		end
 	end
 
-	runTick = now
+	walkTick = now
 end)
 
-CombatContext:WaitForChild("Sprint").Released:Connect(function()
+CoreContext:WaitForChild("WalkForward").Released:Connect(function()
 	if sprinting == false then
 		return
 	end
@@ -61,22 +73,40 @@ CombatContext:WaitForChild("Sprint").Released:Connect(function()
 	end
 end)
 
+ShiftlockedContext:WaitForChild("WalkLeft").Pressed:Connect(function()
+	if debounces["walk"] == true then
+		return
+	end
+
+	processDebounce("walk", 0.05)
+	walking = "left"
+	animationModule.Play("walkLeft", 0.1, true)
+
+	local remote = ServerEvents:FindFirstChild("OnWalk")
+	if remote then
+		remote:FireServer("left")
+	end
+end)
+ShiftlockedContext:WaitForChild("WalkLeft").Released:Connect(function()
+	if walking == "left" then
+		walking = nil
+	end
+
+	animationModule.Stop("walkLeft")
+end)
+
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	if debounces["attack"] == true then
 		return
 	end
 
-	debounces["attack"] = true
+	processDebounce("attack", 0.2)
 
 	local remote = ServerEvents:WaitForChild("OnAttack")
 	if remote then
 		remote:FireServer()
 		print("attack fired")
 	end
-
-	task.delay(0.2, function()
-		debounces["attack"] = false
-	end)
 end)
 
 CombatContext:WaitForChild("Block").Pressed:Connect(function()
@@ -84,15 +114,12 @@ CombatContext:WaitForChild("Block").Pressed:Connect(function()
 		return
 	end
 
-	debounces["block"] = true
+	processDebounce("block", 0.2)
+
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		remote:FireServer()
 	end
-
-	task.delay(0.3, function()
-		debounces["block"] = false
-	end)
 end)
 
 CombatContext:WaitForChild("Block").Released:Connect(function()
@@ -102,6 +129,9 @@ CombatContext:WaitForChild("Block").Released:Connect(function()
 	end
 end)
 
+local function enableCore()
+	CoreContext.Enabled = true
+end
 local function switchToContext(contextName)
 	local allContexts = {
 		"Combat",
@@ -115,7 +145,21 @@ local function switchToContext(contextName)
 	end
 end
 
+local function toggledShiftlockContext()
+	ShiftlockedContext.Enabled = not ShiftlockedContext.Enabled
+end
+
+CoreContext:WaitForChild("LockCam").Pressed:Connect(function()
+	toggledShiftlockContext()
+end)
+
 switchContext.OnClientEvent:Connect(function(contextName)
 	switchToContext(contextName)
 	print("Binds are now in " .. contextName .. " context!")
+end)
+
+charLoaded.OnClientEvent:Connect(function()
+	print("hererrrr")
+	animationModule.PreloadAll()
+	enableCore()
 end)

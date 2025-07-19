@@ -410,7 +410,7 @@ function Enemy:RangedAttack()
 		origin = self.character.PrimaryPart.Position,
 		targetPosition = self.target.character:WaitForChild("HumanoidRootPart").Position,
 		range = self.stats["range"] + 10,
-		speed = 100,
+		speed = 80,
 		hitRadius = 2,
 		onHit = function(target)
 			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME, true)
@@ -455,6 +455,7 @@ function Enemy:Flinch()
 		self.animationHandler:Play(chosenTrack, 0.1, 2)
 	end
 	self.physicsHandler:TweenRetreat(2)
+
 	self.fxHandler:PlaySound("impact")
 	self.fxHandler:PlayParticle("impact")
 end

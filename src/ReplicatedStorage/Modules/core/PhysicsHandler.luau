@@ -8,7 +8,7 @@ local RagdollHandler = require(
 	game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("core"):WaitForChild("RagdollHandler")
 )
 
-local tweenInfoMoveChar = TweenInfo.new(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+local tweenInfoMoveChar = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 function PhysicsHandler.new(rig)
 	local self = setmetatable({}, PhysicsHandler)
@@ -69,6 +69,32 @@ function PhysicsHandler:Knockback(fromCharacter, power)
 
 	RagdollHandler:Ragdoll(self.character, 2)
 	Debris:AddItem(att, 0.1)
+end
+
+function PhysicsHandler:TweenFaceTarget(targetCharacter, duration)
+	if not self.hrp or not targetCharacter then
+		return
+	end
+
+	local targetHRP = targetCharacter:FindFirstChild("HumanoidRootPart")
+	if not targetHRP then
+		return
+	end
+
+	local targetPos = Vector3.new(
+		targetHRP.Position.X,
+		self.hrp.Position.Y, -- lock Y-axis to avoid tilting
+		targetHRP.Position.Z
+	)
+
+	local currentPos = self.hrp.Position
+	local lookAtCFrame = CFrame.new(currentPos, targetPos)
+
+	local goal = { CFrame = lookAtCFrame }
+	local tweenInfo = TweenInfo.new(duration or 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+	local tween = TweenService:Create(self.hrp, tweenInfo, goal)
+	tween:Play()
 end
 
 function PhysicsHandler:SetWalkspeed(speed)
