@@ -1,12 +1,13 @@
 local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local StunModule = require(script.Parent:WaitForChild("stunHandler"))
+local attackDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.attackDone
 
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
-local m1SlowDelay = 1
+local m1SlowDelay = 0.75
 
 local flinchEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("flinch")
@@ -233,6 +234,7 @@ function CombatHandler:M1Slow(speed)
 			task.wait(0.05)
 		end
 		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
+		attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 	end)
 end
 

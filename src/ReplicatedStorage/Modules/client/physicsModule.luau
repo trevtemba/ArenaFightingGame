@@ -10,10 +10,6 @@ local isDashing = false
 
 local physicModule = {}
 
-function EaseOutCubic(t)
-	return 1 - math.pow(1 - t, 3)
-end
-
 function physicModule.Dash(direction, defaultSpeed)
 	if isDashing then
 		return
@@ -32,7 +28,6 @@ function physicModule.Dash(direction, defaultSpeed)
 	end
 
 	isDashing = true
-	humanoid.WalkSpeed = 0
 
 	local startTime = tick()
 	local conn
@@ -40,16 +35,9 @@ function physicModule.Dash(direction, defaultSpeed)
 		local elapsed = tick() - startTime
 		if elapsed >= DASH_DURATION then
 			conn:Disconnect()
-
-			-- Set walkspeed to half of default temporarily
-			humanoid.WalkSpeed = defaultSpeed * 0.5
-
-			-- Restore full speed after slowdown duration
 			task.delay(SLOWDOWN_DURATION, function()
-				humanoid.WalkSpeed = defaultSpeed
 				isDashing = false
 			end)
-
 			return
 		end
 

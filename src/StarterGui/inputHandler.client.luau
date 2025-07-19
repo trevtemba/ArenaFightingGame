@@ -24,6 +24,7 @@ local ShiftlockedContext = PlayerGui:WaitForChild("Shiftlocked")
 local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 
 local switchContext = ClientEvents:WaitForChild("switchContext")
+local attackDone = ClientEvents:WaitForChild("attackDone")
 local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
 
 local DASH_COOLDOWN = 1
@@ -40,11 +41,13 @@ local debounces = {
 
 local canDo = {
 	dash = true,
+	sprint = true,
 }
 
 local walking = nil
 local sprinting = nil
 local dashing = false
+local attacking = false
 
 local activeKeyCount = 0
 local sprintingFromDoubleTap = false
@@ -56,15 +59,6 @@ local directions = {
 	right = { key = "WalkRight", anim = "walkRight" },
 	back = { key = "WalkBack", anim = "walkBack" },
 	forward = { key = "WalkForward", anim = "walkForward", sprintAnim = "sprint" },
-}
-
--- Track current input holds
-local heldInputs = {
-	forward = false,
-	left = false,
-	right = false,
-	back = false,
-	shift = false,
 }
 
 local function processDebounce(name, duration)
@@ -95,12 +89,39 @@ local function processCooldown(name, cooldown)
 	return
 end
 
+-- Track current input holds
+local heldInputs = {
+	forward = false,
+	left = false,
+	right = false,
+	back = false,
+	shift = false,
+}
+
+local function getDashDirection()
+	local activeKeys = heldInputs
+	local direction = "forward"
+
+	print(activeKeys)
+	if activeKeys["left"] and not activeKeys["right"] then
+		direction = "left"
+	elseif activeKeys["right"] and not activeKeys["left"] then
+		direction = "right"
+	elseif activeKeys["back"] and not activeKeys["left"] and not activeKeys["right"] then
+		direction = "back"
+	elseif activeKeys["back"] and activeKeys["left"] and activeKeys["right"] then
+		print()
+		direction = "back"
+	end
+	return direction
+end
 -- Update this function
 local function updateSprinting()
-	local shouldSprint = heldInputs.forward and (heldInputs.shift or sprintingFromDoubleTap)
+	local shouldSprint = heldInputs.forward and canDo["sprint"] and (heldInputs.shift or sprintingFromDoubleTap)
 
 	if shouldSprint and not sprinting then
 		sprinting = true
+		walking = "forward"
 		animationModule.Stop(directions.forward.anim)
 		animationModule.Play(directions.forward.sprintAnim, 0.1, true, "Action")
 		camModule.EnableSprintPOV()
@@ -139,9 +160,10 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 		return
 	end
 
-	local walkingDir = walking or "forward"
+	local walkingDir = getDashDirection()
 	local animName
 	dashing = true
+	canDo["sprint"] = false
 
 	if walkingDir == "forward" then
 		animName = "dashForward"
@@ -159,8 +181,12 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 	end
 
 	animationModule.Play(animName, 0.1, false, "Action2")
+	-- physicsModule.Dash(walkingDir, 12)
 	animationModule.ConnectEvent(animName, "fire", function()
 		physicsModule.Dash(walkingDir, 12)
+		task.delay(0.7, function()
+			canDo["sprint"] = true
+		end)
 		heldInputs.forward = false
 		sprintingFromDoubleTap = false
 		updateSprinting()
@@ -174,6 +200,11 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	if processDebounce("attack", 0.2) then
 		return
 	end
+
+	attacking = true
+	canDo["sprint"] = false
+	canDo["dash"] = false
+	updateSprinting()
 
 	local remote = ServerEvents:WaitForChild("OnAttack")
 	if remote then
@@ -405,6 +436,14 @@ end)
 switchContext.OnClientEvent:Connect(function(contextName)
 	switchToContext(contextName)
 	print("Binds are now in " .. contextName .. " context!")
+end)
+
+attackDone.OnClientEvent:Connect(function()
+	canDo["sprint"] = true
+	canDo["dash"] = true
+	attacking = false
+
+	print("client can do movement")
 end)
 
 if isCharLoaded:Invoke() then
