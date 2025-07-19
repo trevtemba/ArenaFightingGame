@@ -3,6 +3,7 @@ local animationModule = {}
 
 local Players = game:GetService("Players")
 local animations = {}
+local animationConnections = {}
 
 function animationModule.PreloadAll()
 	local character = Players.LocalPlayer.Character
@@ -36,7 +37,6 @@ end
 
 function animationModule.Play(animName, fadeTime, looped, priority)
 	local animTrack = animations[animName]
-	print(animName)
 	if priority then
 		animTrack.Priority = Enum.AnimationPriority[priority]
 	end
@@ -50,6 +50,53 @@ function animationModule.Stop(animName)
 	local animTrack = animations[animName]
 	if animTrack then
 		animTrack:Stop()
+	end
+end
+
+function animationModule.ConnectEvent(animName, markerName, callback)
+	local animTrack = animations[animName]
+	if not animTrack then
+		return
+	end
+
+	animationConnections[animName] = animationConnections[animName] or {}
+
+	-- Disconnect old marker connection
+	if animationConnections[animName][markerName] then
+		animationConnections[animName][markerName]:Disconnect()
+	end
+
+	-- Connect new one
+	local conn = animTrack:GetMarkerReachedSignal(markerName):Connect(callback)
+	animationConnections[animName][markerName] = conn
+end
+
+function animationModule.ConnectStopped(animName, callback)
+	local animTrack = animations[animName]
+	if not animTrack then
+		return
+	end
+
+	animationConnections[animName] = animationConnections[animName] or {}
+
+	-- Disconnect old stopped connection
+	if animationConnections[animName].stopped then
+		animationConnections[animName].stopped:Disconnect()
+	end
+
+	-- Connect new stopped
+	local conn = animTrack.Stopped:Connect(callback)
+	animationConnections[animName].stopped = conn
+end
+
+function animationModule.DisconnectAll(animName)
+	if animationConnections[animName] then
+		for _, conn in pairs(animationConnections[animName]) do
+			if conn.Connected then
+				conn:Disconnect()
+			end
+		end
+		animationConnections[animName] = nil
 	end
 end
 

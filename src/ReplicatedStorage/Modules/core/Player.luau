@@ -104,6 +104,12 @@ function Player:Block(target)
 	end
 end
 
+function Player:Dash(direction)
+	if self.movementHandler then
+		self.movementHandler:HandleDash(direction)
+	end
+end
+
 function Player:SprintHandler(sprintState)
 	if self.movementHandler then
 		if sprintState == "start" then

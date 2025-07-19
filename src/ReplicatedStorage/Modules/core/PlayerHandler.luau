@@ -30,10 +30,10 @@ function PlayerHandler.OnCast(plr, abilitySlot)
 	end
 end
 
-function PlayerHandler.OnDash(plr)
+function PlayerHandler.OnDash(plr, direction)
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
-		playerObj:Dash()
+		playerObj:Dash(direction)
 	end
 end
 

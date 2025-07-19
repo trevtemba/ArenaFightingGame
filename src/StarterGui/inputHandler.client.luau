@@ -6,6 +6,8 @@ local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 local camModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
 local animationModule =
 	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("animationModule"))
+local physicsModule =
+	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("physicsModule"))
 
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
@@ -24,6 +26,8 @@ local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
 
+local DASH_COOLDOWN = 1
+
 local debounces = {
 	attack = false,
 	heavyAttack = false,
@@ -34,9 +38,14 @@ local debounces = {
 	shift = false,
 }
 
+local canDo = {
+	dash = true,
+}
+
 local walking = nil
 local sprinting = nil
 local dashing = false
+
 local activeKeyCount = 0
 local sprintingFromDoubleTap = false
 local doubleTapThreshold = 0.35
@@ -67,6 +76,20 @@ local function processDebounce(name, duration)
 
 	task.delay(duration, function()
 		debounces[name] = false
+	end)
+
+	return
+end
+
+local function processCooldown(name, cooldown)
+	if canDo[name] == false then
+		return true
+	end
+
+	canDo[name] = false
+
+	task.delay(cooldown, function()
+		canDo[name] = true
 	end)
 
 	return
@@ -109,39 +132,42 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 	if processDebounce("dash", 0.2) then
 		return
 	end
+	if processCooldown("dash", DASH_COOLDOWN) then
+		return
+	end
 	if dashing == true then
 		return
 	end
 
 	local walkingDir = walking or "forward"
+	local animName
 	dashing = true
 
 	if walkingDir == "forward" then
-		animationModule.Play("dashForward", 0.1, false, "Action2")
-		task.delay(0.75, function()
-			dashing = false
-		end)
+		animName = "dashForward"
 	elseif walkingDir == "left" then
-		animationModule.Play("dashLeft", 0.1, false, "Action2")
-		task.delay(0.75, function()
-			dashing = false
-		end)
+		animName = "dashLeft"
 	elseif walkingDir == "right" then
-		animationModule.Play("dashRight", 0.1, false, "Action2")
-		task.delay(0.75, function()
-			dashing = false
-		end)
+		animName = "dashRight"
 	elseif walkingDir == "back" then
-		animationModule.Play("dashBack", 0.1, false, "Action2")
-		task.delay(0.75, function()
-			dashing = false
-		end)
+		animName = "dashBack"
 	end
 
-	local remote = ServerEvents:FindFirstChild("OnSprint")
+	local remote = ServerEvents:FindFirstChild("OnDash")
 	if remote then
-		remote:FireServer("start")
+		remote:FireServer(walkingDir)
 	end
+
+	animationModule.Play(animName, 0.1, false, "Action2")
+	animationModule.ConnectEvent(animName, "fire", function()
+		physicsModule.Dash(walkingDir, 12)
+		heldInputs.forward = false
+		sprintingFromDoubleTap = false
+		updateSprinting()
+	end)
+	task.delay(0.75, function()
+		dashing = false
+	end)
 end)
 
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
@@ -316,7 +342,7 @@ local function setupMovementActionFreecammed(direction, data)
 					remote:FireServer("forward")
 				end
 			end
-			print(activeKeyCount)
+			--print(activeKeyCount)
 		end)
 
 		inputAction.Released:Connect(function()
@@ -335,7 +361,7 @@ local function setupMovementActionFreecammed(direction, data)
 			end
 			sprintingFromDoubleTap = false
 
-			print(activeKeyCount)
+			--print(activeKeyCount)
 		end)
 	else
 		inputAction.Pressed:Connect(function()
@@ -345,7 +371,7 @@ local function setupMovementActionFreecammed(direction, data)
 
 			activeKeyCount += 1
 
-			print(activeKeyCount)
+			--print(activeKeyCount)
 		end)
 
 		inputAction.Released:Connect(function()
@@ -357,7 +383,7 @@ local function setupMovementActionFreecammed(direction, data)
 				updateSprinting()
 				animationModule.Stop("walkForward")
 			end
-			print(activeKeyCount)
+			--print(activeKeyCount)
 		end)
 	end
 end

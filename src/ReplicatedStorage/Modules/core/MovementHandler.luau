@@ -1,5 +1,8 @@
 -- MovementHandler.lua
+local HeapProfilerService = game:GetService("HeapProfilerService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
 local Players = game:GetService("Players")
 local sprintEvent = game:GetService("ReplicatedStorage").RemoteEvents.Client.sprint
 
@@ -8,8 +11,9 @@ MovementHandler.__index = MovementHandler
 
 -- Configs
 local DASH_DISTANCE = 20
-local DASH_DURATION = 0.2
-local DASH_COOLDOWN = 1.5
+local DASH_DURATION = 0.7
+local DASH_COOLDOWN = 1
+local DASH_SPEED = DASH_DISTANCE / DASH_DURATION
 
 function MovementHandler.new(playerObj)
 	local self = setmetatable({}, MovementHandler)
@@ -63,28 +67,22 @@ end
 
 -- === Dash === --
 
-function MovementHandler:Dash()
-	if not self.hrp then
-		return
-	end
-	if os.clock() - self.lastDash < DASH_COOLDOWN then
-		return
-	end
+function MovementHandler:HandleDash(direction)
+	-- if not self.hrp or not self.humanoid or self.isDashing then
+	-- 	return
+	-- end
 
-	self.lastDash = os.clock()
+	-- local now = tick()
+	-- if now - self.lastDash < DASH_COOLDOWN then
+	-- 	return
+	-- end
 
-	local direction = self.hrp.CFrame.LookVector * DASH_DISTANCE
-	local targetPosition = self.hrp.Position + direction
+	-- self.lastDash = now
+	-- self.isDashing = true
+	-- self.humanoid.WalkSpeed = 0
 
-	local tween = TweenService:Create(self.hrp, TweenInfo.new(DASH_DURATION, Enum.EasingStyle.Linear), {
-		CFrame = CFrame.new(targetPosition),
-	})
-
-	tween:Play()
-
-	if self.owner.PlayAnimation then
-		self.owner:PlayAnimation("Dash")
-	end
+	-- local dashSpeed = 75
+	-- local startTime = tick()
 end
 
 -- === Jump === --
