@@ -42,18 +42,20 @@ function ChampionFactory.newChampion(name)
 		attackSpeed = data.attackSpeed,
 		attackCooldown = data.attackCooldown,
 		pierce = data.pierce,
+		critChance = data.critChance,
+		critMultiplier = data.critMultiplier,
+		speed = data.speed,
 		range = data.range,
-		
+
 		ranged = data.ranged,
+		attackDmgType = data.attackDmgType,
 		abilities = abilities,
 		cooldowns = data.cooldowns,
 		passive = passive,
 	})
 	local rig = folder:FindFirstChild(name):Clone()
-	
+
 	return champion, rig
 end
 
 return ChampionFactory
-
-

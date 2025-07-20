@@ -93,12 +93,12 @@ function CombatHandler:Attack()
 		local params = {
 			attacker = self.owner,
 			onHit = function(entity)
-				self:ApplyDamage(entity, true)
+				self:ApplyDamage(entity, true, "attack")
 				attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
-				self.owner.physicsHandler:TweenMove(1)
+				-- self.owner.physicsHandler:TweenMove(1)
 			end,
 			hitboxTemplate = "meleeHitbox",
-			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
+			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -3),
 			size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.owner.stats.range),
 			duration = 0.15,
 		}
@@ -139,23 +139,28 @@ function CombatHandler:HandleBlock()
 	end
 end
 
-function CombatHandler:ApplyDamage(entity, blockable)
+function CombatHandler:ApplyDamage(entity, blockable, attackType)
 	if not entity or not entity.combatHandler then
 		return
 	end
 
 	local base = self.owner.stats.attackDmg or 10
 	local pierce = self.owner.stats.pierce or 0
-	local dmg = base -- TODO: add crit functionality
+	local crit = self:determineCrit()
+	if crit then
+		print("hit crit")
+	end
+	local dmg = base * (crit and self.owner.stats.critMultiplier or 1)
+	local dmgType = self.owner.damageTypes[attackType]
 
-	entity:TakeDamage(dmg, pierce, 1, blockable, self.owner.character)
+	entity:TakeDamage(dmg, pierce, 1, dmgType, crit, blockable)
 	if self.combo == self.maxCombo then
 		entity.physicsHandler:Knockback(self.owner.character, 40)
 	end
 	self.owner.fxHandler:PlaySound("attack")
 end
 
-function CombatHandler:TakeDamage(damage, pierce, stunTime)
+function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit)
 	if self.entityType == "Player" then
 		self:Stun(stunTime)
 		self:Flinch()
@@ -182,7 +187,10 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime)
 	self.ownerHumanoid.Health = math.clamp(self.owner.currentHP, 0, self.ownerHumanoid.MaxHealth)
 
 	if self.entityType == "Enemy" then
-		self.owner:UpdateHealthBar()
+		self.owner.uiHandler:UpdateHealthBar()
+		self.owner.uiHandler:ShowDamage(totalDamage, damageType, crit)
+	else
+		self.owner.uiHandler:ShowDamage(totalDamage, damageType, crit)
 	end
 	print(string.format("%s took %d damage", self.owner.name, totalDamage))
 
@@ -194,6 +202,13 @@ end
 function CombatHandler:BlockDamage()
 	self.owner.fxHandler:PlaySound("impact")
 	self.owner.fxHandler:PlayParticle("block")
+end
+
+function CombatHandler:determineCrit()
+	local critChance = self.owner.stats.critChance or 0
+	local roll = math.random()
+
+	return roll < critChance
 end
 
 function CombatHandler:Stun(stunTime)
@@ -237,7 +252,7 @@ function CombatHandler:M1Slow(speed)
 			task.wait(0.05)
 		end
 		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
-		if self.entityType ~= "enemy" then
+		if self.entityType == "Player" then
 			attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 		end
 	end)

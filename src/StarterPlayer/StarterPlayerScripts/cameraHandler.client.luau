@@ -53,8 +53,8 @@ local camShake = initCamShake()
 
 attackEvent.OnClientEvent:Connect(function(effectType)
 	if effectType == "attackHit" then
-		camShake:Start()
-		camShake:Shake(CameraShaker.Presets.Hit)
+		-- camShake:Start()
+		-- camShake:Shake(CameraShaker.Presets.Hit)
 
 		-- Cancel any active FOV tween
 		if fovTween then
@@ -62,7 +62,7 @@ attackEvent.OnClientEvent:Connect(function(effectType)
 		end
 
 		-- Quick FOV zoom in
-		local recoilFOV = originalFOV - 4
+		local recoilFOV = originalFOV - 2
 		local recoilDuration = 0.15
 
 		fovTween = TweenService:Create(

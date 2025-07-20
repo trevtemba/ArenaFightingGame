@@ -14,9 +14,13 @@ function Champion.new(data)
 	self.attackSpeed = data.attackSpeed
 	self.attackCooldown = data.attackCooldown
 	self.pierce = data.pierce
+	self.critChance = data.critChance
+	self.critMultiplier = data.critMultiplier
+	self.speed = data.speed
 	self.range = data.range
-	
+
 	self.ranged = data.ranged
+	self.attackDmgType = data.attackDmgType
 	self.abilities = data.abilities or {}
 	self.cooldowns = data.cooldowns
 	self.passive = data.passive

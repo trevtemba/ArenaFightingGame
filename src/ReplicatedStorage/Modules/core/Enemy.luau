@@ -5,9 +5,9 @@ local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
+local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
 local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 local EnemyData = require(script.Parent.Parent:WaitForChild("data"):WaitForChild("EnemyData"))
-local HealthBarGui = game:GetService("ServerStorage").ui.HealthBar
 
 local RunService = game:GetService("RunService")
 
@@ -43,7 +43,12 @@ function Enemy.new()
 		pierce = 0,
 		range = 0,
 		attackCooldown = 1,
+		critChance = 0,
 		speed = 18,
+	}
+
+	self.damageTypes = {
+		attack = nil,
 	}
 
 	-- COMBAT STATE
@@ -53,15 +58,12 @@ function Enemy.new()
 	-- HANDLERS
 	self.combatHandler = nil
 	self.fxHandler = nil
+	self.uiHandler = nil
 	self.animationHandler = nil
 	self.physicsHandler = nil
 
 	-- ASSETS
 	self.trail = nil
-	self.healthBarGui = nil
-	self.healthFill = nil
-	self.damageFill = nil
-	self.dividers = nil
 
 	-- STATES
 	self.attacking = false
@@ -100,17 +102,6 @@ function Enemy:Init(stage, enemyType, rig)
 	self.currentHP = config.health
 	self.maxHP = config.health
 
-	HealthBarGui:Clone()
-	HealthBarGui.Parent = self.character:WaitForChild("HumanoidRootPart")
-
-	self.healthBarGui = self.character:WaitForChild("HumanoidRootPart"):WaitForChild("HealthBar")
-	self.healthFill = self.healthBarGui:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("health")
-	self.damageFill = self.healthBarGui:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("damage")
-	self.dividers = self.healthBarGui:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("dividers")
-	self.healthBarGui.Enabled = false
-
-	self:CreateDividers()
-
 	self.humanoid.WalkSpeed = config.speed
 	self.humanoid.DisplayName = ""
 
@@ -119,8 +110,11 @@ function Enemy:Init(stage, enemyType, rig)
 	self.stats["pierce"] = config.pierce
 	self.stats["range"] = config.range or 5
 	self.stats["attackCooldown"] = config.cooldown
+	self.stats["critChance"] = config.crit
+	self.stats["critMultiplier"] = config.critMultiplier
 	self.stats["speed"] = config.speed
 	self.stats["ranged"] = config.range > 15 and true or false
+	self.damageTypes.attack = config.attackDmgType
 
 	if self.humanoid then
 		self.humanoid.Health = self.maxHP
@@ -141,6 +135,7 @@ function Enemy:Init(stage, enemyType, rig)
 
 	self.combatHandler = CombatHandler.new(self, "Enemy")
 	self.fxHandler = FXHandler.new(self.character)
+	self.uiHandler = UIHandler.new(self)
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.physicsHandler = PhysicsHandler.new(self.character)
 
@@ -395,7 +390,14 @@ function Enemy:MeleeAttack()
 		attacker = self,
 		target = self.target,
 		onHit = function(target)
-			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME, true)
+			target:TakeDamage(
+				self.stats["damage"],
+				self.stats["pierce"],
+				ATTACK_STUN_TIME,
+				self.damageTypes.attack,
+				false,
+				true
+			)
 			self.damageDebounce = true
 			print(
 				self.name
@@ -430,7 +432,14 @@ function Enemy:RangedAttack()
 		speed = 80,
 		hitRadius = 2,
 		onHit = function(target)
-			target:TakeDamage(self.stats["damage"], self.stats["pierce"], ATTACK_STUN_TIME, true)
+			target:TakeDamage(
+				self.stats["damage"],
+				self.stats["pierce"],
+				ATTACK_STUN_TIME,
+				self.damageTypes.attack,
+				false,
+				true
+			)
 			self.damageDebounce = true
 			print(
 				self.name
@@ -454,48 +463,10 @@ function Enemy:RangedAttack()
 	HitboxHandler:CreateNPCProjectile(params)
 end
 
-function Enemy:TakeDamage(amount, pierce, stunTime)
+function Enemy:TakeDamage(amount, pierce, stunTime, dmgType, crit)
 	if self.combatHandler then
-		self.combatHandler:TakeDamage(amount, pierce, stunTime)
+		self.combatHandler:TakeDamage(amount, pierce, stunTime, dmgType, crit)
 	end
-end
-
-function Enemy:UpdateHealthBar()
-	local hpRatio = self.currentHP / self.maxHP
-	self.healthFill.Size = UDim2.new(hpRatio, 0, 1, 0)
-
-	local showTime = 1.5
-	self.healthBarGui.Enabled = true
-
-	if self.healthBarTween then
-		self.healthBarTween:Cancel()
-	end
-
-	self.healthBarTween = game:GetService("TweenService"):Create(
-		self.healthBarGui:FindFirstChildOfClass("CanvasGroup"),
-		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ GroupTransparency = 0 }
-	)
-	self.healthBarTween:Play()
-
-	local tween = game:GetService("TweenService")
-		:Create(self.damageFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(hpRatio, 0, 1, 0),
-		})
-	tween:Play()
-
-	task.delay(showTime, function()
-		if self.healthBarTween then
-			self.healthBarTween:Cancel()
-		end
-
-		self.healthBarTween = game:GetService("TweenService"):Create(
-			self.healthBarGui:FindFirstChildOfClass("CanvasGroup"),
-			TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-			{ GroupTransparency = 1 }
-		)
-		self.healthBarTween:Play()
-	end)
 end
 
 function Enemy:Flinch()
@@ -529,23 +500,6 @@ function Enemy:GetStat(stat)
 	end
 
 	return self.stats[stat]
-end
-
-function Enemy:CreateDividers()
-	local maxHp = self.maxHP
-	local dividerCount = math.floor(maxHp / 100) - 1
-	self.dividers:ClearAllChildren()
-
-	for i = 1, dividerCount do
-		local divider = Instance.new("Frame")
-		divider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		divider.BackgroundTransparency = 0.7
-		divider.Size = UDim2.new(0.02, 0, 1, 0)
-		divider.Position = UDim2.new(i / (dividerCount + 1), 0, 0, 0)
-		divider.BorderSizePixel = 0
-		divider.ZIndex = 5
-		divider.Parent = self.dividers
-	end
 end
 
 function Enemy:Destroy()

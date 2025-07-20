@@ -13,6 +13,7 @@ local SPAWN_OFFSET_Y = 3
 
 local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr)
 	local enemy = enemyTemplate:Clone()
+	enemy.Name = ""
 	local enemyObj = Enemy.new()
 	local plrPos = plr.character:GetPivot().Position
 

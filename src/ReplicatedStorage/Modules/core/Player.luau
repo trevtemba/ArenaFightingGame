@@ -1,5 +1,6 @@
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
+local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local MovementHandler = require(script.Parent:WaitForChild("MovementHandler"))
 local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
@@ -27,6 +28,7 @@ function Player.new(plr, champion, rig)
 	--Modules
 	self.animationHandler = nil
 	self.fxHandler = nil
+	self.uiHandler = nil
 	self.combatHandler = nil
 	self.movementHandler = nil
 	self.physicsHandler = nil
@@ -39,10 +41,15 @@ function Player.new(plr, champion, rig)
 		attackSpeed = champion.attackSpeed,
 		attackCooldown = champion.attackCooldown,
 		pierce = champion.pierce,
+		critChance = champion.critChance,
+		critMultiplier = champion.critMultiplier,
+		speed = champion.speed,
 		range = champion.range,
-		critChance = 0,
 		stunResist = 0,
-		speed = 12,
+	}
+
+	self.damageTypes = {
+		attack = champion.attackDmgType,
 	}
 
 	-- Combat state
@@ -76,6 +83,7 @@ function Player:Initialize()
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
+	self.uiHandler = UIHandler.new(self)
 	self.combatHandler = CombatHandler.new(self, "Player")
 	self.movementHandler = MovementHandler.new(self)
 	self.physicsHandler = PhysicsHandler.new(self.character)
@@ -120,12 +128,12 @@ function Player:SprintHandler(sprintState)
 	end
 end
 
-function Player:TakeDamage(amount, pierce, stunTime, blockable) --todo, enemyposition so we can make blocking only work if u are facing attacker
+function Player:TakeDamage(amount, pierce, stunTime, dmgType, crit, blockable) --todo, enemyposition so we can make blocking only work if u are facing attacker
 	if self.combatHandler then
 		if self.state.blocking == true and blockable == true then
 			self.combatHandler:BlockDamage()
 		else
-			self.combatHandler:TakeDamage(amount, pierce, stunTime)
+			self.combatHandler:TakeDamage(amount, pierce, stunTime, dmgType, crit)
 		end
 	end
 end

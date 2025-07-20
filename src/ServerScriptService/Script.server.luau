@@ -20,6 +20,7 @@ local CHAMPION_PICK_TIME = 5
 local availableChampions = { "Dante" }
 
 local selectedChampions = {}
+math.randomseed(os.clock() * 1000000) -- for random calculations like crit
 
 -- Tracks when players are ready
 local joinedPlayers = {}
