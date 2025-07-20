@@ -181,6 +181,9 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime)
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
 	self.ownerHumanoid.Health = math.clamp(self.owner.currentHP, 0, self.ownerHumanoid.MaxHealth)
 
+	if self.entityType == "Enemy" then
+		self.owner:UpdateHealthBar()
+	end
 	print(string.format("%s took %d damage", self.owner.name, totalDamage))
 
 	if self.owner.currentHP <= 0 then
@@ -234,7 +237,9 @@ function CombatHandler:M1Slow(speed)
 			task.wait(0.05)
 		end
 		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
-		attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		if self.entityType ~= "enemy" then
+			attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		end
 	end)
 end
 

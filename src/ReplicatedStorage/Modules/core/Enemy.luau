@@ -6,8 +6,8 @@ local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
-
 local EnemyData = require(script.Parent.Parent:WaitForChild("data"):WaitForChild("EnemyData"))
+local HealthBarGui = game:GetService("ServerStorage").ui.HealthBar
 
 local RunService = game:GetService("RunService")
 
@@ -58,6 +58,10 @@ function Enemy.new()
 
 	-- ASSETS
 	self.trail = nil
+	self.healthBarGui = nil
+	self.healthFill = nil
+	self.damageFill = nil
+	self.dividers = nil
 
 	-- STATES
 	self.attacking = false
@@ -95,7 +99,20 @@ function Enemy:Init(stage, enemyType, rig)
 	self.name = config.name
 	self.currentHP = config.health
 	self.maxHP = config.health
+
+	HealthBarGui:Clone()
+	HealthBarGui.Parent = self.character:WaitForChild("HumanoidRootPart")
+
+	self.healthBarGui = self.character:WaitForChild("HumanoidRootPart"):WaitForChild("HealthBar")
+	self.healthFill = self.healthBarGui:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("health")
+	self.damageFill = self.healthBarGui:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("damage")
+	self.dividers = self.healthBarGui:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("dividers")
+	self.healthBarGui.Enabled = false
+
+	self:CreateDividers()
+
 	self.humanoid.WalkSpeed = config.speed
+	self.humanoid.DisplayName = ""
 
 	self.stats["durability"] = config.durability
 	self.stats["damage"] = config.damage
@@ -443,6 +460,44 @@ function Enemy:TakeDamage(amount, pierce, stunTime)
 	end
 end
 
+function Enemy:UpdateHealthBar()
+	local hpRatio = self.currentHP / self.maxHP
+	self.healthFill.Size = UDim2.new(hpRatio, 0, 1, 0)
+
+	local showTime = 1.5
+	self.healthBarGui.Enabled = true
+
+	if self.healthBarTween then
+		self.healthBarTween:Cancel()
+	end
+
+	self.healthBarTween = game:GetService("TweenService"):Create(
+		self.healthBarGui:FindFirstChildOfClass("CanvasGroup"),
+		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ GroupTransparency = 0 }
+	)
+	self.healthBarTween:Play()
+
+	local tween = game:GetService("TweenService")
+		:Create(self.damageFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(hpRatio, 0, 1, 0),
+		})
+	tween:Play()
+
+	task.delay(showTime, function()
+		if self.healthBarTween then
+			self.healthBarTween:Cancel()
+		end
+
+		self.healthBarTween = game:GetService("TweenService"):Create(
+			self.healthBarGui:FindFirstChildOfClass("CanvasGroup"),
+			TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{ GroupTransparency = 1 }
+		)
+		self.healthBarTween:Play()
+	end)
+end
+
 function Enemy:Flinch()
 	self.animationHandler:StopAll()
 	local track1 = "impactleft"
@@ -474,6 +529,23 @@ function Enemy:GetStat(stat)
 	end
 
 	return self.stats[stat]
+end
+
+function Enemy:CreateDividers()
+	local maxHp = self.maxHP
+	local dividerCount = math.floor(maxHp / 100) - 1
+	self.dividers:ClearAllChildren()
+
+	for i = 1, dividerCount do
+		local divider = Instance.new("Frame")
+		divider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		divider.BackgroundTransparency = 0.7
+		divider.Size = UDim2.new(0.02, 0, 1, 0)
+		divider.Position = UDim2.new(i / (dividerCount + 1), 0, 0, 0)
+		divider.BorderSizePixel = 0
+		divider.ZIndex = 5
+		divider.Parent = self.dividers
+	end
 end
 
 function Enemy:Destroy()
