@@ -15,8 +15,6 @@ local splashScreen = splash:WaitForChild("splashScreen")
 --FX
 local uiSFX = ReplicatedStorage:WaitForChild("UISFX")
 
-
-
 function module:hoverSound()
 	uiSFX:WaitForChild("hover"):Play()
 end
@@ -26,10 +24,8 @@ function module:selectSound()
 end
 
 function module.playSplash()
-	
-	print("fired")
-	tweenService:Create(splashScreen, tweenInfoBtns1, {BackgroundTransparency = 0}):Play()
-	
+	tweenService:Create(splashScreen, tweenInfoBtns1, { BackgroundTransparency = 0 }):Play()
+
 	--[[
 	task.delay(1, function()
 		print("removing")

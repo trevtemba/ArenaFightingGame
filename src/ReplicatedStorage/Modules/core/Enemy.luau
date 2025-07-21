@@ -1,6 +1,6 @@
 local ServerStorage = game:GetService("ServerStorage")
--- local TweenService = game:GetService("TweenService")
--- local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
@@ -9,6 +9,7 @@ local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
 local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 local EnemyData = require(script.Parent.Parent:WaitForChild("data"):WaitForChild("EnemyData"))
 
+local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
 local RunService = game:GetService("RunService")
 
 local ATTACK_STUN_TIME = 0.25
@@ -289,7 +290,6 @@ function Enemy:Attack()
 	if self.stats.ranged == false then
 		self.trail.Enabled = true
 		self.animationHandler:ConnectMarker("attack", "fire", function()
-			print("attack fired")
 			self:StopFacing()
 			self:MeleeAttack()
 		end)
@@ -396,8 +396,10 @@ function Enemy:MeleeAttack()
 				ATTACK_STUN_TIME,
 				self.damageTypes.attack,
 				false,
-				true
+				true,
+				"blunt"
 			)
+
 			self.damageDebounce = true
 			print(
 				self.name
@@ -463,9 +465,9 @@ function Enemy:RangedAttack()
 	HitboxHandler:CreateNPCProjectile(params)
 end
 
-function Enemy:TakeDamage(amount, pierce, stunTime, dmgType, crit)
+function Enemy:TakeDamage(amount, pierce, stunTime, dmgType, crit, _, hitType)
 	if self.combatHandler then
-		self.combatHandler:TakeDamage(amount, pierce, stunTime, dmgType, crit)
+		self.combatHandler:TakeDamage(amount, pierce, stunTime, dmgType, crit, hitType)
 	end
 end
 
@@ -480,10 +482,7 @@ function Enemy:Flinch()
 	if chosenTrack then
 		self.animationHandler:Play(chosenTrack, 0.1, 2)
 	end
-	self.physicsHandler:TweenRetreat(2)
-
-	self.fxHandler:PlaySound("impact")
-	self.fxHandler:PlayParticle("impact")
+	self.physicsHandler:TweenRetreat()
 end
 
 function Enemy:FadeOutProjectile(projectile)

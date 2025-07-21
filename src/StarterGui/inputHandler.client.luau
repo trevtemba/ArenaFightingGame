@@ -181,16 +181,13 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 	end
 
 	animationModule.Play(animName, 0.1, false, "Action2")
-	-- physicsModule.Dash(walkingDir, 12)
-	animationModule.ConnectEvent(animName, "fire", function()
-		physicsModule.Dash(walkingDir, 12)
-		task.delay(0.7, function()
-			canDo["sprint"] = true
-		end)
-		heldInputs.forward = false
-		sprintingFromDoubleTap = false
-		updateSprinting()
+	physicsModule.Dash(walkingDir, 12)
+	task.delay(0.7, function()
+		canDo["sprint"] = true
 	end)
+	heldInputs.forward = false
+	sprintingFromDoubleTap = false
+	updateSprinting()
 	task.delay(0.75, function()
 		dashing = false
 	end)

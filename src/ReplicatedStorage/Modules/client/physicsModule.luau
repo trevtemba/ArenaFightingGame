@@ -1,6 +1,6 @@
 local RunService = game:GetService("RunService")
 
-local DASH_DURATION = 0.4
+local DASH_DURATION = 0.6
 local DASH_SPEED = 80
 local SLOWDOWN_DURATION = 0.3 -- how long they stay slowed after dashing
 

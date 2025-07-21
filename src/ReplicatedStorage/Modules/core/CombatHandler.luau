@@ -2,6 +2,7 @@ local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local StunModule = require(script.Parent:WaitForChild("stunHandler"))
 local attackDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.attackDone
+local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
 
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
@@ -84,7 +85,7 @@ function CombatHandler:Attack()
 	self.owner.animationHandler:StopAll()
 	self.owner.animationHandler:Play(animName, 0, 3, 1, false, "Action3")
 
-	self:M1Slow(2)
+	self:M1Slow(5)
 
 	-- Deal damage on hit marker
 	self.owner.animationHandler:ConnectMarker(animName, "fire", function()
@@ -153,14 +154,15 @@ function CombatHandler:ApplyDamage(entity, blockable, attackType)
 	local dmg = base * (crit and self.owner.stats.critMultiplier or 1)
 	local dmgType = self.owner.damageTypes[attackType]
 
-	entity:TakeDamage(dmg, pierce, 1, dmgType, crit, blockable)
+	entity:TakeDamage(dmg, pierce, 1, dmgType, crit, blockable, "slash")
+
 	if self.combo == self.maxCombo then
 		entity.physicsHandler:Knockback(self.owner.character, 40)
 	end
 	self.owner.fxHandler:PlaySound("attack")
 end
 
-function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit)
+function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hitType)
 	if self.entityType == "Player" then
 		self:Stun(stunTime)
 		self:Flinch()
@@ -186,12 +188,10 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit)
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
 	self.ownerHumanoid.Health = math.clamp(self.owner.currentHP, 0, self.ownerHumanoid.MaxHealth)
 
-	if self.entityType == "Enemy" then
-		self.owner.uiHandler:UpdateHealthBar()
-		self.owner.uiHandler:ShowDamage(totalDamage, damageType, crit)
-	else
-		self.owner.uiHandler:ShowDamage(totalDamage, damageType, crit)
-	end
+	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = hitType })
+	self.owner.uiHandler:UpdateHealthBar()
+	self.owner.uiHandler:ShowDamage(damage, damageType, crit)
+
 	print(string.format("%s took %d damage", self.owner.name, totalDamage))
 
 	if self.owner.currentHP <= 0 then
@@ -238,9 +238,6 @@ function CombatHandler:Flinch()
 	if chosenTrack then
 		self.owner.animationHandler:Play(chosenTrack, 0.1, 2)
 		flinchEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "impact")
-		self.owner.fxHandler:PlaySound("impact")
-		self.owner.fxHandler:PlayParticle("impact")
-		print("ahhhhhh")
 	end
 end
 

@@ -1,0 +1,50 @@
+local TweenService = game:GetService("TweenService")
+local player = game:GetService("Players").LocalPlayer
+
+return function(argumentData)
+	local target = argumentData.target
+	local currentHP = argumentData.currentHP
+	local maxHP = argumentData.maxHP
+	local healthShowTime = argumentData.healthShowTime
+
+	if target and target ~= player.Character then
+		local healthBar = target:FindFirstChild("HumanoidRootPart"):FindFirstChild("HealthBar")
+		local healthFill = healthBar:FindFirstChild("base"):FindFirstChild("healthBase"):FindFirstChild("health")
+		local damageFill = healthBar:FindFirstChild("base"):FindFirstChild("healthBase"):FindFirstChild("damage")
+		local hpRatio = currentHP / maxHP
+
+		healthFill.Size = UDim2.new(hpRatio, 0, 1, 0)
+
+		healthBar.Enabled = true
+		local healthBarTween
+		if healthBarTween then
+			healthBarTween:Cancel()
+		end
+
+		healthBarTween = TweenService:Create(
+			healthBar:FindFirstChildOfClass("CanvasGroup"),
+			TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ GroupTransparency = 0 }
+		)
+		healthBarTween:Play()
+
+		local tween =
+			TweenService:Create(damageFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Size = UDim2.new(hpRatio, 0, 1, 0),
+			})
+		tween:Play()
+
+		task.delay(healthShowTime, function()
+			if healthBarTween then
+				healthBarTween:Cancel()
+			end
+
+			healthBarTween = TweenService:Create(
+				healthBar:FindFirstChildOfClass("CanvasGroup"),
+				TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{ GroupTransparency = 1 }
+			)
+			healthBarTween:Play()
+		end)
+	end
+end
