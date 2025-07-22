@@ -53,7 +53,6 @@ function RoundManager.RunPve(stage, plrs)
 		local plrFinalCFrame = plrSpawn.CFrame * CFrame.new(0, 3, 0)
 		plr.character:PivotTo(plrFinalCFrame)
 		ClientEvents:WaitForChild("switchContext"):FireClient(Players:GetPlayerFromCharacter(plr.character), "Combat")
-
 		-- spawn the enemies in each of the arenas
 
 		if stage == 1 then

@@ -104,8 +104,6 @@ function module.EnableSprintPOV()
 			camera.CFrame = camera.CFrame * CFrame.new(0, offsetY, 0)
 		end)
 	end
-
-	print("sprint zoom out")
 end
 
 function module.DisableSprintPOV()
@@ -127,7 +125,6 @@ function module.DisableSprintPOV()
 			bobConnection = nil
 		end
 	end
-	print("sprint zoom in")
 end
 
 function module.CameraSway(character, direction)

@@ -26,23 +26,41 @@ function MovementHandler.new(playerObj)
 	return self
 end
 
--- === Sprint === --
+function MovementHandler:CanSprint()
+	local stateHandler = self.owner.stateHandler
+
+	local blockedStates = {
+		"attacking",
+		"casting",
+		"blocking",
+		"dashing",
+		"stunned",
+		"ragdolled",
+	}
+
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+end
+
+function MovementHandler:CanDash()
+	local stateHandler = self.owner.stateHandler
+
+	local blockedStates = {
+		"attacking",
+		"casting",
+		"stunned",
+		"ragdolled",
+	}
+
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+end
 
 function MovementHandler:StartSprint()
-	if not self.humanoid then
+	if not self.humanoid and not self:CanSprint() then
 		return
 	end
 	self.humanoid.WalkSpeed = self.walkspeed * 2
-	self.isSprinting = true
+	self.owner.stateHandler:SetState("sprinting")
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "start")
-
-	-- if self.owner.animationHandler then
-	-- 	self.owner.animationHandler:Play("sprint", 0.2, 2, 1, true)
-	-- 	task.delay(0.1, function()
-	-- 		self.owner.animationHandler:Stop("walk")
-	-- 	end)
-	-- 	print("sprinting")
-	-- end
 end
 
 function MovementHandler:StopSprint()
@@ -50,37 +68,21 @@ function MovementHandler:StopSprint()
 		return
 	end
 	self.humanoid.WalkSpeed = self.walkspeed
-	self.isSprinting = false
+	self.owner.stateHandler:RemoveState("sprinting")
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "stop")
-
-	-- if self.owner.animationHandler then
-	-- 	self.owner.animationHandler:Play("walk", 0.2, 2, 1, true)
-	-- 	task.delay(0.1, function()
-	-- 		self.owner.animationHandler:Stop("sprint")
-	-- 	end)
-	-- 	print("stopped sprinting")
-	-- end
 end
 
 -- === Dash === --
 
 function MovementHandler:HandleDash(direction)
+	if not self.humanoid and not self:CanDash() then
+		return
+	end
+	self.owner.stateHandler:SetState("dashing")
 	clientEffects:FireAllClients("dash", { target = self.character, direction = direction })
-	-- if not self.hrp or not self.humanoid or self.isDashing then
-	-- 	return
-	-- end
-
-	-- local now = tick()
-	-- if now - self.lastDash < DASH_COOLDOWN then
-	-- 	return
-	-- end
-
-	-- self.lastDash = now
-	-- self.isDashing = true
-	-- self.humanoid.WalkSpeed = 0
-
-	-- local dashSpeed = 75
-	-- local startTime = tick()
+	task.delay(0.5, function()
+		self.owner.stateHandler:RemoveState("dashing")
+	end)
 end
 
 -- === Jump === --

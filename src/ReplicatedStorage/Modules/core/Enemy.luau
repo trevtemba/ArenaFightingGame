@@ -11,6 +11,7 @@ local EnemyData = require(script.Parent.Parent:WaitForChild("data"):WaitForChild
 
 local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
 local RunService = game:GetService("RunService")
+local StateHandler = require(script.Parent.StateHandler)
 
 local ATTACK_STUN_TIME = 0.25
 
@@ -62,13 +63,13 @@ function Enemy.new()
 	self.uiHandler = nil
 	self.animationHandler = nil
 	self.physicsHandler = nil
+	self.stateHandler = nil
 
 	-- ASSETS
 	self.trail = nil
 
 	-- STATES
 	self.attacking = false
-	self.state = STATES.Idle
 	self.damageDebounce = false
 	self.lastAttackTime = 0
 
@@ -139,6 +140,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.uiHandler = UIHandler.new(self)
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.physicsHandler = PhysicsHandler.new(self.character, "enemy", nil)
+	self.stateHandler = StateHandler.new()
 
 	self:SetState(STATES.Idle)
 
@@ -155,11 +157,11 @@ function Enemy:Update()
 	if not self.target or not self.target.character then
 		return
 	end
-	if self.state == STATES.Knocked then
+	if self.stateHandler:HasState(STATES.Knocked) then
 		return
 	end
 
-	while self.state == STATES.Stunned do
+	while self.stateHandler:HasState(STATES.Stunned) do
 		task.wait(0.2)
 	end
 
@@ -169,7 +171,7 @@ function Enemy:Update()
 		return
 	end
 
-	if self.target.state["knocked"] == true then
+	if self.target.stateHandler:HasState("knocked") then
 		self:SetState(STATES.Idle)
 		self.character.Humanoid:MoveTo(hrp.Position)
 		return
@@ -200,11 +202,11 @@ function Enemy:EvaluateNextState()
 	if not self.target or not self.target.character then
 		return
 	end
-	if self.state == STATES.Knocked then
+	if self.stateHandler:HasState(STATES.Knocked) then
 		return
 	end
 
-	while self.state == STATES.Stunned do
+	while self.stateHandler:HasState(STATES.Stunned) do
 		task.wait(0.2)
 	end
 
@@ -214,7 +216,7 @@ function Enemy:EvaluateNextState()
 		return
 	end
 
-	if self.target.state["knocked"] == true then
+	if self.target.stateHandler:HasState("knocked") then
 		self:SetState(STATES.Idle)
 		self.character.Humanoid:MoveTo(hrp.Position)
 		return
@@ -225,17 +227,18 @@ function Enemy:EvaluateNextState()
 	if distance > self.stats["range"] then
 		self:SetState(STATES.Chasing)
 	else
-		self.state = STATES.Idle
+		self.stateHandler:SetState(STATES.Idle)
 		self:StartFacing()
 		self:SetState(STATES.Attacking) -- re-attack if still in range
 	end
 end
 
 function Enemy:SetState(newState, stunDuration)
-	if self.state == newState and (newState ~= STATES.Idle and newState ~= STATES.Stunned) then
+	if self.stateHandler:HasState(newState) and (newState ~= STATES.Idle and newState ~= STATES.Stunned) then
 		return
 	end
-	self.state = newState
+	self.stateHandler:ClearStates()
+	self.stateHandler:SetState(newState)
 	self:StateHandler(newState, stunDuration)
 end
 
@@ -276,7 +279,7 @@ function Enemy:Chase()
 end
 
 function Enemy:Attack()
-	if self.state == STATES.Stunned then
+	if self.stateHandler:HasState(STATES.Stunned) then
 		return
 	end
 
@@ -313,7 +316,7 @@ function Enemy:Stun(duration)
 	print("stunned")
 	duration = duration or 1.5
 
-	if self.state == STATES.Dead or self.state == STATES.Knocked then
+	if self.stateHandler:HasState(STATES.Dead) or self.stateHandler:HasState(STATES.Knocked) then
 		return
 	end
 
@@ -325,8 +328,8 @@ function Enemy:Stun(duration)
 
 	task.delay(duration, function()
 		-- Only reset if no newer stun has occurred
-		if os.clock() >= self._stunEndTime and self.state == STATES.Stunned then
-			self.state = ""
+		if os.clock() >= self._stunEndTime and self.stateHandler:HasState(STATES.Stunned) then
+			self.stateHandler:ClearStates()
 			self:EvaluateNextState()
 		end
 	end)

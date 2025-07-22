@@ -1,4 +1,3 @@
-
 -- Credits to ApprenticeOfMadara
 
 --[[
@@ -40,7 +39,9 @@ local function stunChecker()
 	stunnedHumanoids = 0
 
 	for humanoid, data in pairs(Stunned) do
-		if not data.stunned then continue end
+		if not data.stunned then
+			continue
+		end
 
 		if currentTime >= data.duration then
 			data.stunned = false
@@ -67,56 +68,58 @@ local function stunChecker()
 	end
 end
 
-
 --//Stun Handler
-return {Stun = function (humanoid, duration)
-	if humanoid.Health <= 0 then return end
+return {
+	Stun = function(humanoid, duration)
+		if humanoid.Health <= 0 then
+			return
+		end
 
-	if not Stunned[humanoid] then
-		Stunned[humanoid] = {}
-	end
+		if not Stunned[humanoid] then
+			Stunned[humanoid] = {}
+		end
 
-	local data = Stunned[humanoid]
-	currentTime = clock()
+		local data = Stunned[humanoid]
+		currentTime = clock()
 
-	if not data.stunned then -- not stunned
-		data.stunned = true
-		data.duration = currentTime + duration
-		data.speed = humanoid.WalkSpeed
-		data.jumpPower = humanoid.JumpPower
-		data.jumpHeight = humanoid.JumpHeight
+		if not data.stunned then -- not stunned
+			data.stunned = true
+			data.duration = currentTime + duration
+			data.speed = humanoid.WalkSpeed
+			data.jumpPower = humanoid.JumpPower
+			data.jumpHeight = humanoid.JumpHeight
 
-		humanoid.WalkSpeed = 3
-		humanoid.JumpPower = 0
-		humanoid.JumpHeight = 0
-		print("stunned")
-		humanoid.Parent:SetAttribute("Stunned", true)
-
-	elseif data.duration - currentTime < duration then -- update duration if less time left
-		data.duration = currentTime + duration
-	end
-
-	if not data.changedConn then
-		data.changedConn = humanoid.Changed:Connect(function()
 			humanoid.WalkSpeed = 3
 			humanoid.JumpPower = 0
 			humanoid.JumpHeight = 0
-		end)
-	end
+			humanoid.Parent:SetAttribute("Stunned", true)
+		elseif data.duration - currentTime < duration then -- update duration if less time left
+			data.duration = currentTime + duration
+		end
 
-	if not data.diedConn then
-		data.diedConn = humanoid.AncestryChanged:Connect(function()
-			data.diedConn:Disconnect()
+		if not data.changedConn then
+			data.changedConn = humanoid.Changed:Connect(function()
+				humanoid.WalkSpeed = 3
+				humanoid.JumpPower = 0
+				humanoid.JumpHeight = 0
+			end)
+		end
 
-			if data.changedConn then data.changedConn:Disconnect() end
+		if not data.diedConn then
+			data.diedConn = humanoid.AncestryChanged:Connect(function()
+				data.diedConn:Disconnect()
 
-			Stunned[humanoid] = nil
-		end)
-	end
+				if data.changedConn then
+					data.changedConn:Disconnect()
+				end
 
-	if not isChecking then
-		isChecking = true
-		checkConnection = heartbeat:Connect(stunChecker)
-	end
-end}
+				Stunned[humanoid] = nil
+			end)
+		end
 
+		if not isChecking then
+			isChecking = true
+			checkConnection = heartbeat:Connect(stunChecker)
+		end
+	end,
+}

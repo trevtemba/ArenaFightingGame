@@ -8,6 +8,7 @@ local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 local Game = require(script.Parent:WaitForChild("Game"))
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StateHandler = require(script.Parent.StateHandler)
 
 local Player = {}
 Player.__index = Player
@@ -32,6 +33,7 @@ function Player.new(plr, champion, rig)
 	self.combatHandler = nil
 	self.movementHandler = nil
 	self.physicsHandler = nil
+	self.stateHandler = nil
 
 	-- Runtime-modifiable stats
 	self.stats = {
@@ -59,15 +61,7 @@ function Player.new(plr, champion, rig)
 	self.currentEnergy = champion.energy
 
 	self.cooldowns = champion.cooldowns
-	self.state = {
-		blocking = false,
-		dashing = false,
-		attacking = false,
-		stunned = false,
-		silenced = false,
-		channeling = false,
-		knocked = false,
-	}
+
 	self.currentEnemies = {}
 	self.statusEffects = {
 		["stunned"] = { duration = 2, expiresAt = os.clock() + 2 },
@@ -87,6 +81,7 @@ function Player:Initialize()
 	self.combatHandler = CombatHandler.new(self, "Player")
 	self.movementHandler = MovementHandler.new(self)
 	self.physicsHandler = PhysicsHandler.new(self.character, "player", self.userId)
+	self.stateHandler = StateHandler.new()
 
 	-- setup ragdoll and walkspeed
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
@@ -106,9 +101,13 @@ function Player:Attack(target)
 	end
 end
 
-function Player:Block(target)
+function Player:Block(activate)
 	if self.combatHandler then
-		self.combatHandler:HandleBlock(target)
+		if activate then
+			self.combatHandler:EnableBlock()
+		else
+			self.combatHandler:DisableBlock()
+		end
 	end
 end
 
@@ -130,8 +129,12 @@ end
 
 function Player:TakeDamage(amount, pierce, stunTime, dmgType, crit, blockable, hitType) --todo, enemyposition so we can make blocking only work if u are facing attacker
 	if self.combatHandler then
-		if self.state.blocking == true and blockable == true then
-			self.combatHandler:BlockDamage()
+		if self.stateHandler:HasState("blocking") then
+			if blockable then
+				self.combatHandler:BlockDamage()
+			else
+				self.combatHandler:BreakBlock()
+			end
 		else
 			self.combatHandler:TakeDamage(amount, pierce, stunTime, dmgType, crit, hitType)
 		end
@@ -180,4 +183,7 @@ function Player:SyncWalkspeed()
 		humanoid.WalkSpeed = self.stats.speed
 	end
 end
+
+function Player:CharDie() end
+
 return Player

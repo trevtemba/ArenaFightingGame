@@ -102,7 +102,6 @@ local function getDashDirection()
 	local activeKeys = heldInputs
 	local direction = "forward"
 
-	print(activeKeys)
 	if activeKeys["left"] and not activeKeys["right"] then
 		direction = "left"
 	elseif activeKeys["right"] and not activeKeys["left"] then
@@ -216,14 +215,14 @@ CombatContext:WaitForChild("Block").Pressed:Connect(function()
 
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
-		remote:FireServer()
+		remote:FireServer(true)
 	end
 end)
 
 CombatContext:WaitForChild("Block").Released:Connect(function()
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
-		remote:FireServer()
+		remote:FireServer(false)
 	end
 end)
 

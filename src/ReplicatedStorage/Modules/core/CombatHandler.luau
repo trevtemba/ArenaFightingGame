@@ -6,6 +6,8 @@ local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.c
 
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
 local m1SlowDelay = 0.75
@@ -22,7 +24,7 @@ CombatHandler.__index = CombatHandler
 function CombatHandler.new(owner, entityType)
 	local self = setmetatable({}, CombatHandler)
 	self.owner = owner -- Reference to the player or npc that owns this handler
-	self.ownerHumanoid = owner.character:FindFirstChildOfClass("Humanoid")
+	self.humanoid = owner.character:FindFirstChildOfClass("Humanoid")
 	self.attackCooldown = owner.stats.attackCooldown
 	self.combo = 1
 	self.maxCombo = 5
@@ -47,25 +49,51 @@ function CombatHandler:HandleAttackInput()
 end
 
 function CombatHandler:CanAttack()
+	local stateHandler = self.owner.stateHandler
 	local now = os.clock()
 	local timeSinceLastAttack = now - self.lastAttackTime
 
-	return self.owner.alive
-		and not self.owner.state.attacking
-		and not self.owner.state.stunned
+	local blockedStates = {
+		"casting",
+		"stunned",
+		"ragdolled",
+	}
+
+	return not stateHandler:HasAny(blockedStates)
+		and self.owner.alive
 		and timeSinceLastAttack >= self.owner.stats.attackCooldown
 end
 
 function CombatHandler:CanBlock()
-	return self.owner.alive == true and self.owner.state.attacking == false and self.owner.state.stunned == false
+	local stateHandler = self.owner.stateHandler
+
+	local blockedStates = {
+		"attacking",
+		"casting",
+		"stunned",
+		"ragdolled",
+	}
+
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+end
+
+function CombatHandler:CanStun()
+	local stateHandler = self.owner.stateHandler
+
+	local blockedStates = {
+		"hyperarmor",
+		"ragdolled",
+	}
+
+	return not stateHandler:HasAny(blockedStates)
 end
 
 function CombatHandler:Attack()
-	if not self:CanAttack() then
+	if not self.humanoid and not self:CanAttack() then
 		return
 	end
-	if self.owner.state.blocking == true then
-		self.owner.state.blocking = false
+	if self.owner.stateHandler:HasState("blocking") then
+		self:DisableBlock()
 	end
 
 	local now = os.clock()
@@ -78,7 +106,7 @@ function CombatHandler:Attack()
 	local animName = "m" .. tostring(self.combo)
 	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 3)
 
-	self.owner.state.attacking = true
+	self.owner.stateHandler:SetState("attacking")
 	self.lastAttackTime = now
 
 	-- Play animation
@@ -107,7 +135,7 @@ function CombatHandler:Attack()
 	end)
 
 	task.delay(cooldown, function()
-		self.owner.state.attacking = false
+		self.owner.stateHandler:RemoveState("attacking")
 
 		if self.combo < self.maxCombo then
 			self.combo += 1
@@ -123,20 +151,32 @@ function CombatHandler:Attack()
 	end)
 end
 
-function CombatHandler:HandleBlock()
-	if not self:CanBlock() then
+function CombatHandler:EnableBlock()
+	if not self.humanoid and not self:CanBlock() then
 		return
 	end
 
-	if self.owner.state.blocking == false then
-		self.owner.state.blocking = true
-		self.owner.physicsHandler:SetWalkspeed(5)
-		self.owner.animationHandler:Play("block")
-	else
-		self.owner.state.blocking = false
-		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
-		self.owner.animationHandler:Stop("block")
+	self.owner.stateHandler:SetState("blocking")
+	self.owner.physicsHandler:SetWalkspeed(5)
+	self.owner.animationHandler:Play("block", nil, nil, nil, true, "Action2")
+end
+
+function CombatHandler:DisableBlock()
+	if not self.humanoid then
+		return
 	end
+
+	self.owner.stateHandler:RemoveState("blocking")
+	self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
+	self.owner.animationHandler:Stop("block")
+end
+
+function CombatHandler:BreakBlock()
+	if not self.humanoid then
+		return
+	end
+	self:DisableBlock()
+	--block break logic todo, daze them for 1.53 second
 end
 
 function CombatHandler:ApplyDamage(entity, blockable, attackType)
@@ -186,7 +226,7 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hi
 	end
 
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
-	self.ownerHumanoid.Health = math.clamp(self.owner.currentHP, 0, self.ownerHumanoid.MaxHealth)
+	self.humanoid.Health = math.clamp(self.owner.currentHP, 0, self.humanoid.MaxHealth)
 
 	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = hitType })
 	self.owner.physicsHandler:MoveBackward(6)
@@ -201,8 +241,7 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hi
 end
 
 function CombatHandler:BlockDamage()
-	self.owner.fxHandler:PlaySound("impact")
-	self.owner.fxHandler:PlayParticle("block")
+	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = "block" })
 end
 
 function CombatHandler:determineCrit()
@@ -213,7 +252,11 @@ function CombatHandler:determineCrit()
 end
 
 function CombatHandler:Stun(stunTime)
-	self.owner.state.stunned = true
+	if not self.humanoid and not self:canStun() then
+		return
+	end
+
+	self.owner.stateHandler:SetState("stunned")
 	local stunResist = self.owner.stats["stunResist"] or 0
 	local totalStunTime = nil
 
@@ -223,9 +266,9 @@ function CombatHandler:Stun(stunTime)
 		totalStunTime = stunTime
 	end
 
-	StunModule.Stun(self.ownerHumanoid, totalStunTime)
+	StunModule.Stun(self.humanoid, totalStunTime)
 	task.delay(stunTime, function()
-		self.owner.state.stunned = false
+		self.owner.stateHandler:RemoveState("stunned")
 	end)
 end
 
@@ -259,17 +302,10 @@ end
 function CombatHandler:Knock()
 	RagdollHandler:Ragdoll(self.owner.character)
 	if self.entityType == "Player" then
-		self.owner.state["knocked"] = true
+		self.owner.stateHandler:SetState("ragdolled")
 	else
 		self.owner:SetState("knocked")
 	end
-end
-
-function CombatHandler:Die()
-	self.owner.alive = false
-	self.owner.animationHandler:Play("death")
-	self.owner.fxHandler:PlaySound("death")
-	self.owner.state.dead = true
 end
 
 return CombatHandler
