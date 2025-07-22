@@ -1,8 +1,4 @@
 -- MovementHandler.lua
-local HeapProfilerService = game:GetService("HeapProfilerService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-
 local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
 local Players = game:GetService("Players")
 local sprintEvent = game:GetService("ReplicatedStorage").RemoteEvents.Client.sprint

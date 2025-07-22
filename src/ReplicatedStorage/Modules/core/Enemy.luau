@@ -138,7 +138,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.fxHandler = FXHandler.new(self.character)
 	self.uiHandler = UIHandler.new(self)
 	self.animationHandler = AnimationHandler.new(self.character)
-	self.physicsHandler = PhysicsHandler.new(self.character)
+	self.physicsHandler = PhysicsHandler.new(self.character, "enemy", nil)
 
 	self:SetState(STATES.Idle)
 
@@ -482,7 +482,6 @@ function Enemy:Flinch()
 	if chosenTrack then
 		self.animationHandler:Play(chosenTrack, 0.1, 2)
 	end
-	self.physicsHandler:TweenRetreat()
 end
 
 function Enemy:FadeOutProjectile(projectile)

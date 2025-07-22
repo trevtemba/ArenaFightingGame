@@ -86,7 +86,7 @@ function Player:Initialize()
 	self.uiHandler = UIHandler.new(self)
 	self.combatHandler = CombatHandler.new(self, "Player")
 	self.movementHandler = MovementHandler.new(self)
-	self.physicsHandler = PhysicsHandler.new(self.character)
+	self.physicsHandler = PhysicsHandler.new(self.character, "player", self.userId)
 
 	-- setup ragdoll and walkspeed
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")

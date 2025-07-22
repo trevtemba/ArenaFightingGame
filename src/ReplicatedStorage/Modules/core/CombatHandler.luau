@@ -96,7 +96,6 @@ function CombatHandler:Attack()
 			onHit = function(entity)
 				self:ApplyDamage(entity, true, "attack")
 				attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
-				-- self.owner.physicsHandler:TweenMove(1)
 			end,
 			hitboxTemplate = "meleeHitbox",
 			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -3),
@@ -157,9 +156,10 @@ function CombatHandler:ApplyDamage(entity, blockable, attackType)
 	entity:TakeDamage(dmg, pierce, 1, dmgType, crit, blockable, "slash")
 
 	if self.combo == self.maxCombo then
-		entity.physicsHandler:Knockback(self.owner.character, 40)
+		entity.physicsHandler:Knockback(self.owner.character, 200, 2)
 	end
 	self.owner.fxHandler:PlaySound("attack")
+	self.owner.physicsHandler:MoveForward(3)
 end
 
 function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hitType)
@@ -189,6 +189,7 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hi
 	self.ownerHumanoid.Health = math.clamp(self.owner.currentHP, 0, self.ownerHumanoid.MaxHealth)
 
 	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = hitType })
+	self.owner.physicsHandler:MoveBackward(6)
 	self.owner.uiHandler:UpdateHealthBar()
 	self.owner.uiHandler:ShowDamage(damage, damageType, crit)
 
