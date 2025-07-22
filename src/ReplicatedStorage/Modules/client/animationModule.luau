@@ -4,6 +4,7 @@ local animationModule = {}
 local Players = game:GetService("Players")
 local animations = {}
 local animationConnections = {}
+local animator = nil
 
 function animationModule.PreloadAll()
 	local character = Players.LocalPlayer.Character
@@ -12,7 +13,7 @@ function animationModule.PreloadAll()
 		return
 	end
 
-	local animator = humanoid:FindFirstChildOfClass("Animator")
+	animator = humanoid:FindFirstChildOfClass("Animator")
 	if not animator then
 		animator = Instance.new("Animator")
 		animator.Name = "ClientAnimator"
@@ -50,6 +51,16 @@ function animationModule.Stop(animName)
 	local animTrack = animations[animName]
 	if animTrack then
 		animTrack:Stop()
+	end
+end
+
+function animationModule.StopAll()
+	if not animator then
+		return
+	end
+
+	for _, track in animator:GetPlayingAnimationTracks() do
+		track:Stop()
 	end
 end
 

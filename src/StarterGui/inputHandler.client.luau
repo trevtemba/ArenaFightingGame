@@ -1,22 +1,23 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local TouchInputService = game:GetService("TouchInputService")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
 
-local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
+local InputStateHandler = require(ReplicatedStorage.Modules.client.inputStateHandler)
 local camModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
 local animationModule =
 	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("animationModule"))
 local physicsModule =
 	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("physicsModule"))
-
-local player = Players.LocalPlayer
-local PlayerGui = player:WaitForChild("PlayerGui")
+local STATE = require(ReplicatedStorage.Modules.core.State)
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local BindableFunctions = ReplicatedStorage:WaitForChild("BindableFunctions")
 local ClientEvents = RemoteEvents:WaitForChild("Client")
 local ServerEvents = RemoteEvents:WaitForChild("Server")
 
+-- Input Handler
+local inputStateHandler = nil
 -- Input Contexts
 local CombatContext = PlayerGui:WaitForChild("Combat")
 local CoreContext = PlayerGui:WaitForChild("Core")
@@ -38,16 +39,6 @@ local debounces = {
 	walk = false,
 	shift = false,
 }
-
-local canDo = {
-	dash = true,
-	sprint = true,
-}
-
-local walking = nil
-local sprinting = nil
-local dashing = false
-local attacking = false
 
 local activeKeyCount = 0
 local sprintingFromDoubleTap = false
@@ -75,31 +66,22 @@ local function processDebounce(name, duration)
 	return
 end
 
-local function processCooldown(name, cooldown)
-	if canDo[name] == false then
+local function processCooldown(state, cooldown)
+	if not inputStateHandler:CanDo(state) then
 		return true
 	end
 
-	canDo[name] = false
+	inputStateHandler:SetState(state)
 
 	task.delay(cooldown, function()
-		canDo[name] = true
+		inputStateHandler:RemoveState(state)
 	end)
 
 	return
 end
 
--- Track current input holds
-local heldInputs = {
-	forward = false,
-	left = false,
-	right = false,
-	back = false,
-	shift = false,
-}
-
 local function getDashDirection()
-	local activeKeys = heldInputs
+	local activeKeys = inputStateHandler:GetAllHeldInputs()
 	local direction = "forward"
 
 	if activeKeys["left"] and not activeKeys["right"] then
@@ -114,13 +96,16 @@ local function getDashDirection()
 	end
 	return direction
 end
+
 -- Update this function
 local function updateSprinting()
-	local shouldSprint = heldInputs.forward and canDo["sprint"] and (heldInputs.shift or sprintingFromDoubleTap)
+	local shouldSprint = inputStateHandler:IsHeld("forward")
+		and inputStateHandler:CanDo(STATE.Sprinting)
+		and (inputStateHandler:IsHeld("shift") or sprintingFromDoubleTap)
 
-	if shouldSprint and not sprinting then
-		sprinting = true
-		walking = "forward"
+	if shouldSprint then
+		inputStateHandler:SetState(STATE.Sprinting)
+		inputStateHandler.walking = "forward"
 		animationModule.Stop(directions.forward.anim)
 		animationModule.Play(directions.forward.sprintAnim, 0.1, true, "Action")
 		camModule.EnableSprintPOV()
@@ -129,8 +114,8 @@ local function updateSprinting()
 		if remote then
 			remote:FireServer("start")
 		end
-	elseif not shouldSprint and sprinting then
-		sprinting = false
+	elseif not shouldSprint then
+		inputStateHandler:RemoveState(STATE.Sprinting)
 		animationModule.Stop(directions.forward.sprintAnim)
 		camModule.DisableSprintPOV()
 
@@ -138,7 +123,7 @@ local function updateSprinting()
 		if sprintRemote then
 			sprintRemote:FireServer("stop")
 		end
-		if heldInputs.forward then
+		if inputStateHandler:IsHeld("forward") then
 			animationModule.Play(directions.forward.anim, 0.1, true, "Movement")
 			local walkRemote = ServerEvents:FindFirstChild("OnWalk")
 			if walkRemote then
@@ -152,17 +137,13 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 	if processDebounce("dash", 0.2) then
 		return
 	end
-	if processCooldown("dash", DASH_COOLDOWN) then
-		return
-	end
-	if dashing == true then
+	if processCooldown(STATE.Dashing, DASH_COOLDOWN) then
 		return
 	end
 
 	local walkingDir = getDashDirection()
 	local animName
-	dashing = true
-	canDo["sprint"] = false
+	inputStateHandler:RemoveState(STATE.Sprinting)
 
 	if walkingDir == "forward" then
 		animName = "dashForward"
@@ -179,27 +160,19 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 		remote:FireServer(walkingDir)
 	end
 
+	animationModule.StopAll()
 	animationModule.Play(animName, 0.1, false, "Action2")
 	physicsModule.Dash(walkingDir, 12)
-	task.delay(0.7, function()
-		canDo["sprint"] = true
-	end)
-	heldInputs.forward = false
+	inputStateHandler:HeldOff("forward")
 	sprintingFromDoubleTap = false
 	updateSprinting()
-	task.delay(0.75, function()
-		dashing = false
-	end)
 end)
 
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
-	if processDebounce("attack", 0.2) then
+	if processDebounce("attack", 0.2) and not inputStateHandler:CanDo(STATE.Attacking) then
 		return
 	end
-
-	attacking = true
-	canDo["sprint"] = false
-	canDo["dash"] = false
+	inputStateHandler:SetState(STATE.Attacking)
 	updateSprinting()
 
 	local remote = ServerEvents:WaitForChild("OnAttack")
@@ -209,9 +182,10 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("Block").Pressed:Connect(function()
-	if processDebounce("block", 0.2) then
+	if processDebounce("block", 0.2) and not inputStateHandler:CanDo(STATE.Blocking) then
 		return
 	end
+	inputStateHandler:SetState(STATE.Blocking)
 
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
@@ -220,6 +194,7 @@ CombatContext:WaitForChild("Block").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("Block").Released:Connect(function()
+	inputStateHandler:RemoveState(STATE.Blocking)
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		remote:FireServer(false)
@@ -230,15 +205,15 @@ CoreContext:WaitForChild("Shift").Pressed:Connect(function()
 	if processDebounce("shift", 0.1) then
 		return
 	end
-	heldInputs.shift = true
+	inputStateHandler:HeldOn("shift")
 	updateSprinting()
-	if sprinting then
+	if inputStateHandler:HasState(STATE.Sprinting) then
 		activeKeyCount += 1
 	end
 end)
 
 CoreContext:WaitForChild("Shift").Released:Connect(function()
-	heldInputs.shift = false
+	inputStateHandler:HeldOff("shift")
 	updateSprinting()
 	if activeKeyCount > 0 then
 		activeKeyCount -= 1
@@ -262,11 +237,7 @@ local function toggledShiftlockContext()
 	ShiftlockedContext.Enabled = not ShiftlockedContext.Enabled
 	FreecamContext.Enabled = not FreecamContext.Enabled
 	if FreecamContext.Enabled == true then
-		for _, v in pairs(heldInputs) do
-			if v ~= "forward" then
-				heldInputs[v] = false
-			end
-		end
+		inputStateHandler:ToggleHeldForFreecam() -- only forward/shift remain held
 	end
 end
 
@@ -286,11 +257,11 @@ local function setupMovementActionShiftLocked(direction, data)
 			end
 			lastForwardTapTime = currentTime
 
-			heldInputs.forward = true
+			inputStateHandler:HeldOn("forward")
 			updateSprinting()
 
-			if not sprinting then
-				walking = "forward"
+			if not inputStateHandler:HasState(STATE.Sprinting) then
+				inputStateHandler.walking = "forward"
 				animationModule.Play(data.anim, 0.1, true, "Movement")
 
 				local remote = ServerEvents:FindFirstChild("OnWalk")
@@ -301,12 +272,12 @@ local function setupMovementActionShiftLocked(direction, data)
 		end)
 
 		inputAction.Released:Connect(function()
-			heldInputs.forward = false
+			inputStateHandler:HeldOff("forward")
 			sprintingFromDoubleTap = false
 			updateSprinting()
 
-			if walking == "forward" then
-				walking = nil
+			if inputStateHandler.walking == "forward" then
+				inputStateHandler.walking = nil
 			end
 
 			animationModule.Stop(data.anim)
@@ -318,8 +289,8 @@ local function setupMovementActionShiftLocked(direction, data)
 				return
 			end
 
-			heldInputs[direction] = true
-			walking = direction
+			inputStateHandler:HeldOn(direction)
+			inputStateHandler.walking = direction
 			animationModule.Play(data.anim, 0.1, true, "Movement")
 
 			local remote = ServerEvents:FindFirstChild("OnWalk")
@@ -329,11 +300,11 @@ local function setupMovementActionShiftLocked(direction, data)
 		end)
 
 		inputAction.Released:Connect(function()
-			if walking == direction then
-				walking = nil
+			if inputStateHandler.walking == direction then
+				inputStateHandler.walking = nil
 			end
 
-			heldInputs[direction] = false
+			inputStateHandler:HeldOff(direction)
 			animationModule.Stop(data.anim)
 		end)
 	end
@@ -355,13 +326,13 @@ local function setupMovementActionFreecammed(direction, data)
 			end
 			lastForwardTapTime = currentTime
 
-			heldInputs.forward = true
+			inputStateHandler:HeldOn("forward")
 			updateSprinting()
 
 			activeKeyCount += 1
 
-			if not sprinting then
-				walking = "forward"
+			if not inputStateHandler:HasState(STATE.Sprinting) then
+				inputStateHandler.walking = "forward"
 				animationModule.Play(data.anim, 0.1, true, "Movement")
 
 				local remote = ServerEvents:FindFirstChild("OnWalk")
@@ -373,13 +344,13 @@ local function setupMovementActionFreecammed(direction, data)
 		end)
 
 		inputAction.Released:Connect(function()
-			heldInputs.forward = false
 			if activeKeyCount > 0 then
 				activeKeyCount -= 1
 			end
+			inputStateHandler:HeldOff("forward")
 
-			if walking == "forward" then
-				walking = nil
+			if inputStateHandler.walking == "forward" then
+				inputStateHandler.walking = nil
 			end
 
 			if activeKeyCount == 0 then
@@ -410,7 +381,6 @@ local function setupMovementActionFreecammed(direction, data)
 				updateSprinting()
 				animationModule.Stop("walkForward")
 			end
-			--print(activeKeyCount)
 		end)
 	end
 end
@@ -435,15 +405,14 @@ switchContext.OnClientEvent:Connect(function(contextName)
 end)
 
 attackDone.OnClientEvent:Connect(function()
-	canDo["sprint"] = true
-	canDo["dash"] = true
-	attacking = false
+	inputStateHandler:RemoveState(STATE.Attacking)
 
 	print("client can do movement")
 end)
 
 if isCharLoaded:Invoke() then
 	print("CHARACTER IS READY")
+	inputStateHandler = InputStateHandler.new(player.Character.Humanoid)
 	PlayerGui:FindFirstChild("Core").Enabled = true
 	PlayerGui:FindFirstChild("Freecammed").Enabled = true
 else

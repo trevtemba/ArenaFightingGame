@@ -69,9 +69,10 @@ function RagdollModule:Unragdoll(rig)
 
 	-- Destroy ragdoll constraints
 	for _, part in ipairs(rig:GetDescendants()) do
-		if part:IsA("BallSocketConstraint") and part.Name == "RagdollSocket" then
-			part:Destroy()
-		elseif part:IsA("Attachment") and (part.Name == "RagdollAttachment0" or part.Name == "RagdollAttachment1") then
+		if
+			(part:IsA("BallSocketConstraint") and part.Name == "RagdollSocket")
+			or (part:IsA("Attachment") and (part.Name == "RagdollAttachment0" or part.Name == "RagdollAttachment1"))
+		then
 			part:Destroy()
 		end
 	end

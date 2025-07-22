@@ -11,7 +11,6 @@ local STATE = require(script.Parent.State)
 local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
-local m1SlowDelay = 0.75
 
 local flinchEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("flinch")
@@ -290,6 +289,7 @@ end
 
 function CombatHandler:M1Slow(speed)
 	self.owner.physicsHandler:SetWalkspeed(speed)
+	local m1SlowDelay = self.combo < self.maxCombo and 0.75 or 1
 
 	task.spawn(function()
 		while os.clock() - self.lastAttackTime < m1SlowDelay do

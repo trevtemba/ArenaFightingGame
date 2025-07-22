@@ -89,8 +89,12 @@ function AnimationHandler:Stop(name)
 end
 
 function AnimationHandler:StopAll()
-	for _, animData in pairs(self.animations) do
-		animData.track:Stop()
+	if not self.animator then
+		return
+	end
+
+	for _, track in self.animator:GetPlayingAnimationTracks() do
+		track:Stop()
 	end
 end
 
