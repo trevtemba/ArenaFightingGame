@@ -7,6 +7,7 @@ local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.c
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local STATE = require(script.Parent.State)
 local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
@@ -49,29 +50,30 @@ function CombatHandler:HandleAttackInput()
 end
 
 function CombatHandler:CanAttack()
-	local stateHandler = self.owner.stateHandler
 	local now = os.clock()
 	local timeSinceLastAttack = now - self.lastAttackTime
+	if timeSinceLastAttack < self.owner.stats.attackCooldown then
+		return false
+	end
 
+	local stateHandler = self.owner.stateHandler
 	local blockedStates = {
-		"casting",
-		"stunned",
-		"ragdolled",
+		STATE.Attacking,
+		STATE.Stunned,
+		STATE.Ragdolled,
 	}
 
-	return not stateHandler:HasAny(blockedStates)
-		and self.owner.alive
-		and timeSinceLastAttack >= self.owner.stats.attackCooldown
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
 end
 
 function CombatHandler:CanBlock()
 	local stateHandler = self.owner.stateHandler
 
 	local blockedStates = {
-		"attacking",
-		"casting",
-		"stunned",
-		"ragdolled",
+		STATE.Attacking,
+		STATE.Casting,
+		STATE.Stunned,
+		STATE.Ragdolled,
 	}
 
 	return not stateHandler:HasAny(blockedStates) and self.owner.alive
@@ -81,8 +83,8 @@ function CombatHandler:CanStun()
 	local stateHandler = self.owner.stateHandler
 
 	local blockedStates = {
-		"hyperarmor",
-		"ragdolled",
+		STATE.Hyperarmor,
+		STATE.Ragdolled,
 	}
 
 	return not stateHandler:HasAny(blockedStates)
@@ -92,7 +94,7 @@ function CombatHandler:Attack()
 	if not self.humanoid and not self:CanAttack() then
 		return
 	end
-	if self.owner.stateHandler:HasState("blocking") then
+	if self.owner.stateHandler:HasState(STATE.Blocking) then
 		self:DisableBlock()
 	end
 
@@ -102,11 +104,12 @@ function CombatHandler:Attack()
 	if now - self.lastAttackTime > self.comboResetTime then
 		self.combo = 1
 	end
+	print(self.combo)
 
 	local animName = "m" .. tostring(self.combo)
-	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 3)
+	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 2)
 
-	self.owner.stateHandler:SetState("attacking")
+	self.owner.stateHandler:SetState(STATE.Attacking)
 	self.lastAttackTime = now
 
 	-- Play animation
@@ -135,7 +138,7 @@ function CombatHandler:Attack()
 	end)
 
 	task.delay(cooldown, function()
-		self.owner.stateHandler:RemoveState("attacking")
+		self.owner.stateHandler:RemoveState(STATE.Attacking)
 
 		if self.combo < self.maxCombo then
 			self.combo += 1
@@ -156,7 +159,7 @@ function CombatHandler:EnableBlock()
 		return
 	end
 
-	self.owner.stateHandler:SetState("blocking")
+	self.owner.stateHandler:SetState(STATE.Blocking)
 	self.owner.physicsHandler:SetWalkspeed(5)
 	self.owner.animationHandler:Play("block", nil, nil, nil, true, "Action2")
 end
@@ -166,7 +169,7 @@ function CombatHandler:DisableBlock()
 		return
 	end
 
-	self.owner.stateHandler:RemoveState("blocking")
+	self.owner.stateHandler:RemoveState(STATE.Blocking)
 	self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
 	self.owner.animationHandler:Stop("block")
 end
@@ -207,7 +210,7 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hi
 		self:Stun(stunTime)
 		self:Flinch()
 	elseif self.entityType == "Enemy" then
-		self.owner:SetState("stunned", stunTime)
+		self.owner:SetState(STATE.Stunned, stunTime)
 		self.owner:Flinch()
 	end
 
@@ -256,7 +259,7 @@ function CombatHandler:Stun(stunTime)
 		return
 	end
 
-	self.owner.stateHandler:SetState("stunned")
+	self.owner.stateHandler:SetState(STATE.Stunned)
 	local stunResist = self.owner.stats["stunResist"] or 0
 	local totalStunTime = nil
 
@@ -268,7 +271,7 @@ function CombatHandler:Stun(stunTime)
 
 	StunModule.Stun(self.humanoid, totalStunTime)
 	task.delay(stunTime, function()
-		self.owner.stateHandler:RemoveState("stunned")
+		self.owner.stateHandler:RemoveState(STATE.Stunned)
 	end)
 end
 
@@ -302,9 +305,9 @@ end
 function CombatHandler:Knock()
 	RagdollHandler:Ragdoll(self.owner.character)
 	if self.entityType == "Player" then
-		self.owner.stateHandler:SetState("ragdolled")
+		self.owner.stateHandler:SetState(STATE.Ragdolled)
 	else
-		self.owner:SetState("knocked")
+		self.owner:SetState(STATE.Knocked)
 	end
 end
 

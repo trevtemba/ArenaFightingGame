@@ -73,7 +73,6 @@ function RagdollModule:Unragdoll(rig)
 			part:Destroy()
 		elseif part:IsA("Attachment") and (part.Name == "RagdollAttachment0" or part.Name == "RagdollAttachment1") then
 			part:Destroy()
-			print("")
 		end
 	end
 

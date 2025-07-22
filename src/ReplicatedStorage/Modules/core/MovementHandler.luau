@@ -6,11 +6,7 @@ local sprintEvent = game:GetService("ReplicatedStorage").RemoteEvents.Client.spr
 local MovementHandler = {}
 MovementHandler.__index = MovementHandler
 
--- Configs
-local DASH_DISTANCE = 20
-local DASH_DURATION = 0.7
-local DASH_COOLDOWN = 1
-local DASH_SPEED = DASH_DISTANCE / DASH_DURATION
+local STATE = require(script.Parent.State)
 
 function MovementHandler.new(playerObj)
 	local self = setmetatable({}, MovementHandler)
@@ -30,12 +26,12 @@ function MovementHandler:CanSprint()
 	local stateHandler = self.owner.stateHandler
 
 	local blockedStates = {
-		"attacking",
-		"casting",
-		"blocking",
-		"dashing",
-		"stunned",
-		"ragdolled",
+		STATE.Attacking,
+		STATE.Casting,
+		STATE.Blocking,
+		STATE.Dashing,
+		STATE.Stunned,
+		STATE.Ragdolled,
 	}
 
 	return not stateHandler:HasAny(blockedStates) and self.owner.alive
@@ -45,10 +41,10 @@ function MovementHandler:CanDash()
 	local stateHandler = self.owner.stateHandler
 
 	local blockedStates = {
-		"attacking",
-		"casting",
-		"stunned",
-		"ragdolled",
+		STATE.Attacking,
+		STATE.Casting,
+		STATE.Stunned,
+		STATE.Ragdolled,
 	}
 
 	return not stateHandler:HasAny(blockedStates) and self.owner.alive
@@ -59,7 +55,7 @@ function MovementHandler:StartSprint()
 		return
 	end
 	self.humanoid.WalkSpeed = self.walkspeed * 2
-	self.owner.stateHandler:SetState("sprinting")
+	self.owner.stateHandler:SetState(STATE.Sprinting)
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "start")
 end
 
@@ -68,7 +64,7 @@ function MovementHandler:StopSprint()
 		return
 	end
 	self.humanoid.WalkSpeed = self.walkspeed
-	self.owner.stateHandler:RemoveState("sprinting")
+	self.owner.stateHandler:RemoveState(STATE.Sprinting)
 	sprintEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "stop")
 end
 
@@ -78,10 +74,10 @@ function MovementHandler:HandleDash(direction)
 	if not self.humanoid and not self:CanDash() then
 		return
 	end
-	self.owner.stateHandler:SetState("dashing")
+	self.owner.stateHandler:SetState(STATE.Dashing)
 	clientEffects:FireAllClients("dash", { target = self.character, direction = direction })
 	task.delay(0.5, function()
-		self.owner.stateHandler:RemoveState("dashing")
+		self.owner.stateHandler:RemoveState(STATE.Dashing)
 	end)
 end
 
