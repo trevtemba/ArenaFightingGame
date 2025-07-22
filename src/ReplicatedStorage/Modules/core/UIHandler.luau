@@ -1,5 +1,3 @@
--- local TweenService = game:GetService("TweenService")
-
 local UIFolder = game:GetService("ServerStorage"):FindFirstChild("ui")
 local healthBarGui = UIFolder:FindFirstChild("HealthBar")
 local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
@@ -32,9 +30,6 @@ function UIHandler:init()
 	self.dividers = healthBar:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("dividers")
 	self:CreateDividers()
 	healthBar.Parent = HumanoidRootPart
-	-- self.healthBar = healthBar
-	-- self.healthFill = healthBar:FindFirstChild("base"):FindFirstChild("healthBase"):FindFirstChild("health")
-	-- self.damageFill = healthBar:FindFirstChild("base"):FindFirstChild("healthBase"):FindFirstChild("damage")
 end
 
 function UIHandler:UpdateHealthBar()
@@ -72,43 +67,5 @@ function UIHandler:CreateDividers()
 		divider.Parent = self.dividers
 	end
 end
-
--- function UIHandler:UpdateHealthBar()
--- 	local hpRatio = self.owner.currentHP / self.owner.maxHP
-
--- 	self.healthFill.Size = UDim2.new(hpRatio, 0, 1, 0)
-
--- 	self.healthBar.Enabled = true
-
--- 	if self.healthBarTween then
--- 		self.healthBarTween:Cancel()
--- 	end
-
--- 	self.healthBarTween = TweenService:Create(
--- 		self.healthBar:FindFirstChildOfClass("CanvasGroup"),
--- 		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
--- 		{ GroupTransparency = 0 }
--- 	)
--- 	self.healthBarTween:Play()
-
--- 	local tween =
--- 		TweenService:Create(self.damageFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
--- 			Size = UDim2.new(hpRatio, 0, 1, 0),
--- 		})
--- 	tween:Play()
-
--- 	task.delay(self.healthShowTime, function()
--- 		if self.healthBarTween then
--- 			self.healthBarTween:Cancel()
--- 		end
-
--- 		self.healthBarTween = TweenService:Create(
--- 			self.healthBar:FindFirstChildOfClass("CanvasGroup"),
--- 			TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
--- 			{ GroupTransparency = 1 }
--- 		)
--- 		self.healthBarTween:Play()
--- 	end)
--- end
 
 return UIHandler

@@ -1,4 +1,3 @@
-local tween = game:GetService("TweenService")
 --Grabs variables
 local plr = game:GetService("Players").LocalPlayer
 local character = plr.Character or plr.CharacterAdded:wait()
