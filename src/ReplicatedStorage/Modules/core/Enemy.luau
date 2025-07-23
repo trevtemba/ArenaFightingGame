@@ -2,6 +2,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local CollisionManager = require(script.Parent.CollisionManager)
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
@@ -135,7 +136,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.stateHandler = StateHandler.new()
 
 	self:SetState(STATE.Idle)
-
+	CollisionManager:SetCollisionGroupEntities(self.character)
 	print(string.format("✅ Built stage %d %s enemy (%s)", stage, enemyType, self.name))
 	print(self)
 end

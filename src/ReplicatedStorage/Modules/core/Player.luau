@@ -8,6 +8,7 @@ local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 local Game = require(script.Parent:WaitForChild("Game"))
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollisionManager = require(script.Parent.CollisionManager)
 local StateHandler = require(script.Parent.StateHandler)
 
 local Player = {}
@@ -87,6 +88,8 @@ function Player:Initialize()
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
 	humanoid.BreakJointsOnDeath = false
+
+	CollisionManager:SetCollisionGroupEntities(self.character)
 
 	self:SyncWalkspeed()
 end
