@@ -36,6 +36,8 @@ function CombatHandler.new(owner, entityType)
 	self.airResetTime = 1
 	self.lastAirAttackTime = 0
 	self.airFloatCoroutine = nil
+	self.attackerFloat = nil
+	self.targetFloat = nil
 	self.bufferedAttack = false
 	self.bufferedAttackSpaceHeld = false
 	self.bufferDuration = owner.stats.attackCooldown
@@ -244,7 +246,9 @@ function CombatHandler:ApplyDamage(entity, blockable, attackType)
 		entity.physicsHandler:Knockback(self.owner.character, 200, 2)
 	end
 	self.owner.fxHandler:PlaySound("attack")
-	self.owner.physicsHandler:MoveForward(3)
+	if not self.owner.stateHandler:HasState(STATE.InAirCombo) then
+		self.owner.physicsHandler:MoveForward(3)
+	end
 end
 
 function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hitType)
@@ -274,7 +278,9 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hi
 	self.humanoid.Health = math.clamp(self.owner.currentHP, 0, self.humanoid.MaxHealth)
 
 	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = hitType })
-	self.owner.physicsHandler:MoveBackward(6)
+	if not self.owner.stateHandler:HasState(STATE.InAirCombo) then
+		self.owner.physicsHandler:MoveBackward(6)
+	end
 	self.owner.uiHandler:UpdateHealthBar()
 	self.owner.uiHandler:ShowDamage(damage, damageType, crit)
 
@@ -363,32 +369,39 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), true)
 		end
 
-		local bp1, bp2 = Instance.new("BodyPosition"), Instance.new("BodyPosition")
-		for _, bp in { bp1, bp2 } do
-			bp.P = 1200
-			bp.MaxForce = Vector3.new(4e4, 4e4, 4e4)
-			bp.D = 200
-			bp.Name = "AirFloat"
-		end
-		bp1.Position = attackerRoot.Position + Vector3.new(0, 30, 0)
-		bp2.Position = targetRoot.Position + Vector3.new(0, 30, 0)
-		bp1.Parent = attackerRoot
-		bp2.Parent = targetRoot
+		-- Create floating constraints
+		local aAlign, aAlignPart, aAtt0, aAtt1 =
+			self.owner.physicsHandler:createAirFloat(self.owner.character, "AirFloat")
+		local tAlign, tAlignPart, tAtt0, tAtt1 =
+			targetEntity.physicsHandler:createAirFloat(targetEntity.character, "AirFloat")
 
-		-- Cancel old coroutine if still running
+		-- Store for reuse
+		self.attackerFloat = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
+		self.targetFloat = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
+
+		self.attackerFloat.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 10, 0)
+		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 10, 0)
+
+		-- Cleanup timer
 		if self.airFloatCoroutine then
 			task.cancel(self.airFloatCoroutine)
 		end
-
-		-- Start new coroutine
 		self.airFloatCoroutine = task.spawn(function()
 			while os.clock() - self.lastAirAttackTime < self.airResetTime do
 				task.wait(0.1)
 			end
 
-			-- Cleanup float
-			bp1:Destroy()
-			bp2:Destroy()
+			-- Cleanup
+			self.attackerFloat.align:Destroy()
+			self.attackerFloat.alignPart:Destroy()
+			self.attackerFloat.att0:Destroy()
+			-- Cleanup
+			self.targetFloat.align:Destroy()
+			self.targetFloat.alignPart:Destroy()
+			self.targetFloat.att0:Destroy()
+
+			self.attackerFloat, self.targetFloat = nil, nil
+
 			attackerState:RemoveState(STATE.InAirCombo)
 			targetState:RemoveState(STATE.InAirCombo)
 
@@ -400,8 +413,17 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			self.airFloatCoroutine = nil
 		end)
 	elseif airComboAction == "continue" then
-		print("continuing")
-		self.lastAirAttackTime = os.clock()
+		-- Offset: attacker moves slightly forward, target moves back
+		if self.attackerFloat and self.targetFloat then
+			print("continuing")
+			self.lastAirAttackTime = os.clock()
+			local aAlignPart = self.attackerFloat.alignPart
+			local tAlignPart = self.targetFloat.alignPart
+			local attackerLookVector = attackerRoot.CFrame.LookVector
+			local moveDistance = 4
+			aAlignPart.CFrame = CFrame.new(aAlignPart.Position + attackerLookVector * moveDistance)
+			tAlignPart.CFrame = CFrame.new(tAlignPart.Position + attackerLookVector * moveDistance)
+		end
 	elseif airComboAction == "downslam" then
 	elseif airComboAction == "knockback" then
 	elseif airComboAction == "downm1" then

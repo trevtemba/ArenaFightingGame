@@ -3,11 +3,14 @@ PhysicsHandler.__index = PhysicsHandler
 
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local RagdollHandler = require(
 	game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("core"):WaitForChild("RagdollHandler")
 )
+
+local mockRootPart = ReplicatedStorage:WaitForChild("Misc"):FindFirstChild("MockRootPart")
 
 function PhysicsHandler.new(rig, entityType, userId)
 	local self = setmetatable({}, PhysicsHandler)
@@ -17,6 +20,8 @@ function PhysicsHandler.new(rig, entityType, userId)
 	self.humanoid = rig:FindFirstChildOfClass("Humanoid")
 	self.entityType = entityType
 	self.userId = entityType == "player" and userId or nil
+	self.alignPart = nil
+	self.alignPostion = nil
 
 	return self
 end
@@ -38,12 +43,39 @@ local function setLowFriction(rig)
 end
 
 -- Utility to stop velocity after a short duration
-local function applyImpulse(hrp, direction)
+function PhysicsHandler:applyImpulse(direction)
 	local velocity = Instance.new("BodyVelocity")
 	velocity.MaxForce = Vector3.new(4e4, 0, 4e4)
-	velocity.Velocity = hrp.CFrame.LookVector * direction
-	velocity.Parent = hrp
+	velocity.Velocity = self.hrp.CFrame.LookVector * direction
+	velocity.Parent = self.hrp
 	Debris:AddItem(velocity, 0.3)
+end
+
+-- Setup helper
+function PhysicsHandler:createAirFloat(character, name)
+	local alignPart = mockRootPart:Clone()
+	alignPart.Parent = game.Workspace:FindFirstChild("PhysicsAssets")
+	alignPart.CFrame = character.PrimaryPart.CFrame
+
+	local att0 = Instance.new("Attachment")
+	att0.Name = name .. "_Base"
+	att0.Parent = character.PrimaryPart
+
+	local att1 = Instance.new("Attachment")
+	att1.Name = name .. "_Target"
+	att1.Parent = alignPart
+
+	local align = Instance.new("AlignPosition")
+	align.Name = name
+	align.Mode = Enum.PositionAlignmentMode.TwoAttachment
+	align.MaxForce = 5e5
+	align.Responsiveness = 20
+
+	align.Attachment0 = att0
+	align.Attachment1 = att1
+	align.Parent = character.PrimaryPart
+
+	return align, alignPart, att0, att1
 end
 
 function PhysicsHandler:shiftNetworkOwner(duration)
@@ -67,7 +99,7 @@ function PhysicsHandler:MoveForward(distance)
 		return
 	end
 
-	applyImpulse(self.hrp, distance)
+	self:applyImpulse(distance)
 end
 
 function PhysicsHandler:MoveBackward(distance)
@@ -75,7 +107,7 @@ function PhysicsHandler:MoveBackward(distance)
 		return
 	end
 
-	applyImpulse(self.hrp, -distance)
+	self:applyImpulse(-distance)
 end
 
 function PhysicsHandler:Knockback(fromCharacter, power, duration)

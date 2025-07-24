@@ -4,7 +4,7 @@ local Debris = game:GetService("Debris")
 
 local Sounds = ReplicatedStorage:FindFirstChild("Sounds")
 local DamageCounter = ReplicatedStorage:FindFirstChild("UI"):FindFirstChild("DamageCounter")
-local MockRootPart = ReplicatedStorage:FindFirstChild("MockRootPart")
+local MockRootPart = ReplicatedStorage.Misc:FindFirstChild("MockRootPart")
 
 return function(argumentData)
 	local target = argumentData.target

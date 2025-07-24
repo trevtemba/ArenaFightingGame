@@ -32,7 +32,7 @@ local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr)
 	enemy:PivotTo(lookAtCFrame)
 
 	enemyObj:SetTarget(plr)
-	-- enemyObj:StartAI()
+	enemyObj:StartAI()
 end
 
 function EnemyManager.SpawnS1Enemies(spawns, plr)
