@@ -261,13 +261,11 @@ function Enemy:StateHandler(stateName, stunDuration)
 end
 
 function Enemy:Idle()
-	print("idling")
 	self.animationHandler:StopAll()
 	self.animationHandler:Play("idle")
 end
 
 function Enemy:Chase()
-	print("chasing")
 	self.animationHandler:Stop("idle")
 	self.animationHandler:PlayRun(self.stats.speed)
 end
@@ -277,7 +275,6 @@ function Enemy:Attack()
 		return
 	end
 
-	print("attacking")
 	self.attacking = true
 	self.animationHandler:StopAll()
 	self.animationHandler:Play("attack", 0.1)

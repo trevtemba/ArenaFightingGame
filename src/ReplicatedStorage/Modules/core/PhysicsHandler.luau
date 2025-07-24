@@ -22,7 +22,7 @@ function PhysicsHandler.new(rig, entityType, userId)
 end
 
 local lowFrictionProps = PhysicalProperties.new(
-	0, -- Density (keep default or tweak)
+	0.001, -- Density (keep default or tweak)
 	0.2, -- Friction (very low)
 	0, -- Elasticity
 	1, -- FrictionWeight

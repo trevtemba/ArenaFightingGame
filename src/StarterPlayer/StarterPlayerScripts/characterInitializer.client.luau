@@ -22,6 +22,7 @@ local function processCharacter(character)
 		print("Processing tagged player character:", character.Name)
 		local humanoid = character:WaitForChild("Humanoid")
 		local animator = humanoid:WaitForChild("Animator")
+		humanoid.JumpPower = 70
 
 		-- Your initialization logic here
 		AnimationHandler.PreloadAll()

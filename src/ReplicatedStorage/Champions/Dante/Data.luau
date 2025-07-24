@@ -4,7 +4,7 @@ return {
 	durability = 10,
 	attackDmg = 20,
 	magicDmg = 20,
-	attackSpeed = 0.75,
+	attackSpeed = 1,
 	attackCooldown = 0.5,
 	critChance = 0.25,
 	critMultiplier = 1.75,

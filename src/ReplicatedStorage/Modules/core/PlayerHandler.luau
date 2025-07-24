@@ -2,10 +2,10 @@
 local Game = require(script.Parent.Game)
 local PlayerHandler = {}
 
-function PlayerHandler.OnAttack(plr)
+function PlayerHandler.OnAttack(plr, spaceHeld)
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
-		playerObj:Attack()
+		playerObj:Attack(spaceHeld)
 	end
 end
 

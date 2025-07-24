@@ -20,6 +20,7 @@ function InputStateHandler:CanDo(state)
 	if state == STATE.Sprinting then
 		blockedStates = {
 			STATE.Sprinting,
+			STATE.InAirCombo,
 			STATE.Attacking,
 			STATE.Casting,
 			STATE.Blocking,
@@ -30,6 +31,7 @@ function InputStateHandler:CanDo(state)
 	elseif state == STATE.Dashing then
 		blockedStates = {
 			STATE.Dashing,
+			STATE.InAirCombo,
 			STATE.Attacking,
 			STATE.Casting,
 			STATE.Stunned,
@@ -45,7 +47,12 @@ function InputStateHandler:CanDo(state)
 		}
 	elseif state == STATE.Attacking then
 		blockedStates = {
-			STATE.Attacking,
+			STATE.Casting,
+		}
+	elseif state == STATE.Jumping then
+		blockedStates = {
+			STATE.Jumping,
+			STATE.Casting,
 			STATE.Stunned,
 			STATE.Ragdolled,
 		}

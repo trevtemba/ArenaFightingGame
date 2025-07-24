@@ -2,8 +2,11 @@ local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local StunModule = require(script.Parent:WaitForChild("stunHandler"))
 local attackDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.attackDone
+local inAir = game:GetService("ReplicatedStorage").RemoteEvents.Client.inAir
+
 local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
 
+local CollectionService = game:GetService("CollectionService")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,22 +31,27 @@ function CombatHandler.new(owner, entityType)
 	self.attackCooldown = owner.stats.attackCooldown
 	self.combo = 1
 	self.maxCombo = 5
-	self.comboResetTime = 1.5 -- Seconds to reset combo
+	self.comboResetTime = 0.9 -- Seconds to reset combo
 	self.lastAttackTime = 0
+	self.airResetTime = 1
+	self.lastAirAttackTime = 0
+	self.airFloatCoroutine = nil
 	self.bufferedAttack = false
+	self.bufferedAttackSpaceHeld = false
 	self.bufferDuration = owner.stats.attackCooldown
 	self.entityType = entityType
 	return self
 end
 
-function CombatHandler:HandleAttackInput()
+function CombatHandler:HandleAttackInput(spaceHeld)
 	if self:CanAttack() then
-		self:Attack()
+		self:Attack(spaceHeld)
 	else
 		self.bufferedAttack = true
-
+		self.bufferedAttackSpaceHeld = spaceHeld
 		task.delay(self.bufferDuration, function()
 			self.bufferedAttack = false
+			self.bufferedAttackSpaceHeld = false
 		end)
 	end
 end
@@ -89,7 +97,7 @@ function CombatHandler:CanStun()
 	return not stateHandler:HasAny(blockedStates)
 end
 
-function CombatHandler:Attack()
+function CombatHandler:Attack(spaceHeld)
 	if not self.humanoid and not self:CanAttack() then
 		return
 	end
@@ -98,23 +106,55 @@ function CombatHandler:Attack()
 	end
 
 	local now = os.clock()
+	local isAirCombo = false
+	local airComboAction
+	local cooldown
+	local animName
+
+	self.owner.stateHandler:SetState(STATE.Attacking)
 
 	-- Reset combo if player waited too long
 	if now - self.lastAttackTime > self.comboResetTime then
 		self.combo = 1
 	end
-	print(self.combo)
-
-	local animName = "m" .. tostring(self.combo)
-	local cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 2)
-
-	self.owner.stateHandler:SetState(STATE.Attacking)
 	self.lastAttackTime = now
+
+	cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 2)
+	animName = "m" .. tostring(self.combo)
+
+	if spaceHeld then
+		if not self.owner.stateHandler:HasState(STATE.InAirCombo) then
+			if self.combo < self.maxCombo then
+				animName = "knockUp"
+				isAirCombo = true
+				airComboAction = "knockup"
+			else
+				print("combo ender, normal knockback")
+			end
+		else
+			if self.combo < self.maxCombo then
+				isAirCombo = true
+				airComboAction = "continue"
+			else
+				isAirCombo = true
+				airComboAction = "knockback"
+			end
+		end
+	else
+		if self.owner.stateHandler:HasState(STATE.InAirCombo) then
+			if self.combo < self.maxCombo then
+				isAirCombo = true
+				airComboAction = "downm1"
+			else
+				isAirCombo = true
+				airComboAction = "downslam"
+			end
+		end
+	end
 
 	-- Play animation
 	self.owner.animationHandler:StopAll()
 	self.owner.animationHandler:Play(animName, 0, 3, 1, false, "Action3")
-
 	self:M1Slow(5)
 
 	-- Deal damage on hit marker
@@ -125,6 +165,9 @@ function CombatHandler:Attack()
 			attacker = self.owner,
 			onHit = function(entity)
 				self:ApplyDamage(entity, true, "attack")
+				if isAirCombo then
+					self:handleAirCombo(entity, airComboAction)
+				end
 				attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
 			end,
 			hitboxTemplate = "meleeHitbox",
@@ -148,7 +191,7 @@ function CombatHandler:Attack()
 		-- if buffered attack, immediately attack
 		if self.bufferedAttack and self:CanAttack() then
 			self.bufferedAttack = false
-			self:Attack()
+			self:Attack(self.bufferedAttackSpaceHeld)
 		end
 	end)
 end
@@ -289,7 +332,7 @@ end
 
 function CombatHandler:M1Slow(speed)
 	self.owner.physicsHandler:SetWalkspeed(speed)
-	local m1SlowDelay = self.combo < self.maxCombo and 0.75 or 1
+	local m1SlowDelay = self.combo < self.maxCombo and 1 or 1.5
 
 	task.spawn(function()
 		while os.clock() - self.lastAttackTime < m1SlowDelay do
@@ -300,6 +343,71 @@ function CombatHandler:M1Slow(speed)
 			attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 		end
 	end)
+end
+
+function CombatHandler:handleAirCombo(targetEntity, airComboAction)
+	local attackerRoot = self.owner.character:FindFirstChild("HumanoidRootPart")
+	local targetRoot = targetEntity.character:FindFirstChild("HumanoidRootPart")
+	local attackerState = self.owner.stateHandler
+	local targetState = targetEntity.stateHandler
+	local now = os.clock()
+
+	print(airComboAction)
+	if airComboAction == "knockup" then
+		self.lastAirAttackTime = os.clock()
+		attackerState:SetState(STATE.InAirCombo)
+		targetState:SetState(STATE.InAirCombo)
+
+		inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), true)
+		if CollectionService:HasTag(targetEntity.character, "Player") then
+			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), true)
+		end
+
+		local bp1, bp2 = Instance.new("BodyPosition"), Instance.new("BodyPosition")
+		for _, bp in { bp1, bp2 } do
+			bp.P = 1200
+			bp.MaxForce = Vector3.new(4e4, 4e4, 4e4)
+			bp.D = 200
+			bp.Name = "AirFloat"
+		end
+		bp1.Position = attackerRoot.Position + Vector3.new(0, 30, 0)
+		bp2.Position = targetRoot.Position + Vector3.new(0, 30, 0)
+		bp1.Parent = attackerRoot
+		bp2.Parent = targetRoot
+
+		-- Cancel old coroutine if still running
+		if self.airFloatCoroutine then
+			task.cancel(self.airFloatCoroutine)
+		end
+
+		-- Start new coroutine
+		self.airFloatCoroutine = task.spawn(function()
+			while os.clock() - self.lastAirAttackTime < self.airResetTime do
+				task.wait(0.1)
+			end
+
+			-- Cleanup float
+			bp1:Destroy()
+			bp2:Destroy()
+			attackerState:RemoveState(STATE.InAirCombo)
+			targetState:RemoveState(STATE.InAirCombo)
+
+			inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), false)
+			if CollectionService:HasTag(targetEntity.character, "Player") then
+				inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), false)
+			end
+
+			self.airFloatCoroutine = nil
+		end)
+	elseif airComboAction == "continue" then
+		print("continuing")
+		self.lastAirAttackTime = os.clock()
+	elseif airComboAction == "downslam" then
+	elseif airComboAction == "knockback" then
+	elseif airComboAction == "downm1" then
+	else
+		warn("Invalid air combo action:", airComboAction)
+	end
 end
 
 function CombatHandler:Knock()

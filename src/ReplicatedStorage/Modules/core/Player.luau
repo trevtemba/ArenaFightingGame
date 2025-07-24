@@ -9,6 +9,7 @@ local Game = require(script.Parent:WaitForChild("Game"))
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollisionManager = require(script.Parent.CollisionManager)
+local Soul = require(script.Parent.Soul)
 local StateHandler = require(script.Parent.StateHandler)
 
 local Player = {}
@@ -24,6 +25,7 @@ function Player.new(plr, champion, rig)
 	self.xp = 0
 	self.champion = champion
 	self.character = rig
+	self.soul = Soul.new("Engage")
 	self.ranged = champion.ranged
 	self.alive = true
 
@@ -98,9 +100,9 @@ function Player:Damage(roundNum, enemyHP)
 	self.health = self.health - (roundNum + enemyHP / 10)
 end
 
-function Player:Attack(target)
+function Player:Attack(target, spaceHeld)
 	if self.combatHandler then
-		self.combatHandler:HandleAttackInput(target)
+		self.combatHandler:HandleAttackInput(target, spaceHeld)
 	end
 end
 

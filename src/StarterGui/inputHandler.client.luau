@@ -26,9 +26,12 @@ local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local attackDone = ClientEvents:WaitForChild("attackDone")
+local inAir = ClientEvents:WaitForChild("inAir")
 local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
 
 local DASH_COOLDOWN = 1
+local JUMP_COOLDOWN = 1
+local DEFAULT_JUMP_POWER = 60
 
 local debounces = {
 	attack = false,
@@ -52,6 +55,14 @@ local directions = {
 	forward = { key = "WalkForward", anim = "walkForward", sprintAnim = "sprint" },
 }
 
+local function setCanJump(bool)
+	local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+	if bool then
+		humanoid.JumpPower = DEFAULT_JUMP_POWER
+	else
+		humanoid.JumpPower = 0
+	end
+end
 local function processDebounce(name, duration)
 	if debounces[name] == true then
 		return true
@@ -63,7 +74,7 @@ local function processDebounce(name, duration)
 		debounces[name] = false
 	end)
 
-	return
+	return false
 end
 
 local function processCooldown(state, cooldown)
@@ -133,6 +144,21 @@ local function updateSprinting()
 	end
 end
 
+CoreContext:WaitForChild("Jump").Pressed:Connect(function()
+	if processDebounce("dash", 0.2) or not inputStateHandler:CanDo(STATE.Jumping) then
+		return
+	end
+
+	--setCanJump(false)
+	inputStateHandler:HeldOn("space")
+	print("holding space")
+end)
+
+CoreContext:WaitForChild("Jump").Released:Connect(function()
+	inputStateHandler:HeldOff("space")
+	print("letting go of space")
+end)
+
 CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 	if processDebounce("dash", 0.2) then
 		return
@@ -169,20 +195,22 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
-	if processDebounce("attack", 0.2) and not inputStateHandler:CanDo(STATE.Attacking) then
+	if processDebounce("attack", 0.2) or not inputStateHandler:CanDo(STATE.Attacking) then
 		return
 	end
 	inputStateHandler:SetState(STATE.Attacking)
 	updateSprinting()
 
+	setCanJump(false)
+
 	local remote = ServerEvents:WaitForChild("OnAttack")
 	if remote then
-		remote:FireServer()
+		remote:FireServer(inputStateHandler:IsHeld("space"))
 	end
 end)
 
 CombatContext:WaitForChild("Block").Pressed:Connect(function()
-	if processDebounce("block", 0.2) and not inputStateHandler:CanDo(STATE.Blocking) then
+	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
 		return
 	end
 	inputStateHandler:SetState(STATE.Blocking)
@@ -406,15 +434,36 @@ end)
 
 attackDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Attacking)
-
+	setCanJump(true)
 	print("client can do movement")
+end)
+
+inAir.OnClientEvent:Connect(function(isActive)
+	if isActive then
+		inputStateHandler:SetState(STATE.InAirCombo)
+		setCanJump(false)
+	else
+		inputStateHandler:RemoveState(STATE.InAirCombo)
+		setCanJump(true)
+	end
+	print(inputStateHandler:HasState(STATE.InAirCombo))
 end)
 
 if isCharLoaded:Invoke() then
 	print("CHARACTER IS READY")
-	inputStateHandler = InputStateHandler.new(player.Character.Humanoid)
+	local humanoid = player.Character.Humanoid
+
+	inputStateHandler = InputStateHandler.new(humanoid)
 	PlayerGui:FindFirstChild("Core").Enabled = true
 	PlayerGui:FindFirstChild("Freecammed").Enabled = true
+	humanoid.StateChanged:Connect(function(_, newState)
+		if newState == Enum.HumanoidStateType.Landed then
+			inputStateHandler:RemoveState(STATE.Jumping)
+			inputStateHandler:RemoveState(STATE.InAirCombo)
+			animationModule.Play("landing", 0.1, false, "Action")
+			-- Trigger landing animation or reset jump state
+		end
+	end)
 else
 	print("CHARACTER IS NOT READY YET — waiting for signal")
 end
