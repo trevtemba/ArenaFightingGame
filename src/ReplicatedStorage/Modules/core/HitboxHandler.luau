@@ -21,7 +21,7 @@ function HitboxModule:CreatePlrHitbox(params)
 	hitbox.Transparency = DEBUG and 0.5 or 1
 	hitbox.Size = params.size or hitbox.Size
 	hitbox.CFrame = params.cframe or CFrame.identity
-	hitbox.Parent = Workspace
+	hitbox.Parent = params.attacker.character
 	hitbox.Name = "ActiveHitbox"
 
 	-- Set up overlap parameters
@@ -68,7 +68,7 @@ function HitboxModule:CreateNPCHitbox(params)
 	hitbox.Transparency = DEBUG and 0.5 or 1
 	hitbox.Size = params.size or hitbox.Size
 	hitbox.CFrame = params.cframe or CFrame.identity
-	hitbox.Parent = Workspace:FindFirstChild("Hitboxes")
+	hitbox.Parent = params.attacker.character
 	hitbox.Name = "ActiveHitbox"
 
 	-- Set up overlap parameters

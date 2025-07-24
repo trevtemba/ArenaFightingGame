@@ -21,6 +21,8 @@ local flinchEvent =
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
 
+local FLINCH_DISTANCE = 4
+
 local CombatHandler = {}
 CombatHandler.__index = CombatHandler
 
@@ -31,9 +33,9 @@ function CombatHandler.new(owner, entityType)
 	self.attackCooldown = owner.stats.attackCooldown
 	self.combo = 1
 	self.maxCombo = 5
-	self.comboResetTime = 0.9 -- Seconds to reset combo
+	self.comboResetTime = 1 -- Seconds to reset combo
 	self.lastAttackTime = 0
-	self.airResetTime = 1
+	self.airResetTime = 1.5
 	self.lastAirAttackTime = 0
 	self.airFloatCoroutine = nil
 	self.attackerFloat = nil
@@ -109,6 +111,7 @@ function CombatHandler:Attack(spaceHeld)
 
 	local now = os.clock()
 	local isAirCombo = false
+	local knocksBack = false
 	local airComboAction
 	local cooldown
 	local animName
@@ -122,6 +125,7 @@ function CombatHandler:Attack(spaceHeld)
 	self.lastAttackTime = now
 
 	cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 2)
+	knocksBack = self.combo == self.maxCombo
 	animName = "m" .. tostring(self.combo)
 
 	if spaceHeld then
@@ -148,6 +152,7 @@ function CombatHandler:Attack(spaceHeld)
 				isAirCombo = true
 				airComboAction = "downm1"
 			else
+				animName = "downSlam"
 				isAirCombo = true
 				airComboAction = "downslam"
 			end
@@ -166,7 +171,7 @@ function CombatHandler:Attack(spaceHeld)
 		local params = {
 			attacker = self.owner,
 			onHit = function(entity)
-				self:ApplyDamage(entity, true, "attack")
+				self:ApplyDamage(entity, true, "attack", knocksBack, isAirCombo)
 				if isAirCombo then
 					self:handleAirCombo(entity, airComboAction)
 				end
@@ -226,7 +231,7 @@ function CombatHandler:BreakBlock()
 	--block break logic todo, daze them for 1.53 second
 end
 
-function CombatHandler:ApplyDamage(entity, blockable, attackType)
+function CombatHandler:ApplyDamage(entity, blockable, attackType, knocksBack, isAirCombo)
 	if not entity or not entity.combatHandler then
 		return
 	end
@@ -239,24 +244,35 @@ function CombatHandler:ApplyDamage(entity, blockable, attackType)
 	end
 	local dmg = base * (crit and self.owner.stats.critMultiplier or 1)
 	local dmgType = self.owner.damageTypes[attackType]
+	local lookVector = self.owner.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector
 
-	entity:TakeDamage(dmg, pierce, 1, dmgType, crit, blockable, "slash")
+	local attackData = {
+		damage = dmg,
+		pierce = pierce,
+		stunTime = 1,
+		damageType = dmgType,
+		crit = crit,
+		blockable = blockable,
+		knocksBack = knocksBack,
+		isAirCombo = isAirCombo,
+		hitType = "slash",
+		attackerLookVector = lookVector,
+	}
 
-	if self.combo == self.maxCombo then
-		entity.physicsHandler:Knockback(self.owner.character, 200, 2)
-	end
+	entity:TakeDamage(attackData)
+
 	self.owner.fxHandler:PlaySound("attack")
-	if not self.owner.stateHandler:HasState(STATE.InAirCombo) then
-		self.owner.physicsHandler:MoveForward(3)
+	if not isAirCombo then
+		self.owner.physicsHandler:MoveForward(lookVector, 3)
 	end
 end
 
-function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hitType)
+function CombatHandler:TakeDamage(attackData)
 	if self.entityType == "Player" then
-		self:Stun(stunTime)
+		self:Stun(attackData.stunTime)
 		self:Flinch()
 	elseif self.entityType == "Enemy" then
-		self.owner:SetState(STATE.Stunned, stunTime)
+		self.owner:SetState(STATE.Stunned, attackData.stunTime)
 		self.owner:Flinch()
 	end
 
@@ -264,25 +280,29 @@ function CombatHandler:TakeDamage(damage, pierce, stunTime, damageType, crit, hi
 	local multiplier = nil
 	local totalDamage = nil
 
-	if durability > pierce then
-		multiplier = (durability - pierce) / 100
-		totalDamage = damage - (damage * multiplier)
-	elseif durability < pierce then
-		multiplier = (pierce - durability) / 100
-		totalDamage = damage + (damage * multiplier)
+	if durability > attackData.pierce then
+		multiplier = (durability - attackData.pierce) / 100
+		totalDamage = attackData.damage - (attackData.damage * multiplier)
+	elseif durability < attackData.pierce then
+		multiplier = (attackData.pierce - durability) / 100
+		totalDamage = attackData.damage + (attackData.damage * multiplier)
 	else
-		totalDamage = damage
+		totalDamage = attackData.damage
 	end
 
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
 	self.humanoid.Health = math.clamp(self.owner.currentHP, 0, self.humanoid.MaxHealth)
 
-	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = hitType })
-	if not self.owner.stateHandler:HasState(STATE.InAirCombo) then
-		self.owner.physicsHandler:MoveBackward(6)
+	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = attackData.hitType })
+	if not attackData.isAirCombo then
+		if attackData.knocksBack then
+			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 6)
+		else
+			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE)
+		end
 	end
 	self.owner.uiHandler:UpdateHealthBar()
-	self.owner.uiHandler:ShowDamage(damage, damageType, crit)
+	self.owner.uiHandler:ShowDamage(attackData.damage, attackData.damageType, attackData.crit)
 
 	print(string.format("%s took %d damage", self.owner.name, totalDamage))
 
@@ -356,7 +376,21 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 	local targetRoot = targetEntity.character:FindFirstChild("HumanoidRootPart")
 	local attackerState = self.owner.stateHandler
 	local targetState = targetEntity.stateHandler
-	local now = os.clock()
+
+	local function cleanInAir()
+		self.attackerFloat = nil
+		self.targetFloat = nil
+
+		attackerState:RemoveState(STATE.InAirCombo)
+		targetState:RemoveState(STATE.InAirCombo)
+
+		inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), false)
+		if CollectionService:HasTag(targetEntity.character, "Player") then
+			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), false)
+		end
+
+		self.airFloatCoroutine = nil
+	end
 
 	print(airComboAction)
 	if airComboAction == "knockup" then
@@ -371,16 +405,16 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 
 		-- Create floating constraints
 		local aAlign, aAlignPart, aAtt0, aAtt1 =
-			self.owner.physicsHandler:createAirFloat(self.owner.character, "AirFloat")
+			self.owner.physicsHandler:createAirFloat(self.owner.character, "airFloat")
 		local tAlign, tAlignPart, tAtt0, tAtt1 =
-			targetEntity.physicsHandler:createAirFloat(targetEntity.character, "AirFloat")
+			targetEntity.physicsHandler:createAirFloat(targetEntity.character, "airFloat")
 
 		-- Store for reuse
 		self.attackerFloat = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
 		self.targetFloat = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
 
-		self.attackerFloat.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 10, 0)
-		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 10, 0)
+		self.attackerFloat.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 30, 0)
+		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 30, 0)
 
 		-- Cleanup timer
 		if self.airFloatCoroutine then
@@ -391,26 +425,8 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 				task.wait(0.1)
 			end
 
-			-- Cleanup
-			self.attackerFloat.align:Destroy()
-			self.attackerFloat.alignPart:Destroy()
-			self.attackerFloat.att0:Destroy()
-			-- Cleanup
-			self.targetFloat.align:Destroy()
-			self.targetFloat.alignPart:Destroy()
-			self.targetFloat.att0:Destroy()
-
-			self.attackerFloat, self.targetFloat = nil, nil
-
-			attackerState:RemoveState(STATE.InAirCombo)
-			targetState:RemoveState(STATE.InAirCombo)
-
-			inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), false)
-			if CollectionService:HasTag(targetEntity.character, "Player") then
-				inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), false)
-			end
-
-			self.airFloatCoroutine = nil
+			self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
+			cleanInAir()
 		end)
 	elseif airComboAction == "continue" then
 		-- Offset: attacker moves slightly forward, target moves back
@@ -420,11 +436,52 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			local aAlignPart = self.attackerFloat.alignPart
 			local tAlignPart = self.targetFloat.alignPart
 			local attackerLookVector = attackerRoot.CFrame.LookVector
-			local moveDistance = 4
-			aAlignPart.CFrame = CFrame.new(aAlignPart.Position + attackerLookVector * moveDistance)
-			tAlignPart.CFrame = CFrame.new(tAlignPart.Position + attackerLookVector * moveDistance)
+			local distance = 4
+
+			aAlignPart.CFrame = CFrame.new(aAlignPart.Position + attackerLookVector * distance)
+			tAlignPart.CFrame = CFrame.new(tAlignPart.Position + attackerLookVector * distance)
 		end
 	elseif airComboAction == "downslam" then
+		if self.airFloatCoroutine then
+			task.cancel(self.airFloatCoroutine)
+		end
+
+		if self.attackerFloat and self.targetFloat then
+			print("downslam")
+			self.lastAirAttackTime = os.clock()
+
+			local tAlign = self.targetFloat.align
+			local tAlignPart = self.targetFloat.alignPart
+			local attackerLookVector = attackerRoot.CFrame.LookVector
+			tAlign.Responsiveness = 150
+
+			-- back position
+			local backwardOffset = attackerLookVector * 10 -- stud offse
+			local newXZPos = tAlignPart.Position + backwardOffset
+
+			-- Raycast downward to find ground height
+			local rayOrigin = newXZPos
+			-- Downward and backward relative to the attacker’s look vector
+			local rayDirection = (attackerLookVector * -0.5 + Vector3.new(0, -1, 0)).Unit * 100
+
+			local groundPos = self.owner.physicsHandler:ReturnRaycastVector(
+				rayOrigin,
+				rayDirection,
+				{ targetEntity.character, self.owner.character }
+			)
+
+			-- Step 3: Use result
+			if groundPos then
+				tAlignPart.Position = Vector3.new(newXZPos.X, groundPos.Y + 3, newXZPos.Z)
+			else
+				tAlignPart.Position = newXZPos -- fallback if no ground detected
+			end
+
+			task.delay(1, function()
+				self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
+				cleanInAir()
+			end)
+		end
 	elseif airComboAction == "knockback" then
 	elseif airComboAction == "downm1" then
 	else

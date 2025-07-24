@@ -20,8 +20,10 @@ function PhysicsHandler.new(rig, entityType, userId)
 	self.humanoid = rig:FindFirstChildOfClass("Humanoid")
 	self.entityType = entityType
 	self.userId = entityType == "player" and userId or nil
-	self.alignPart = nil
-	self.alignPostion = nil
+	self.physicsAssets = Instance.new("Folder")
+
+	self.physicsAssets.Name = "physicsAssets"
+	self.physicsAssets.Parent = self.character
 
 	return self
 end
@@ -43,18 +45,23 @@ local function setLowFriction(rig)
 end
 
 -- Utility to stop velocity after a short duration
-function PhysicsHandler:applyImpulse(direction)
+function PhysicsHandler:applyImpulse(lookVector, direction)
 	local velocity = Instance.new("BodyVelocity")
 	velocity.MaxForce = Vector3.new(4e4, 0, 4e4)
-	velocity.Velocity = self.hrp.CFrame.LookVector * direction
+	velocity.Velocity = lookVector * direction
 	velocity.Parent = self.hrp
 	Debris:AddItem(velocity, 0.3)
 end
 
 -- Setup helper
 function PhysicsHandler:createAirFloat(character, name)
+	local oldAP = self.physicsAssets:FindFirstChildOfClass("AlignPosition")
+	if oldAP then
+		oldAP:Destroy()
+	end
 	local alignPart = mockRootPart:Clone()
-	alignPart.Parent = game.Workspace:FindFirstChild("PhysicsAssets")
+	alignPart.Name = name .. "_AlignPart"
+	alignPart.Parent = self.physicsAssets
 	alignPart.CFrame = character.PrimaryPart.CFrame
 
 	local att0 = Instance.new("Attachment")
@@ -78,6 +85,20 @@ function PhysicsHandler:createAirFloat(character, name)
 	return align, alignPart, att0, att1
 end
 
+function PhysicsHandler:ClearAirFloat(attackerFloat, targetFloat)
+	if attackerFloat then
+		attackerFloat.align:Destroy()
+		attackerFloat.alignPart:Destroy()
+		attackerFloat.att0:Destroy()
+	end
+
+	if targetFloat then
+		targetFloat.align:Destroy()
+		targetFloat.alignPart:Destroy()
+		targetFloat.att0:Destroy()
+	end
+end
+
 function PhysicsHandler:shiftNetworkOwner(duration)
 	print("Shifting network ownership")
 	if not self.hrp or not self.humanoid then
@@ -94,20 +115,54 @@ function PhysicsHandler:shiftNetworkOwner(duration)
 	end)
 end
 
-function PhysicsHandler:MoveForward(distance)
+function PhysicsHandler:MoveForward(lookVector, distance)
 	if not self.hrp then
 		return
 	end
+	local aAlign, aAlignPart, aAtt0, _ = self:createAirFloat(self.character, "moveForward")
 
-	self:applyImpulse(distance)
+	aAlignPart.CFrame = CFrame.new(aAlignPart.Position + (lookVector and lookVector or 0) * distance)
+	task.delay(0.3, function()
+		if aAlign then
+			aAlign:Destroy()
+		end
+
+		aAlignPart:Destroy()
+		aAtt0:Destroy()
+	end)
+	-- self:applyImpulse(lookVector, distance)
 end
 
-function PhysicsHandler:MoveBackward(distance)
+function PhysicsHandler:MoveBackward(attackerLookVector, distance)
 	if not self.hrp then
 		return
 	end
+	local aAlign, aAlignPart, aAtt0, _ = self:createAirFloat(self.character, "moveBackward")
 
-	self:applyImpulse(-distance)
+	aAlignPart.CFrame = CFrame.new(aAlignPart.Position + (attackerLookVector and attackerLookVector or 0) * distance)
+	task.delay(0.3, function()
+		aAlign:Destroy()
+		aAlignPart:Destroy()
+		aAtt0:Destroy()
+	end)
+	-- self:applyImpulse(attackerLookVector, distance)
+end
+
+function PhysicsHandler:ReturnRaycastVector(rayOrigin, rayDirection, rayExclusions)
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = rayExclusions or {}
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	raycastParams.IgnoreWater = true
+
+	local result = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+
+	if result then
+		print("Ray hit part:", result.Instance.Name)
+		return result.Position
+	else
+		print("ray didnt hit anything")
+		return nil
+	end
 end
 
 function PhysicsHandler:Knockback(fromCharacter, power, duration)

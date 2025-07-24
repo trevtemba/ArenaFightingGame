@@ -384,15 +384,17 @@ function Enemy:MeleeAttack()
 		attacker = self,
 		target = self.target,
 		onHit = function(target)
-			target:TakeDamage(
-				self.stats["damage"],
-				self.stats["pierce"],
-				ATTACK_STUN_TIME,
-				self.damageTypes.attack,
-				false,
-				true,
-				"blunt"
-			)
+			local attackData = {
+				damage = self.stats.damage,
+				pierce = self.stats.pierce,
+				stunTime = ATTACK_STUN_TIME,
+				damageType = self.damageTypes.attack,
+				crit = false,
+				blockable = true,
+				hitType = "slash",
+				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+			}
+			target:TakeDamage(attackData)
 
 			self.damageDebounce = true
 			print(
@@ -428,18 +430,22 @@ function Enemy:RangedAttack()
 		speed = 80,
 		hitRadius = 2,
 		onHit = function(target)
-			target:TakeDamage(
-				self.stats["damage"],
-				self.stats["pierce"],
-				ATTACK_STUN_TIME,
-				self.damageTypes.attack,
-				false,
-				true
-			)
+			local attackData = {
+				damage = self.stats.damage,
+				pierce = self.stats.pierce,
+				stunTime = ATTACK_STUN_TIME,
+				damageType = self.damageTypes.attack,
+				crit = false,
+				blockable = true,
+				knocksBack = false,
+				hitType = "blunt",
+				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+			}
+			target:TakeDamage(attackData)
 			self.damageDebounce = true
 			print(
 				self.name
-					.. " hit "
+					.. " attacked "
 					.. target.name
 					.. " for "
 					.. self.stats["damage"]
@@ -459,9 +465,9 @@ function Enemy:RangedAttack()
 	HitboxHandler:CreateNPCProjectile(params)
 end
 
-function Enemy:TakeDamage(amount, pierce, stunTime, dmgType, crit, _, hitType)
+function Enemy:TakeDamage(attackData)
 	if self.combatHandler then
-		self.combatHandler:TakeDamage(amount, pierce, stunTime, dmgType, crit, hitType)
+		self.combatHandler:TakeDamage(attackData)
 	end
 end
 

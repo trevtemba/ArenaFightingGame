@@ -41,10 +41,7 @@ selectBtn.MouseButton1Click:Connect(function()
 		tweenServ:Create(blur, tweenInfoBtns1, { Size = 0.1 }):Play()
 	end)
 	task.delay(1, function()
-
+		camModule.normCam()
 		--startPrompt.Enabled = false
 	end)
-	--uiModule.playSplash()
-	--Camera adjustment
-	camModule.normCam()
 end)

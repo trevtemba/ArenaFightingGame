@@ -2,6 +2,8 @@
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local cameraModule = require(ReplicatedStorage.Modules.client.cameraModule)
 local AnimationHandler = require(game:GetService("ReplicatedStorage").Modules.client.animationModule)
 local ShiftlockModule = require(game:GetService("ReplicatedStorage").Modules.client.smoothShiftlock.SmoothShiftLock)
 
@@ -28,6 +30,7 @@ local function processCharacter(character)
 		AnimationHandler.PreloadAll()
 		charLoaded = true
 		ShiftlockModule.new()
+		cameraModule.normCam()
 	else
 		warn("Character does not have 'player' tag, skipping.")
 	end

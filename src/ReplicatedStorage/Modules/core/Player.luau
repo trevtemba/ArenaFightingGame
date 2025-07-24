@@ -132,16 +132,16 @@ function Player:SprintHandler(sprintState)
 	end
 end
 
-function Player:TakeDamage(amount, pierce, stunTime, dmgType, crit, blockable, hitType) --todo, enemyposition so we can make blocking only work if u are facing attacker
+function Player:TakeDamage(attackData) --todo, enemyposition so we can make blocking only work if u are facing attacker
 	if self.combatHandler then
 		if self.stateHandler:HasState("blocking") then
-			if blockable then
+			if attackData.blockable then
 				self.combatHandler:BlockDamage()
 			else
 				self.combatHandler:BreakBlock()
 			end
 		else
-			self.combatHandler:TakeDamage(amount, pierce, stunTime, dmgType, crit, hitType)
+			self.combatHandler:TakeDamage(attackData)
 		end
 	end
 end

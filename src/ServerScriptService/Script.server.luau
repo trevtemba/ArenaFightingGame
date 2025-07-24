@@ -12,6 +12,7 @@ local Game = require(core:WaitForChild("Game"))
 local Player = require(core:WaitForChild("Player"))
 local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
 
+local toggleCamera = ClientEvents:WaitForChild("toggleCamera")
 local ChampionSelectedEvent = ServerEvents:WaitForChild("ChampSelect")
 
 CollisionManager:Init()
@@ -72,6 +73,7 @@ for _, plr in ipairs(joinedPlayers) do
 		selectedChampions[plr.UserId] = randomPick
 		print(plr.Name .. " did not pick. Assigned random champion: " .. randomPick)
 	end
+	toggleCamera:FireAllClients("normal")
 end
 
 -- Wait for all characters to load
