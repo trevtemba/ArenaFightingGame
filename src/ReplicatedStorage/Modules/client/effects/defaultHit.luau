@@ -14,6 +14,8 @@ return function(argumentData)
 			local clone = nil
 			local sound = nil
 			local highlightColor = Color3.fromRGB(255, 0, 0)
+			local innerTransparency = 0.85
+			local outerTransparency = 1
 
 			if hitType == "blunt" then
 				clone = Effects.CoreEffects.bluntHitEffect:Clone()
@@ -23,8 +25,10 @@ return function(argumentData)
 				sound = Sounds:FindFirstChild("impact"):Clone()
 			elseif hitType == "block" then
 				clone = Effects.CoreEffects.blockHitEffect:Clone()
-				sound = Sounds:FindFirstChild("impact"):Clone()
-				highlightColor = Color3.fromRGB(135, 215, 255)
+				local num = math.random(1, 3)
+				sound = Sounds:FindFirstChild("block" .. num):Clone()
+				highlightColor = Color3.fromRGB(255, 204, 19)
+				outerTransparency = 0.1
 			else
 				warn("hitType not valid")
 				return
@@ -43,7 +47,15 @@ return function(argumentData)
 					end
 				end
 			end
-			local highlight = highlightHelper:highlightCharacter(target, highlightColor, 0.8, 1, false, "pulse", 0.25)
+			local highlight = highlightHelper:highlightCharacter(
+				target,
+				highlightColor,
+				innerTransparency,
+				outerTransparency,
+				false,
+				"pulse",
+				0.25
+			)
 			-- Cleanup
 			Debris:AddItem(clone, 1)
 			Debris:AddItem(sound, 1)

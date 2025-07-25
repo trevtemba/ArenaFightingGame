@@ -13,9 +13,12 @@ local offsets = {
 return function(argumentData)
 	local target: Model = argumentData.target
 	local direction: string = argumentData.direction
+	local sound = ReplicatedStorage:WaitForChild("Sounds"):WaitForChild("dash"):Clone()
+	sound.Parent = target
 
 	if target and direction then
 		local rootPart = target:FindFirstChild("HumanoidRootPart")
+		sound:Play()
 
 		if rootPart then
 			local clone = Effects:WaitForChild("DashEffects"):WaitForChild(direction):Clone()
@@ -49,6 +52,7 @@ return function(argumentData)
 			end
 
 			Debris:AddItem(clone, 1)
+			Debris:AddItem(sound, 1)
 		end
 	end
 end

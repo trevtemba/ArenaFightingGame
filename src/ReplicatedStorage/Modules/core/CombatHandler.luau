@@ -10,6 +10,7 @@ local CollectionService = game:GetService("CollectionService")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local animationModule = require(ReplicatedStorage.Modules.client.animationModule)
 local STATE = require(script.Parent.State)
 local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 
@@ -208,9 +209,10 @@ function CombatHandler:EnableBlock()
 		return
 	end
 
+	clientEffects:FireAllClients("initiate", { target = self.owner.character, initiateType = "block" })
 	self.owner.stateHandler:SetState(STATE.Blocking)
 	self.owner.physicsHandler:SetWalkspeed(5)
-	self.owner.animationHandler:Play("block", nil, nil, nil, true, "Action2")
+	self.owner.animationHandler:Play("block", nil, nil, nil, true, "Action")
 end
 
 function CombatHandler:DisableBlock()
@@ -312,6 +314,16 @@ function CombatHandler:TakeDamage(attackData)
 end
 
 function CombatHandler:BlockDamage()
+	local track1 = "blockImpactRight"
+	local track2 = "blockImpactLeft"
+
+	-- Randomly choose one of the impact animations
+	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+
+	if chosenTrack then
+		self.owner.animationHandler:Play(chosenTrack, nil, nil, nil, false, "Action2")
+	end
+
 	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = "block" })
 end
 
