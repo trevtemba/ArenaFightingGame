@@ -22,6 +22,7 @@ function Player.new(plr, champion, rig)
 	self.userId = plr.UserId
 	self.name = plr.Name
 	self.health = 100
+	self.teir = 1
 	self.xp = 0
 	self.champion = champion
 	self.character = rig

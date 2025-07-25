@@ -9,8 +9,16 @@ return function(argumentData)
 
 	if target and target ~= player.Character then
 		local healthBar = target:FindFirstChild("HumanoidRootPart"):FindFirstChild("HealthBar")
-		local healthFill = healthBar:FindFirstChild("base"):FindFirstChild("healthBase"):FindFirstChild("health")
-		local damageFill = healthBar:FindFirstChild("base"):FindFirstChild("healthBase"):FindFirstChild("damage")
+		local healthFill = healthBar
+			:FindFirstChildOfClass("CanvasGroup")
+			:FindFirstChild("healthsuper")
+			:FindFirstChild("healthBase")
+			:FindFirstChild("health")
+		local damageFill = healthBar
+			:FindFirstChildOfClass("CanvasGroup")
+			:FindFirstChild("healthsuper")
+			:FindFirstChild("healthBase")
+			:FindFirstChild("damage")
 		local hpRatio = currentHP / maxHP
 
 		healthFill.Size = UDim2.new(hpRatio, 0, 1, 0)

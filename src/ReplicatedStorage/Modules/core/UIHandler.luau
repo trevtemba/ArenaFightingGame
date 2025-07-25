@@ -1,5 +1,5 @@
 local UIFolder = game:GetService("ServerStorage"):FindFirstChild("ui")
-local healthBarGui = UIFolder:FindFirstChild("HealthBar")
+local billboardGui_template = UIFolder:FindFirstChild("HealthBar")
 local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
 
 local UIHandler = {}
@@ -15,7 +15,7 @@ function UIHandler.new(entity)
 	self.healthBarTween = nil
 	self.healthShowTime = 1.75
 	self.damageShowTime = 0.25
-	-- self.healthBar = nil
+	self.billBoardGui = nil
 	-- self.healthFill = nil
 	-- self.damageFill = nil
 
@@ -26,10 +26,12 @@ end
 function UIHandler:init()
 	local HumanoidRootPart = self.owner.character:FindFirstChild("HumanoidRootPart")
 
-	local healthBar = healthBarGui:Clone()
-	self.dividers = healthBar:WaitForChild("base"):WaitForChild("healthBase"):WaitForChild("dividers")
-	self:CreateDividers()
-	healthBar.Parent = HumanoidRootPart
+	local billboard = billboardGui_template:Clone()
+	self.dividers =
+		billboard:WaitForChild("super"):WaitForChild("healthsuper"):WaitForChild("healthBase"):WaitForChild("dividers")
+	self.billBoardGui = billboard
+	self:Calibrate()
+	billboard.Parent = HumanoidRootPart
 end
 
 function UIHandler:UpdateHealthBar()
@@ -51,6 +53,13 @@ function UIHandler:ShowDamage(damage, damageType, crit)
 	})
 end
 
+function UIHandler:Calibrate()
+	local teir = self.billBoardGui.super.teirsuper.teirbase.teirbase2:FindFirstChildOfClass("TextLabel")
+
+	teir.Text = self.owner.teir
+	self:CreateDividers()
+end
+
 function UIHandler:CreateDividers()
 	local maxHp = self.owner.maxHP
 	local dividerCount = math.floor(maxHp / 100) - 1
@@ -59,7 +68,7 @@ function UIHandler:CreateDividers()
 	for i = 1, dividerCount do
 		local divider = Instance.new("Frame")
 		divider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		divider.BackgroundTransparency = 0.7
+		divider.BackgroundTransparency = 0
 		divider.Size = UDim2.new(0.02, 0, 1, 0)
 		divider.Position = UDim2.new(i / (dividerCount + 1), 0, 0, 0)
 		divider.BorderSizePixel = 0

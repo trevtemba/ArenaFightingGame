@@ -15,7 +15,7 @@ local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
 local StateHandler = require(script.Parent.StateHandler)
 
 local STATE = require(script.Parent:WaitForChild("State"))
-local ATTACK_STUN_TIME = 0.75
+local ATTACK_STUN_TIME = 0.5
 
 local Enemy = {}
 Enemy.__index = Enemy
@@ -29,6 +29,7 @@ function Enemy.new()
 	self.name = ""
 	self.character = nil
 	self.humanoid = nil
+	self.teir = 0
 	self.target = nil
 	self.alive = false
 	self.active = false
@@ -96,6 +97,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.name = config.name
 	self.currentHP = config.health
 	self.maxHP = config.health
+	self.teir = stage
 
 	self.humanoid.WalkSpeed = config.speed
 	self.humanoid.DisplayName = ""
