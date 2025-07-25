@@ -16,6 +16,12 @@ function InputStateHandler.new(humanoid)
 end
 
 function InputStateHandler:CanDo(state)
+	local stunned = self.humanoid.Parent:GetAttribute("Stunned")
+	if stunned then
+		print("cant do, your stunned")
+		return false
+	end
+
 	local blockedStates = {}
 	if state == STATE.Sprinting then
 		blockedStates = {

@@ -186,7 +186,6 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 		remote:FireServer(walkingDir)
 	end
 
-	animationModule.StopAll()
 	animationModule.Play(animName, 0.1, false, "Action2")
 	physicsModule.Dash(walkingDir, 12)
 	inputStateHandler:HeldOff("forward")

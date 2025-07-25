@@ -25,7 +25,6 @@
 
 --//Private variables & functions
 local heartbeat = game:GetService("RunService").Heartbeat
-
 local Stunned = {}
 
 local clock = os.clock
@@ -78,7 +77,6 @@ return {
 		if not Stunned[humanoid] then
 			Stunned[humanoid] = {}
 		end
-
 		local data = Stunned[humanoid]
 		currentTime = clock()
 
@@ -114,6 +112,7 @@ return {
 				end
 
 				Stunned[humanoid] = nil
+				humanoid.Parent:SetAttribute("Stunned", false)
 			end)
 		end
 

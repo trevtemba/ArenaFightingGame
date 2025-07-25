@@ -15,7 +15,7 @@ local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
 local StateHandler = require(script.Parent.StateHandler)
 
 local STATE = require(script.Parent:WaitForChild("State"))
-local ATTACK_STUN_TIME = 0.25
+local ATTACK_STUN_TIME = 0.75
 
 local Enemy = {}
 Enemy.__index = Enemy
