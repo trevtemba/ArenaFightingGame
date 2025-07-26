@@ -10,6 +10,7 @@ local CollectionService = game:GetService("CollectionService")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TouchInputService = game:GetService("TouchInputService")
 local animationModule = require(ReplicatedStorage.Modules.client.animationModule)
 local STATE = require(script.Parent.State)
 local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
@@ -45,8 +46,10 @@ function CombatHandler.new(owner, entityType)
 	self.attackerFloat = nil
 	self.targetFloat = nil
 	self._attackSessionId = nil
+	self._blockBreakSessionId = nil
 	self._airFloatCoroutine = nil
 	self._m1SlowId = nil
+	self._stunSessionId = nil
 	self.entityType = entityType
 	return self
 end
@@ -114,6 +117,7 @@ function CombatHandler:Attack(spaceHeld)
 	end
 
 	local now = os.clock()
+	local blockable = self.combo < self.maxCombo
 	local isAirCombo = false
 	local knocksBack = false
 	local airComboAction
@@ -180,7 +184,7 @@ function CombatHandler:Attack(spaceHeld)
 		local params = {
 			attacker = self.owner,
 			onHit = function(entity)
-				self:ApplyDamage(entity, true, "attack", knocksBack, isAirCombo)
+				self:ApplyDamage(entity, blockable, "attack", knocksBack, isAirCombo)
 				if isAirCombo then
 					self:handleAirCombo(entity, airComboAction)
 				end
@@ -238,7 +242,33 @@ function CombatHandler:BreakBlock()
 		return
 	end
 	self:DisableBlock()
-	--block break logic todo, daze them for 1.53 second
+	self:Stun(2, 0)
+	self.owner.fxHandler:EnableParticlePart("DizzyEffect", "Head")
+	self.owner.physicsHandler:SetWalkspeed(0)
+	self.owner.animationHandler:StopAll()
+	self.owner.animationHandler:Play("blockBreak", nil, nil, nil, true, "Action4")
+	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = "blockBreak" })
+
+	self._blockBreakSessionId = (self._blockBreakSessionId or 0) + 1
+	local sessionId = self._blockBreakSessionId
+
+	task.delay(2, function()
+		if self._blockBreakSessionId ~= sessionId then
+			return
+		end
+		self:RestoreBreakBlock()
+	end)
+end
+
+function CombatHandler:RestoreBreakBlock()
+	if not self.humanoid then
+		return
+	end
+	self._blockBreakSessionId = nil
+
+	self.owner.fxHandler:DisableParticlePart("DizzyEffect", "Head")
+	self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
+	self.owner.animationHandler:Stop("blockBreak")
 end
 
 function CombatHandler:ApplyDamage(entity, blockable, attackType, knocksBack, isAirCombo)
@@ -279,13 +309,17 @@ end
 
 function CombatHandler:TakeDamage(attackData)
 	if self.entityType == "Player" then
-		self:Stun(attackData.stunTime)
+		if self._blockBreakSessionId then
+			self:RestoreBreakBlock()
+		end
+		self:Stun(attackData.stunTime, 3)
 		self:Flinch()
 	elseif self.entityType == "Enemy" then
 		self.owner:SetState(STATE.Stunned, attackData.stunTime)
 		self.owner:Flinch()
 	end
 
+	self.owner.stateHandler:RemoveState(STATE.Attacking)
 	local durability = self.owner.stats["durability"]
 	local multiplier = nil
 	local totalDamage = nil
@@ -345,7 +379,7 @@ function CombatHandler:determineCrit()
 	return roll < critChance
 end
 
-function CombatHandler:Stun(stunTime)
+function CombatHandler:Stun(stunTime, walkspeed)
 	if not self.humanoid and not self:canStun() then
 		return
 	end
@@ -360,8 +394,14 @@ function CombatHandler:Stun(stunTime)
 		totalStunTime = stunTime
 	end
 
-	StunModule.Stun(self.humanoid, totalStunTime)
+	StunModule.Stun(self.humanoid, totalStunTime, walkspeed)
+	local sessionId = (self._stunSessionId and 0 or 1) + 1
+	self._stunSessionId = sessionId
+
 	task.delay(stunTime, function()
+		if sessionId ~= self._stunSessionId then
+			return
+		end
 		self.owner.stateHandler:RemoveState(STATE.Stunned)
 	end)
 end

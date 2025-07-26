@@ -29,6 +29,10 @@ return function(argumentData)
 				sound = Sounds:FindFirstChild("block" .. num):Clone()
 				highlightColor = Color3.fromRGB(255, 204, 19)
 				outerTransparency = 0.1
+			elseif hitType == "blockBreak" then
+				clone = Effects.CoreEffects.blockBreakHitEffect:Clone()
+				sound = Sounds:FindFirstChild("blockBreak"):Clone()
+				outerTransparency = 0.1
 			else
 				warn("hitType not valid")
 				return

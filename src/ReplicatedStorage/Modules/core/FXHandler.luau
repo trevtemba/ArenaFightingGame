@@ -1,5 +1,6 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local WeldHelper = require(script.Parent:WaitForChild("WeldHelper"))
-
+local Effects = ReplicatedStorage:WaitForChild("Effects")
 local FXHandler = {}
 FXHandler.__index = FXHandler
 
@@ -63,6 +64,26 @@ function FXHandler:PlayParticle(particleName)
 			end
 		end
 	end
+end
+
+function FXHandler:EnableParticlePart(partName, weldTo)
+	local particlePart = Effects:WaitForChild(partName):Clone()
+	local bodyPart = self.rig:FindFirstChild(weldTo)
+
+	particlePart.CFrame = bodyPart.CFrame
+	particlePart.Parent = bodyPart
+	WeldHelper.WeldParts(particlePart, bodyPart)
+
+	for _, v in pairs(particlePart:GetDescendants()) do
+		if v:IsA("ParticleEmitter") then
+			v.Enabled = true
+		end
+	end
+end
+
+function FXHandler:DisableParticlePart(partName, bodyPart)
+	local part = self.rig:FindFirstChild(bodyPart)
+	part:FindFirstChild(partName):Destroy()
 end
 
 function FXHandler:GetProjectile(name)

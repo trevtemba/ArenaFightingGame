@@ -274,7 +274,7 @@ local function setupMovementActionShiftLocked(direction, data)
 
 	if direction == "forward" then
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) then
+			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
@@ -312,7 +312,7 @@ local function setupMovementActionShiftLocked(direction, data)
 		end)
 	else
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) then
+			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
@@ -343,7 +343,7 @@ local function setupMovementActionFreecammed(direction, data)
 
 	if direction == "forward" then
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) then
+			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
@@ -390,7 +390,7 @@ local function setupMovementActionFreecammed(direction, data)
 		end)
 	else
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) then
+			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
@@ -451,6 +451,7 @@ end)
 if isCharLoaded:Invoke() then
 	print("CHARACTER IS READY")
 	local humanoid = player.Character.Humanoid
+	local char = player.Character
 
 	inputStateHandler = InputStateHandler.new(humanoid)
 	PlayerGui:FindFirstChild("Core").Enabled = true
@@ -461,6 +462,17 @@ if isCharLoaded:Invoke() then
 			inputStateHandler:RemoveState(STATE.InAirCombo)
 			animationModule.Play("landing", 0.1, false, "Action")
 			-- Trigger landing animation or reset jump state
+		end
+	end)
+	char:GetAttributeChangedSignal("Stunned"):Connect(function()
+		local stunned = char:GetAttribute("Stunned")
+		if stunned then
+			-- animationModule.StopAllExcept({ impactleft = true, impactright = true, blockBreak = true })
+			inputStateHandler:SetState(STATE.Stunned)
+			setCanJump(false)
+		else
+			inputStateHandler:RemoveState(STATE.Stunned)
+			setCanJump(true)
 		end
 	end)
 else

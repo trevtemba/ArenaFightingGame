@@ -4,6 +4,7 @@ local State = {
 	Attacking = "attacking",
 	Casting = "casting",
 	Sprinting = "sprinting",
+	Walking = "walking",
 	Jumping = "jumping",
 	Blocking = "blocking",
 	Dashing = "dashing",

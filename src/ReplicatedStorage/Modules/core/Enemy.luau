@@ -134,7 +134,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.fxHandler = FXHandler.new(self.character)
 	self.uiHandler = UIHandler.new(self)
 	self.animationHandler = AnimationHandler.new(self.character)
-	self.physicsHandler = PhysicsHandler.new(self.character, "enemy", nil)
+	self.physicsHandler = PhysicsHandler.new(self.character, "Enemy", nil)
 	self.stateHandler = StateHandler.new()
 
 	self:SetState(STATE.Idle)
@@ -392,7 +392,7 @@ function Enemy:MeleeAttack()
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
 				crit = false,
-				blockable = true,
+				blockable = false,
 				hitType = "slash",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
 			}

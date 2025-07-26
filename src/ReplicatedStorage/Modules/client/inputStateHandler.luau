@@ -34,6 +34,11 @@ function InputStateHandler:CanDo(state)
 			STATE.Stunned,
 			STATE.Ragdolled,
 		}
+	elseif state == STATE.Walking then
+		blockedStates = {
+			STATE.Stunned,
+			STATE.Ragdolled,
+		}
 	elseif state == STATE.Dashing then
 		blockedStates = {
 			STATE.Dashing,
