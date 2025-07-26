@@ -34,16 +34,19 @@ function CombatHandler.new(owner, entityType)
 	self.attackCooldown = owner.stats.attackCooldown
 	self.combo = 1
 	self.maxCombo = 5
+	self.blockAnimSeq = 1
 	self.comboResetTime = 1 -- Seconds to reset combo
 	self.lastAttackTime = 0
 	self.airResetTime = 1.5
 	self.lastAirAttackTime = 0
-	self.airFloatCoroutine = nil
-	self.attackerFloat = nil
-	self.targetFloat = nil
 	self.bufferedAttack = false
 	self.bufferedAttackSpaceHeld = false
 	self.bufferDuration = owner.stats.attackCooldown
+	self.attackerFloat = nil
+	self.targetFloat = nil
+	self._attackSessionId = nil
+	self._airFloatCoroutine = nil
+	self._m1SlowId = nil
 	self.entityType = entityType
 	return self
 end
@@ -164,11 +167,16 @@ function CombatHandler:Attack(spaceHeld)
 	self.owner.animationHandler:StopAll()
 	self.owner.animationHandler:Play(animName, 0, 3, 1, false, "Action3")
 	self:M1Slow(5)
+	-- When starting the attack (before connecting or right at anim start)
+	self._attackSessionId = (self._attackSessionId or 0) + 1
+	local sessionId = self._attackSessionId
 
 	-- Deal damage on hit marker
 	self.owner.animationHandler:ConnectMarker(animName, "fire", function()
 		local hitboxSize = ServerStorage:WaitForChild("meleeHitbox").Size
-
+		if self._attackSessionId ~= sessionId then
+			return
+		end
 		local params = {
 			attacker = self.owner,
 			onHit = function(entity)
@@ -314,14 +322,17 @@ function CombatHandler:TakeDamage(attackData)
 end
 
 function CombatHandler:BlockDamage()
-	local track1 = "blockImpactRight"
-	local track2 = "blockImpactLeft"
+	local track = "blockImpactRight"
 
-	-- Randomly choose one of the impact animations
-	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+	if self.blockAnimSeq == 1 then
+		self.blockAnimSeq = 2
+	else
+		track = "blockImpactLeft"
+		self.blockAnimSeq = 1
+	end
 
-	if chosenTrack then
-		self.owner.animationHandler:Play(chosenTrack, nil, nil, nil, false, "Action2")
+	if track then
+		self.owner.animationHandler:Play(track, nil, nil, nil, false, "Action2")
 	end
 
 	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = "block" })
@@ -363,7 +374,8 @@ function CombatHandler:Flinch()
 	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 
 	if chosenTrack then
-		self.owner.animationHandler:Play(chosenTrack, 0.1, 2)
+		self.owner.animationHandler:StopAll()
+		self.owner.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
 		flinchEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "impact")
 	end
 end
@@ -372,13 +384,26 @@ function CombatHandler:M1Slow(speed)
 	self.owner.physicsHandler:SetWalkspeed(speed)
 	local m1SlowDelay = self.combo < self.maxCombo and 1 or 1.5
 
+	-- Increment a unique ID to track this specific slowdown
+	self._m1SlowId = (self._m1SlowId or 0) + 1
+	local currentId = self._m1SlowId
+
 	task.spawn(function()
 		while os.clock() - self.lastAttackTime < m1SlowDelay do
 			task.wait(0.05)
+			-- If a new M1Slow was triggered, abort this one
+			if self._m1SlowId ~= currentId then
+				return
+			end
 		end
-		self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
-		if self.entityType == "Player" then
-			attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+
+		-- Only resume walkspeed and fire if still valid
+		if self._m1SlowId == currentId then
+			self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
+			if self.entityType == "Player" then
+				print("dfdfrs")
+				attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+			end
 		end
 	end)
 end
@@ -401,7 +426,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), false)
 		end
 
-		self.airFloatCoroutine = nil
+		self._airFloatCoroutine = nil
 	end
 
 	print(airComboAction)
@@ -429,10 +454,10 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 30, 0)
 
 		-- Cleanup timer
-		if self.airFloatCoroutine then
-			task.cancel(self.airFloatCoroutine)
+		if self._airFloatCoroutine then
+			task.cancel(self._airFloatCoroutine)
 		end
-		self.airFloatCoroutine = task.spawn(function()
+		self._airFloatCoroutine = task.spawn(function()
 			while os.clock() - self.lastAirAttackTime < self.airResetTime do
 				task.wait(0.1)
 			end
@@ -454,8 +479,8 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			tAlignPart.CFrame = CFrame.new(tAlignPart.Position + attackerLookVector * distance)
 		end
 	elseif airComboAction == "downslam" then
-		if self.airFloatCoroutine then
-			task.cancel(self.airFloatCoroutine)
+		if self._airFloatCoroutine then
+			task.cancel(self._airFloatCoroutine)
 		end
 
 		if self.attackerFloat and self.targetFloat then
