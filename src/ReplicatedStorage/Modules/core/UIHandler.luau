@@ -69,7 +69,7 @@ function UIHandler:CreateDividers()
 		local divider = Instance.new("Frame")
 		divider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		divider.BackgroundTransparency = 0
-		divider.Size = UDim2.new(0.015, 0, 1, 0)
+		divider.Size = UDim2.new(0.01, 0, 1, 0)
 		divider.Position = UDim2.new(i / (dividerCount + 1), 0, 0, 0)
 		divider.BorderSizePixel = 0
 		divider.ZIndex = 5

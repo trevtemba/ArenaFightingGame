@@ -2,7 +2,7 @@ return {
 	[1] = {
 		melee = {
 			name = "Ranger",
-			health = 400,
+			health = 250,
 			durability = 0,
 			damage = 10,
 			pierce = 0,
@@ -15,7 +15,7 @@ return {
 		},
 		ranged = {
 			name = "Archer",
-			health = 750,
+			health = 150,
 			durability = 0,
 			damage = 20,
 			pierce = 0,

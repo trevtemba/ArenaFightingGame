@@ -304,7 +304,8 @@ function CombatHandler:ApplyDamage(entity, blockable, attackType, knocksBack, is
 
 	self.owner.fxHandler:PlaySound("attack")
 	if not isAirCombo then
-		self.owner.physicsHandler:MoveForward(lookVector, 3)
+		self.owner.physicsHandler:SetWalkspeed(0)
+		self.owner.physicsHandler:MoveForward(lookVector, FLINCH_DISTANCE)
 	end
 end
 
@@ -338,13 +339,15 @@ function CombatHandler:TakeDamage(attackData)
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
 	self.humanoid.Health = math.clamp(self.owner.currentHP, 0, self.humanoid.MaxHealth)
 
-	clientEffects:FireAllClients(
-		"defaultHit",
-		{ target = self.owner.character, hitType = attackData.hitType, knocksBack = attackData.knocksBack }
-	)
+	clientEffects:FireAllClients("defaultHit", {
+		target = self.owner.character,
+		hitType = attackData.hitType,
+		knockBack = attackData.knocksBack,
+		attackerLookVector = attackData.attackerLookVector,
+	})
 	if not attackData.isAirCombo then
 		if attackData.knocksBack then
-			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 6)
+			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 10)
 		else
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE)
 		end
