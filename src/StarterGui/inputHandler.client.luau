@@ -468,6 +468,7 @@ if isCharLoaded:Invoke() then
 		local stunned = char:GetAttribute("Stunned")
 		if stunned then
 			-- animationModule.StopAllExcept({ impactleft = true, impactright = true, blockBreak = true })
+			inputStateHandler:ClearStates()
 			inputStateHandler:SetState(STATE.Stunned)
 			setCanJump(false)
 		else

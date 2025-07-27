@@ -103,6 +103,12 @@ function InputStateHandler:ClearStates()
 	end
 end
 
+function InputStateHandler:ClearHelds()
+	for k in pairs(self.heldInputs) do
+		self.heldInputs[k] = nil
+	end
+end
+
 -- Optionally expose all active states (for debugging or syncing)
 function InputStateHandler:GetAllStates()
 	local list = {}

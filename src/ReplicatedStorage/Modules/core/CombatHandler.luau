@@ -150,6 +150,7 @@ function CombatHandler:Attack(spaceHeld)
 				isAirCombo = true
 				airComboAction = "continue"
 			else
+				animName = "airKnockBack"
 				isAirCombo = true
 				airComboAction = "knockback"
 			end
@@ -193,7 +194,7 @@ function CombatHandler:Attack(spaceHeld)
 			hitboxTemplate = "meleeHitbox",
 			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -3),
 			size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.owner.stats.range),
-			duration = 0.15,
+			duration = 0.2,
 		}
 
 		HitboxHandler:CreatePlrHitbox(params)
@@ -337,7 +338,10 @@ function CombatHandler:TakeDamage(attackData)
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
 	self.humanoid.Health = math.clamp(self.owner.currentHP, 0, self.humanoid.MaxHealth)
 
-	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = attackData.hitType })
+	clientEffects:FireAllClients(
+		"defaultHit",
+		{ target = self.owner.character, hitType = attackData.hitType, knocksBack = attackData.knocksBack }
+	)
 	if not attackData.isAirCombo then
 		if attackData.knocksBack then
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 6)
@@ -454,7 +458,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 	local attackerState = self.owner.stateHandler
 	local targetState = targetEntity.stateHandler
 
-	local function cleanInAir()
+	local function disableInAir()
 		self.attackerFloat = nil
 		self.targetFloat = nil
 
@@ -503,7 +507,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			end
 
 			self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
-			cleanInAir()
+			disableInAir()
 		end)
 	elseif airComboAction == "continue" then
 		-- Offset: attacker moves slightly forward, target moves back
@@ -554,13 +558,28 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 				tAlignPart.Position = newXZPos -- fallback if no ground detected
 			end
 
-			task.delay(1, function()
+			task.delay(0.5, function()
 				self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
-				cleanInAir()
+				disableInAir()
 			end)
 		end
 	elseif airComboAction == "knockback" then
+		print("knocksback")
+		self.lastAirAttackTime = os.clock()
+		local tAlignPart = self.targetFloat.alignPart
+		local attackerLookVector = attackerRoot.CFrame.LookVector
+		local distance = 20
+
+		tAlignPart.CFrame = CFrame.new(tAlignPart.Position + attackerLookVector * distance)
+
+		task.delay(0.5, function()
+			self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
+			disableInAir()
+		end)
 	elseif airComboAction == "downm1" then
+		print("downm1")
+		self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
+		disableInAir()
 	else
 		warn("Invalid air combo action:", airComboAction)
 	end

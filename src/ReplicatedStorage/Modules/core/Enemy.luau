@@ -392,7 +392,7 @@ function Enemy:MeleeAttack()
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
 				crit = false,
-				blockable = false,
+				blockable = true,
 				hitType = "slash",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
 			}
@@ -416,7 +416,7 @@ function Enemy:MeleeAttack()
 		hitboxTemplate = "meleeHitbox",
 		cframe = self.character.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
 		size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.stats["range"]),
-		duration = 0.15,
+		duration = 0.2,
 	}
 	HitboxHandler:CreateNPCHitbox(params)
 end
@@ -438,7 +438,7 @@ function Enemy:RangedAttack()
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
 				crit = false,
-				blockable = true,
+				blockable = false,
 				knocksBack = false,
 				hitType = "blunt",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,

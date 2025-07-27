@@ -10,7 +10,7 @@ return {
 	critMultiplier = 1.75,
 	pierce = 0,
 	speed = 12,
-	range = 4,
+	range = 5,
 
 	ranged = false,
 	attackDmgType = "physical",
