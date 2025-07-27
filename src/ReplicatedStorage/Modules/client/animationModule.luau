@@ -38,6 +38,7 @@ end
 
 function animationModule.Play(animName, fadeTime, looped, priority)
 	local animTrack = animations[animName]
+
 	if priority then
 		animTrack.Priority = Enum.AnimationPriority[priority]
 	end
@@ -61,6 +62,30 @@ function animationModule.StopAll()
 
 	for _, track in animator:GetPlayingAnimationTracks() do
 		track:Stop()
+	end
+end
+
+function animationModule.StopAllExcept(anims)
+	if not animator then
+		return
+	end
+
+	-- Build a set of AnimationIds to keep
+	local allowedIds = {}
+	for key, val in pairs(anims) do
+		if typeof(key) == "string" and val == true and animations[key] then
+			local animTrack = animations[key]
+			if animTrack.Animation then
+				allowedIds[animTrack.Animation.AnimationId] = true
+			end
+		end
+	end
+
+	for _, track in animator:GetPlayingAnimationTracks() do
+		local id = track.Animation and track.Animation.AnimationId
+		if not allowedIds[id] then
+			track:Stop()
+		end
 	end
 end
 

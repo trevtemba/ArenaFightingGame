@@ -134,7 +134,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.fxHandler = FXHandler.new(self.character)
 	self.uiHandler = UIHandler.new(self)
 	self.animationHandler = AnimationHandler.new(self.character)
-	self.physicsHandler = PhysicsHandler.new(self.character, "enemy", nil)
+	self.physicsHandler = PhysicsHandler.new(self.character, "Enemy", nil)
 	self.stateHandler = StateHandler.new()
 
 	self:SetState(STATE.Idle)
@@ -416,7 +416,7 @@ function Enemy:MeleeAttack()
 		hitboxTemplate = "meleeHitbox",
 		cframe = self.character.PrimaryPart.CFrame * CFrame.new(0, 0, -2),
 		size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.stats["range"]),
-		duration = 0.15,
+		duration = 0.2,
 	}
 	HitboxHandler:CreateNPCHitbox(params)
 end
@@ -438,7 +438,7 @@ function Enemy:RangedAttack()
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
 				crit = false,
-				blockable = true,
+				blockable = false,
 				knocksBack = false,
 				hitType = "blunt",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,

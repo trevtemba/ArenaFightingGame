@@ -1,124 +1,73 @@
--- Credits to ApprenticeOfMadara
+-- StunHandler.lua
+local StunHandler = {}
 
---[[
-	Very simple to use stun module:
-	Simply send a humanoid object and the amount of seconds you want the stun to last for to the function
-	
-	Example:
-		local StunHandler = require(path.to.module)
-		
-		StunHandler.Stun(humanoid, 5)	-->>	stuns for 5 seconds
-		
-	The function saves the current speed and jump power of the humanoid before setting them to 0
-	Once the specified duration passes, it will reset the speed and jump power back to what was stored
-	
-	If the function tries to stun an already stunned humanoid, it will compare the duration sent with the time left
-	from the previous stun
-	If there is less time left, the stun duration will update to the new one
-	
-	An attribute with the name "Stunned" is added to the humanoid's parent (character) and set to true whilst
-	the humanoid is stunned
-	It is set to false again once the stun wears off
-	
-	Note: The function does not yield whilst the humanoid has been stunned
-]]
+local stunnedMap = {}
 
---//Private variables & functions
-local heartbeat = game:GetService("RunService").Heartbeat
-local Stunned = {}
-
-local clock = os.clock
-local isChecking = false
-local checkConnection
-local currentTime
-local stunnedHumanoids
-
-local function stunChecker()
-	currentTime = clock()
-	stunnedHumanoids = 0
-
-	for humanoid, data in pairs(Stunned) do
-		if not data.stunned then
-			continue
-		end
-
-		if currentTime >= data.duration then
-			data.stunned = false
-
-			data.changedConn:Disconnect()
-			data.changedConn = nil
-
-			if humanoid:IsDescendantOf(workspace) then
-				humanoid.WalkSpeed = data.speed
-				humanoid.JumpPower = data.jumpPower
-				humanoid.JumpHeight = data.jumpHeight
-				print("unstunned")
-				humanoid.Parent:SetAttribute("Stunned", false)
-			end
-		end
-
-		stunnedHumanoids += 1
-		-- print(string.format("waiting: %f", data.duration - currentTime))
+function StunHandler.Stun(humanoid: Humanoid, duration: number, walkSpeed: number?)
+	if not humanoid or humanoid.Health <= 0 then
+		return
 	end
 
-	if stunnedHumanoids == 0 then
-		checkConnection:Disconnect()
-		isChecking = false
+	local char = humanoid.Parent
+	if not char then
+		return
 	end
+
+	-- Cancel previous task (if running)
+	if stunnedMap[humanoid] then
+		stunnedMap[humanoid].active = false -- signal the old coroutine to stop
+		if stunnedMap[humanoid].conn then
+			stunnedMap[humanoid].conn:Disconnect()
+		end
+	end
+
+	-- Save original stats
+	local originalSpeed = humanoid.WalkSpeed
+	local originalJumpPower = humanoid.JumpPower
+	local originalJumpHeight = humanoid.JumpHeight
+	local newSpeed = walkSpeed or 0
+
+	-- Apply stun immediately
+	humanoid.WalkSpeed = newSpeed
+	humanoid.JumpPower = 0
+	humanoid.JumpHeight = 0
+	char:SetAttribute("Stunned", true)
+
+	local changedConn = humanoid.Changed:Connect(function()
+		humanoid.WalkSpeed = newSpeed
+		humanoid.JumpPower = 0
+		humanoid.JumpHeight = 0
+	end)
+
+	local stunInfo = {
+		conn = changedConn,
+		active = true,
+	}
+
+	stunnedMap[humanoid] = stunInfo
+
+	task.spawn(function()
+		local startTime = tick()
+		while tick() - startTime < duration do
+			if not stunInfo.active then
+				return
+			end -- cancelled
+			task.wait(0.1)
+		end
+
+		if stunInfo.active and humanoid:IsDescendantOf(game) then
+			humanoid.WalkSpeed = originalSpeed
+			humanoid.JumpPower = originalJumpPower
+			humanoid.JumpHeight = originalJumpHeight
+			char:SetAttribute("Stunned", false)
+		end
+
+		if stunInfo.conn then
+			stunInfo.conn:Disconnect()
+		end
+
+		stunnedMap[humanoid] = nil
+	end)
 end
 
---//Stun Handler
-return {
-	Stun = function(humanoid, duration)
-		if humanoid.Health <= 0 then
-			return
-		end
-
-		if not Stunned[humanoid] then
-			Stunned[humanoid] = {}
-		end
-		local data = Stunned[humanoid]
-		currentTime = clock()
-
-		if not data.stunned then -- not stunned
-			data.stunned = true
-			data.duration = currentTime + duration
-			data.speed = humanoid.WalkSpeed
-			data.jumpPower = humanoid.JumpPower
-			data.jumpHeight = humanoid.JumpHeight
-
-			humanoid.WalkSpeed = 3
-			humanoid.JumpPower = 0
-			humanoid.JumpHeight = 0
-			humanoid.Parent:SetAttribute("Stunned", true)
-		elseif data.duration - currentTime < duration then -- update duration if less time left
-			data.duration = currentTime + duration
-		end
-
-		if not data.changedConn then
-			data.changedConn = humanoid.Changed:Connect(function()
-				humanoid.WalkSpeed = 3
-				humanoid.JumpPower = 0
-				humanoid.JumpHeight = 0
-			end)
-		end
-
-		if not data.diedConn then
-			data.diedConn = humanoid.AncestryChanged:Connect(function()
-				data.diedConn:Disconnect()
-
-				if data.changedConn then
-					data.changedConn:Disconnect()
-				end
-
-				Stunned[humanoid] = nil
-				humanoid.Parent:SetAttribute("Stunned", false)
-			end)
-		end
-
-		if not isChecking then
-			isChecking = true
-			checkConnection = heartbeat:Connect(stunChecker)
-		end
-	end,
-}
+return StunHandler

@@ -34,6 +34,11 @@ function InputStateHandler:CanDo(state)
 			STATE.Stunned,
 			STATE.Ragdolled,
 		}
+	elseif state == STATE.Walking then
+		blockedStates = {
+			STATE.Stunned,
+			STATE.Ragdolled,
+		}
 	elseif state == STATE.Dashing then
 		blockedStates = {
 			STATE.Dashing,
@@ -95,6 +100,12 @@ end
 function InputStateHandler:ClearStates()
 	for k in pairs(self.states) do
 		self.states[k] = nil
+	end
+end
+
+function InputStateHandler:ClearHelds()
+	for k in pairs(self.heldInputs) do
+		self.heldInputs[k] = nil
 	end
 end
 

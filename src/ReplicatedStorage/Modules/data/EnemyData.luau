@@ -23,7 +23,7 @@ return {
 			cooldown = 1,
 			crit = 0,
 			critMultiplier = 1.75,
-			speed = 15,
+			speed = 3,
 			attackDmgType = "physical",
 		},
 	},

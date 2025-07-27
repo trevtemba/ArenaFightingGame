@@ -8,6 +8,7 @@ local Effects = ReplicatedStorage:WaitForChild("Effects")
 return function(argumentData)
 	local target: Model = argumentData.target
 	local hitType: string = argumentData.hitType
+	local knocksBack: boolean = argumentData.knocksBack
 	if target and hitType then
 		local rootPart = target:FindFirstChild("HumanoidRootPart")
 		if rootPart then
@@ -16,7 +17,7 @@ return function(argumentData)
 			local highlightColor = Color3.fromRGB(255, 0, 0)
 			local innerTransparency = 0.85
 			local outerTransparency = 1
-
+			-- todo: add knockback effect
 			if hitType == "blunt" then
 				clone = Effects.CoreEffects.bluntHitEffect:Clone()
 				sound = Sounds:FindFirstChild("impact"):Clone()
@@ -28,6 +29,10 @@ return function(argumentData)
 				local num = math.random(1, 3)
 				sound = Sounds:FindFirstChild("block" .. num):Clone()
 				highlightColor = Color3.fromRGB(255, 204, 19)
+				outerTransparency = 0.1
+			elseif hitType == "blockBreak" then
+				clone = Effects.CoreEffects.blockBreakHitEffect:Clone()
+				sound = Sounds:FindFirstChild("blockBreak"):Clone()
 				outerTransparency = 0.1
 			else
 				warn("hitType not valid")
