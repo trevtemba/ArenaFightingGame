@@ -9,6 +9,7 @@ local Game = require(script.Parent:WaitForChild("Game"))
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollisionManager = require(script.Parent.CollisionManager)
+local ComponentHandler = require(script.Parent.ComponentHandler)
 local Soul = require(script.Parent.Soul)
 local StateHandler = require(script.Parent.StateHandler)
 
@@ -22,6 +23,7 @@ function Player.new(plr, champion, rig)
 	self.userId = plr.UserId
 	self.name = plr.Name
 	self.health = 100
+	self.gold = 0
 	self.teir = 1
 	self.xp = 0
 	self.champion = champion
@@ -37,6 +39,7 @@ function Player.new(plr, champion, rig)
 	self.combatHandler = nil
 	self.movementHandler = nil
 	self.physicsHandler = nil
+	self.componentHandler = nil
 	self.stateHandler = nil
 
 	-- Runtime-modifiable stats
@@ -85,6 +88,7 @@ function Player:Initialize()
 	self.combatHandler = CombatHandler.new(self, "Player")
 	self.movementHandler = MovementHandler.new(self)
 	self.physicsHandler = PhysicsHandler.new(self.character, "player", self.userId)
+	self.componentHandler = ComponentHandler.new(self)
 	self.stateHandler = StateHandler.new()
 
 	-- setup ragdoll and walkspeed
@@ -188,6 +192,23 @@ function Player:SyncWalkspeed()
 		local humanoid = self.character:FindFirstChildOfClass("Humanoid")
 		humanoid.WalkSpeed = self.stats.speed
 	end
+end
+
+function Player:AddGold(amount)
+	self.gold += amount
+end
+
+function Player:AddComponent(component)
+	self.componentHandler:AddComponent(component)
+end
+
+function Player:AddRandomComponent()
+	local randomComponent = self.componentHandler:RollComponent()
+	self:AddComponent(randomComponent)
+end
+
+function Player:AddHealth(amount)
+	self.health += amount
 end
 
 function Player:CharDie() end
