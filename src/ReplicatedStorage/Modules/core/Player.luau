@@ -42,8 +42,8 @@ function Player.new(plr, champion, rig)
 	self.componentHandler = nil
 	self.stateHandler = nil
 
-	-- Runtime-modifiable stats
-	self.stats = {
+	-- Runtime-modifiable baseStats
+	self.baseStats = {
 		durability = champion.durability,
 		attackDmg = champion.attackDmg,
 		magicDmg = champion.magicDmg,
@@ -56,6 +56,9 @@ function Player.new(plr, champion, rig)
 		range = champion.range,
 		stunResist = 0,
 	}
+
+	-- (Base + Modifier)
+	self.stats = {}
 
 	self.damageTypes = {
 		attack = champion.attackDmgType,
@@ -98,7 +101,28 @@ function Player:Initialize()
 
 	CollisionManager:SetCollisionGroupEntities(self.character)
 
+	self:RecalculateStats()
 	self:SyncWalkspeed()
+end
+
+function Player:RecalculateStats()
+	for stat, val in pairs(self.baseStats) do
+		self.stats[stat] = val
+	end
+	if self.componentHandler then
+		for _, comp in pairs(self.componentHandler.components) do
+			if comp and comp.stats then
+				for stat, val in pairs(comp.stats) do
+					self.stats[stat] = (self.stats[stat] or 0) + val
+				end
+			end
+		end
+	end
+end
+
+-- Apply incremental stat change (e.g. temporary buff)
+function Player:ApplyStat(stat, val)
+	self.stats[stat] = (self.stats[stat] or 0) + val
 end
 
 function Player:Damage(roundNum, enemyHP)
@@ -178,7 +202,7 @@ function Player:GetEnemyFromCharacter(character)
 end
 
 function Player:GetStat(stat)
-	-- First check dynamic player-modified stats
+	-- First check dynamic player-modified baseStats
 	if self.stats and self.stats[stat] ~= nil then
 		return self.stats[stat]
 	end
@@ -200,6 +224,7 @@ end
 
 function Player:AddComponent(component)
 	self.componentHandler:AddComponent(component)
+	self:RecalculateStats()
 end
 
 function Player:AddRandomComponent()

@@ -33,7 +33,7 @@ function Enemy.new()
 	self.target = nil
 	self.alive = false
 	self.active = false
-	self.stats = {
+	self.baseStats = {
 		durability = 0,
 		damage = 0,
 		pierce = 0,
@@ -42,6 +42,9 @@ function Enemy.new()
 		critChance = 0,
 		speed = 18,
 	}
+
+	-- (Base + Modifier)
+	self.stats = {}
 
 	self.damageTypes = {
 		attack = nil,
@@ -102,15 +105,15 @@ function Enemy:Init(stage, enemyType, rig)
 	self.humanoid.WalkSpeed = config.speed
 	self.humanoid.DisplayName = ""
 
-	self.stats["durability"] = config.durability
-	self.stats["damage"] = config.damage
-	self.stats["pierce"] = config.pierce
-	self.stats["range"] = config.range or 5
-	self.stats["attackCooldown"] = config.cooldown
-	self.stats["critChance"] = config.crit
-	self.stats["critMultiplier"] = config.critMultiplier
-	self.stats["speed"] = config.speed
-	self.stats["ranged"] = config.range > 15 and true or false
+	self.baseStats["durability"] = config.durability
+	self.baseStats["damage"] = config.damage
+	self.baseStats["pierce"] = config.pierce
+	self.baseStats["range"] = config.range or 5
+	self.baseStats["attackCooldown"] = config.cooldown
+	self.baseStats["critChance"] = config.crit
+	self.baseStats["critMultiplier"] = config.critMultiplier
+	self.baseStats["speed"] = config.speed
+	self.baseStats["ranged"] = config.range > 15 and true or false
 	self.damageTypes.attack = config.attackDmgType
 
 	if self.humanoid then
@@ -118,11 +121,11 @@ function Enemy:Init(stage, enemyType, rig)
 	end
 
 	-- load hitbox
-	if self.stats["ranged"] == false then -- Melee
+	if self.baseStats["ranged"] == false then -- Melee
 		local template = ServerStorage:FindFirstChild("meleeHitbox")
 		if template then
 			local hitbox = template:Clone()
-			hitbox.Size = Vector3.new(hitbox.Size.X, hitbox.Size.Y, self.stats["range"])
+			hitbox.Size = Vector3.new(hitbox.Size.X, hitbox.Size.Y, self.baseStats["range"])
 			hitbox.Parent = workspace
 			self.hitbox = hitbox
 		else
@@ -137,10 +140,26 @@ function Enemy:Init(stage, enemyType, rig)
 	self.physicsHandler = PhysicsHandler.new(self.character, "Enemy", nil)
 	self.stateHandler = StateHandler.new()
 
+	self:RecalculateStats()
 	self:SetState(STATE.Idle)
 	CollisionManager:SetCollisionGroupEntities(self.character)
 	print(string.format("✅ Built stage %d %s enemy (%s)", stage, enemyType, self.name))
 	print(self)
+end
+
+function Enemy:RecalculateStats()
+	for stat, val in pairs(self.baseStats) do
+		self.stats[stat] = val
+	end
+	if self.componentHandler then
+		for _, comp in pairs(self.componentHandler.components) do
+			if comp and comp.stats then
+				for stat, val in pairs(comp.stats) do
+					self.stats[stat] = (self.stats[stat] or 0) + val
+				end
+			end
+		end
+	end
 end
 
 -- STATE --
