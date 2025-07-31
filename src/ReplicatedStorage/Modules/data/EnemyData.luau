@@ -1,3 +1,6 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DROP_TYPES = require(ReplicatedStorage.Modules.core.DropTypes)
+
 return {
 	[1] = {
 		melee = {
@@ -25,6 +28,13 @@ return {
 			critMultiplier = 1.75,
 			speed = 3,
 			attackDmgType = "physical",
+		},
+		droprates = {
+			[DROP_TYPES.None] = 25,
+			[DROP_TYPES.Common] = 25,
+			[DROP_TYPES.Uncommon] = 25,
+			[DROP_TYPES.Rare] = 20,
+			[DROP_TYPES.Legendary] = 5,
 		},
 	},
 	[2] = {
@@ -54,6 +64,13 @@ return {
 			speed = 18,
 			attackDmgType = "physical",
 		},
+		droprates = {
+			[DROP_TYPES.None] = 35,
+			[DROP_TYPES.Common] = 30,
+			[DROP_TYPES.Uncommon] = 20,
+			[DROP_TYPES.Rare] = 10,
+			[DROP_TYPES.Legendary] = 5,
+		},
 	},
 	[3] = {
 		melee = {
@@ -82,6 +99,13 @@ return {
 			speed = 18,
 			attackDmgType = "physical",
 		},
+		droprates = {
+			[DROP_TYPES.None] = 25,
+			[DROP_TYPES.Common] = 25,
+			[DROP_TYPES.Uncommon] = 25,
+			[DROP_TYPES.Rare] = 15,
+			[DROP_TYPES.Legendary] = 10,
+		},
 	},
 	[4] = {
 		melee = {
@@ -109,6 +133,13 @@ return {
 			critMultiplier = 1.75,
 			speed = 18,
 			attackDmgType = "physical",
+		},
+		droprates = {
+			[DROP_TYPES.None] = 10,
+			[DROP_TYPES.Common] = 20,
+			[DROP_TYPES.Uncommon] = 30,
+			[DROP_TYPES.Rare] = 25,
+			[DROP_TYPES.Legendary] = 15,
 		},
 	},
 }

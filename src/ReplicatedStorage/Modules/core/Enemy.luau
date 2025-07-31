@@ -22,7 +22,7 @@ Enemy.__index = Enemy
 
 -- CLASS SETUP --
 
-function Enemy.new()
+function Enemy.new(lootDrop)
 	local self = setmetatable({}, Enemy)
 
 	-- PROPERTIES
@@ -75,6 +75,7 @@ function Enemy.new()
 	self._stunEndTime = nil
 	self._facingConn = nil
 
+	self.lootDrop = lootDrop
 	return self
 end
 

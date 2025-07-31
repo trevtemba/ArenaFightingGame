@@ -1,6 +1,6 @@
 return {
 	["gs001"] = { name = "Greatsword", stats = { attackDmg = 15 } },
-	["cm001"] = { name = "Comet", stats = { magicDmg = 15 } },
+	["ms001"] = { name = "Mage Staff", stats = { magicDmg = 15 } },
 	["sh001"] = { name = "Shield", stats = { durability = 10 } },
 	["gh001"] = { name = "Giant's Heart", stats = { health = 150 } },
 	["sg001"] = { name = "Steel Gauntlet", stats = { critChance = 20 } },
@@ -12,7 +12,7 @@ return {
 		passive = "Every 3rd attack deals double damage.",
 	},
 
-	["cm001+cm001"] = {
+	["ms001+ms001"] = {
 		name = "Supernova",
 		stats = { magicDmg = 34 },
 		passive = "Spells burn enemies for 5 magic damage over 3s.",
@@ -30,7 +30,7 @@ return {
 		passive = "Crits apply bleed, dealing 10 damage over 4s.",
 	},
 
-	["cm001+sg001"] = {
+	["ms001+sg001"] = {
 		name = "Arcane Fist",
 		stats = { magicDmg = 17, critChance = 25 },
 		passive = "Spells can crit, dealing 150% damage.",
@@ -62,7 +62,7 @@ return {
 	},
 
 	-- === HYBRID / UTILITY FUSIONS ===
-	["gs001+cm001"] = {
+	["gs001+ms001"] = {
 		name = "Spellblade",
 		stats = { attackDmg = 17, magicDmg = 17 },
 		passive = "Basic attacks trigger a magic explosion every 3s.",
