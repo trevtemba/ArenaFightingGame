@@ -155,8 +155,8 @@ function Enemy:RecalculateStats()
 	for stat, val in pairs(self.baseStats) do
 		self.stats[stat] = val
 	end
-	if self.componentHandler then
-		for _, comp in pairs(self.componentHandler.components) do
+	if self.itemHandler then
+		for _, comp in pairs(self.itemHandler.components) do
 			if comp and comp.stats then
 				for stat, val in pairs(comp.stats) do
 					self.stats[stat] = (self.stats[stat] or 0) + val
@@ -352,10 +352,11 @@ function Enemy:Stun(duration)
 end
 
 function Enemy:Die()
-	if self.lootDrop and self.target.userId and self.alive then
+	clientEffects:FireAllClients("dissolveCharacter", { target = self.character, killEffect = "default" })
+	if self.lootDrop ~= DROP_TYPES.None and self.target.userId and self.alive then
 		self.alive = false
 		local rootPos = self.character.PrimaryPart.Position
-		LootManager.CreateLootOrb(rootPos, self.target.userId, self.lootDrop)
+		LootManager.CreateLootOrb(rootPos, self.target, self.lootDrop)
 		self.lootDrop = DROP_TYPES.None
 	end
 end

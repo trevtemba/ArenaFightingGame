@@ -5,14 +5,11 @@ local Effects = ReplicatedStorage:WaitForChild("Effects")
 
 return function(argumentData)
 	local target: Model = argumentData.target
-	local direction: string = argumentData.direction
-
-	if target and direction then
+	local killEffect: string = argumentData.killEffect
+	if target and killEffect then
 		local rootPart = target:FindFirstChild("HumanoidRootPart")
 		if rootPart then
-			local clone = nil
-
-			Debris:AddItem(clone, 1)
+			--todo
 		end
 	end
 end

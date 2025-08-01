@@ -7,9 +7,8 @@ local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 
 local Game = require(script.Parent:WaitForChild("Game"))
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollisionManager = require(script.Parent.CollisionManager)
-local ComponentHandler = require(script.Parent.ComponentHandler)
+local ItemHandler = require(script.Parent.ItemHandler)
 local Soul = require(script.Parent.Soul)
 local StateHandler = require(script.Parent.StateHandler)
 
@@ -39,7 +38,7 @@ function Player.new(plr, champion, rig)
 	self.combatHandler = nil
 	self.movementHandler = nil
 	self.physicsHandler = nil
-	self.componentHandler = nil
+	self.itemHandler = nil
 	self.stateHandler = nil
 
 	-- Runtime-modifiable baseStats
@@ -93,7 +92,7 @@ function Player:Initialize()
 	self.combatHandler = CombatHandler.new(self, "Player")
 	self.movementHandler = MovementHandler.new(self)
 	self.physicsHandler = PhysicsHandler.new(self.character, "player", self.userId)
-	self.componentHandler = ComponentHandler.new(self)
+	self.itemHandler = ItemHandler.new(self)
 	self.stateHandler = StateHandler.new()
 
 	-- setup ragdoll and walkspeed
@@ -110,8 +109,8 @@ function Player:RecalculateStats()
 	for stat, val in pairs(self.baseStats) do
 		self.stats[stat] = val
 	end
-	if self.componentHandler then
-		for _, comp in pairs(self.componentHandler.components) do
+	if self.itemHandler then
+		for _, comp in pairs(self.itemHandler.components) do
 			if comp and comp.stats then
 				for stat, val in pairs(comp.stats) do
 					self.stats[stat] = (self.stats[stat] or 0) + val
@@ -219,22 +218,47 @@ function Player:SyncWalkspeed()
 	end
 end
 
+-- ADDERS
+
+function Player:AddHealth(amount)
+	self.health += amount
+end
+
 function Player:AddGold(amount)
 	self.gold += amount
 end
 
-function Player:AddComponent(component)
-	self.componentHandler:AddComponent(component)
-	self:RecalculateStats()
-end
-
 function Player:AddRandomComponent()
-	local randomComponent = self.componentHandler:RollComponent()
-	self:AddComponent(randomComponent)
+	if self.itemHandler then
+		local randomComponent = self.itemHandler:RollComponent()
+		self:AddComponent(randomComponent)
+		print(self.itemHandler.components)
+	end
 end
 
-function Player:AddHealth(amount)
-	self.health += amount
+function Player:AddComponent(component)
+	if self.itemHandler then
+		self.itemHandler:AddComponent(component)
+		self:RecalculateStats()
+	end
+end
+
+function Player:AddRandomArtifact()
+	if self.itemHandler then
+		print("artifact todo")
+	end
+end
+
+function Player:AddArtifact()
+	if self.itemHandler then
+		print("artifact todo")
+	end
+end
+
+function Player:SpawnAnvil(type)
+	if self.itemHandler then
+		self.itemHandler:SpawnAnvil(type)
+	end
 end
 
 function Player:CharDie() end

@@ -1,9 +1,12 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
+
 local LootData = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("data"):WaitForChild("LootData"))
 local clientEffects =
 	ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("clientEffects")
 
+local lootOrbsFolder = ServerStorage.assets.lootOrbs
 local LootManager = {}
 local lootOrbMap = {} -- [orbId] = { player = Player, tier = "Common" }
 local orbCounter = 0
@@ -13,21 +16,46 @@ local function generateOrbId()
 	return "orb_" .. os.time() .. "_" .. orbCounter
 end
 
-function LootManager.CreateLootOrb(rootPos: Vector3, userId: number, tier: string)
+function LootManager.CreateLootOrb(rootPos: Vector3, playerObj, tier: string)
 	assert(LootData.Tiers[tier], "Invalid loot tier: " .. tostring(tier))
-	local player = Players:GetPlayerByUserId(userId)
-	if not player or not player:IsDescendantOf(game.Players) then
+
+	local function getPlayerFromTouch(part)
+		local character = part:FindFirstAncestorWhichIsA("Model")
+		if character then
+			return Players:GetPlayerFromCharacter(character)
+		end
 		return nil
 	end
 
+	local orbClone = lootOrbsFolder:FindFirstChild(tier):Clone()
+	orbClone.Position = rootPos
+	orbClone.Parent = game.Workspace:WaitForChild("Assets"):WaitForChild("orbs")
+
 	local id = generateOrbId()
 	lootOrbMap[id] = {
-		player = player,
+		userId = playerObj.userId,
 		tier = tier,
+		instance = orbClone,
 	}
+	orbClone:SetAttribute("orbId", id)
 
-	-- Render on client
-	clientEffects:FireAllClients("spawnOrb", { rootPos = rootPos, tier = tier, id = id })
+	task.defer(function()
+		clientEffects:FireAllClients("spawnOrb", { tier = tier, orbId = id })
+
+		task.delay(2, function()
+			orbClone.Touched:Connect(function(hit)
+				local player = getPlayerFromTouch(hit)
+				if player and player.UserId == playerObj.userId then
+					local success, loot = LootManager.TryPickup(player.UserId, id)
+					if success and loot then
+						print("Player: " .. player.Name .. " collected: " .. loot.Name)
+						loot.Apply(playerObj)
+						orbClone:Destroy()
+					end
+				end
+			end)
+		end)
+	end)
 
 	return id
 end
@@ -47,16 +75,14 @@ local function rollItemFromTier(tier: string)
 	return lootList[math.random(1, #lootList)]
 end
 
-function LootManager.CanPickup(player: Player, orbId: string)
-	local orb = lootOrbMap[orbId]
-	return orb and orb.player == player
-end
-
-function LootManager.TryPickup(player: Player, orbId: string)
+function LootManager.TryPickup(userId: number, orbId: string)
+	print(userId)
+	print(orbId)
 	local orb = lootOrbMap[orbId]
 
-	if not orb or orb.player ~= player then
-		return false, "Invalid or unauthorized orb"
+	if not orb or orb.userId ~= userId then
+		print("Invalid or unauthorized orb")
+		return false, nil
 	end
 
 	-- Immediately remove to prevent race conditions
@@ -64,9 +90,6 @@ function LootManager.TryPickup(player: Player, orbId: string)
 
 	-- Roll and apply loot
 	local loot = rollItemFromTier(orb.tier)
-	if loot then
-		loot.Apply(player)
-	end
 
 	return true, loot
 end

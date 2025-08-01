@@ -28,10 +28,17 @@ function Game.new(players)
 	self.currentRoundIndex = 0
 	self.currentRound = nil
 	self.stage = 1
+	self.componentIdList = { "gs001", "ms001", "sh001", "gh001", "sg001" }
 	self.portal = portalMsg[math.random(1, #portalMsg)]
 
 	instance = self
 	return self
+end
+
+function Game:incrementPlayerComponentPools()
+	for _, playerObj in pairs(self.alivePlayers) do
+		playerObj.itemHandler:SetStageComponents(self.componentIdList)
+	end
 end
 
 function Game:AddPlayer(playerObj)
@@ -64,6 +71,7 @@ end
 
 function Game:Run()
 	print(string.format("Start of stage %d", self.stage))
+	self:incrementPlayerComponentPools()
 	while self.currentRoundIndex < #self.roundQueue do
 		-- Intermission
 		for i = 5, 1, -1 do
@@ -76,6 +84,7 @@ function Game:Run()
 
 		if self.currentRoundIndex == 3 then
 			self.stage += 1
+			self:incrementPlayerComponentPools()
 			print(string.format("Start of stage %d", self.stage))
 			-- elseif self.currentRoundIndex == 9 then
 			-- 	self.stage += 1

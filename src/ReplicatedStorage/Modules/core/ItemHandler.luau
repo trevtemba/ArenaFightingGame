@@ -1,18 +1,33 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Items = require(ReplicatedStorage.Modules.data.ItemData)
 
-local ComponentHandler = {}
-ComponentHandler.__index = ComponentHandler
+local ItemHandler = {}
+ItemHandler.__index = ItemHandler
 
-function ComponentHandler.new(owner)
-	local self = setmetatable({}, ComponentHandler)
+function ItemHandler.new(owner)
+	local self = setmetatable({}, ItemHandler)
 	self.owner = owner
 	self.lootPool = {}
 	self.components = {}
 	return self
 end
 
-function ComponentHandler:AddComponent(componentId)
+function ItemHandler:SetStageComponents(componentIdList)
+	self.lootPool = {}
+	for _, id in ipairs(componentIdList) do
+		self.lootPool[id] = (self.lootPool[id] or 0) + 1
+	end
+end
+
+function ItemHandler:SpawnAnvil(type)
+	if type == "component" then
+		print("component anvil logic")
+	elseif type == "item" then
+		print("item anvil logic")
+	end
+end
+
+function ItemHandler:AddComponent(componentId)
 	if not Items[componentId] then
 		warn("Attempted to add unknown component ID:", componentId)
 		return
@@ -20,14 +35,7 @@ function ComponentHandler:AddComponent(componentId)
 	table.insert(self.components, Items[componentId])
 end
 
-function ComponentHandler:SetStageComponents(componentIdList)
-	self.lootPool = {}
-	for _, id in ipairs(componentIdList) do
-		self.lootPool[id] = (self.lootPool[id] or 0) + 1
-	end
-end
-
-function ComponentHandler:RollComponent()
+function ItemHandler:RollComponent()
 	local availableIds = {}
 	for id, count in pairs(self.lootPool) do
 		if count > 0 then
@@ -46,10 +54,10 @@ function ComponentHandler:RollComponent()
 		self.lootPool[chosenId] = nil
 	end
 
-	return Items[chosenId], chosenId
+	return chosenId
 end
 
-function ComponentHandler:MergeComponents(componentId1, componentId2)
+function ItemHandler:MergeComponents(componentId1, componentId2)
 	if not componentId1 or not componentId2 then
 		return nil
 	end
@@ -65,4 +73,4 @@ function ComponentHandler:MergeComponents(componentId1, componentId2)
 	return fusedItem
 end
 
-return ComponentHandler
+return ItemHandler

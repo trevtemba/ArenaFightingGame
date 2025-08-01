@@ -8,8 +8,9 @@ LootData.Tiers = {
 		Loot = {
 			{
 				Name = "Gold 2-5",
-				Apply = function(player)
-					-- playerData:AddGold(50)
+				Apply = function(playerObj)
+					local amount = math.random(2, 5)
+					playerObj:AddGold(amount)
 				end,
 			},
 		},
@@ -19,14 +20,14 @@ LootData.Tiers = {
 		Loot = {
 			{
 				Name = "Component",
-				Apply = function(player)
-					-- playerData:AddComponent(50)
+				Apply = function(playerObj)
+					playerObj:AddRandomComponent()
 				end,
 			},
 			{
 				Name = "Heal 15hp",
-				Apply = function(player)
-					-- player.Character.Humanoid.Health += 25
+				Apply = function(playerObj)
+					playerObj:AddHealth(15)
 				end,
 			},
 		},
@@ -36,8 +37,8 @@ LootData.Tiers = {
 		Loot = {
 			{
 				Name = "ComponentAnvil",
-				Apply = function(player)
-					-- Inventory:AddItem(player, "Epic Sword")
+				Apply = function(playerObj)
+					playerObj:SpawnAnvil("component")
 				end,
 			},
 		},
@@ -46,9 +47,9 @@ LootData.Tiers = {
 		Weight = 10,
 		Loot = {
 			{
-				Name = "Artifact",
-				Apply = function(player)
-					-- SummonPet(player)
+				Name = "ItemAnvil",
+				Apply = function(playerObj)
+					playerObj:SpawnAnvil("item")
 				end,
 			},
 		},

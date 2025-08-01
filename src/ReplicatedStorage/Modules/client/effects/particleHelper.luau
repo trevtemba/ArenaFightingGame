@@ -14,4 +14,13 @@ function ParticleHelper.EmitPart(part)
 	end
 end
 
+function ParticleHelper.EnablePart(part)
+	for _, v in part:GetDescendants() do
+		if v:IsA("ParticleEmitter") then
+			v.Enabled = true
+			v:Emit(1)
+		end
+	end
+end
+
 return ParticleHelper
