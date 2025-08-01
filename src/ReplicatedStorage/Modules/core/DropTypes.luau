@@ -1,5 +1,5 @@
 return {
-	None = nil,
+	None = "none",
 	Common = "common",
 	Uncommon = "uncommon",
 	Rare = "rare",

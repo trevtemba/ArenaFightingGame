@@ -5,7 +5,7 @@ return {
 	[1] = {
 		melee = {
 			name = "Ranger",
-			health = 250,
+			health = 75,
 			durability = 0,
 			damage = 10,
 			pierce = 0,
@@ -29,12 +29,12 @@ return {
 			speed = 3,
 			attackDmgType = "physical",
 		},
-		droprates = {
-			[DROP_TYPES.None] = 25,
-			[DROP_TYPES.Common] = 25,
-			[DROP_TYPES.Uncommon] = 25,
-			[DROP_TYPES.Rare] = 20,
-			[DROP_TYPES.Legendary] = 5,
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 25 },
+			{ Type = DROP_TYPES.Common, Weight = 25 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 20 },
+			{ Type = DROP_TYPES.Legendary, Weight = 5 },
 		},
 	},
 	[2] = {
@@ -64,12 +64,12 @@ return {
 			speed = 18,
 			attackDmgType = "physical",
 		},
-		droprates = {
-			[DROP_TYPES.None] = 35,
-			[DROP_TYPES.Common] = 30,
-			[DROP_TYPES.Uncommon] = 20,
-			[DROP_TYPES.Rare] = 10,
-			[DROP_TYPES.Legendary] = 5,
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 25 },
+			{ Type = DROP_TYPES.Common, Weight = 25 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 20 },
+			{ Type = DROP_TYPES.Legendary, Weight = 5 },
 		},
 	},
 	[3] = {
@@ -99,12 +99,12 @@ return {
 			speed = 18,
 			attackDmgType = "physical",
 		},
-		droprates = {
-			[DROP_TYPES.None] = 25,
-			[DROP_TYPES.Common] = 25,
-			[DROP_TYPES.Uncommon] = 25,
-			[DROP_TYPES.Rare] = 15,
-			[DROP_TYPES.Legendary] = 10,
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 25 },
+			{ Type = DROP_TYPES.Common, Weight = 25 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 20 },
+			{ Type = DROP_TYPES.Legendary, Weight = 5 },
 		},
 	},
 	[4] = {
@@ -134,12 +134,12 @@ return {
 			speed = 18,
 			attackDmgType = "physical",
 		},
-		droprates = {
-			[DROP_TYPES.None] = 10,
-			[DROP_TYPES.Common] = 20,
-			[DROP_TYPES.Uncommon] = 30,
-			[DROP_TYPES.Rare] = 25,
-			[DROP_TYPES.Legendary] = 15,
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 25 },
+			{ Type = DROP_TYPES.Common, Weight = 25 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 20 },
+			{ Type = DROP_TYPES.Legendary, Weight = 5 },
 		},
 	},
 }

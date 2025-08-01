@@ -24,7 +24,7 @@ function Player.new(plr, champion, rig)
 	self.name = plr.Name
 	self.health = 100
 	self.gold = 0
-	self.teir = 1
+	self.tier = 1
 	self.xp = 0
 	self.champion = champion
 	self.character = rig
@@ -84,6 +84,8 @@ function Player.new(plr, champion, rig)
 end
 
 function Player:Initialize()
+	self:RecalculateStats()
+
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
@@ -101,7 +103,6 @@ function Player:Initialize()
 
 	CollisionManager:SetCollisionGroupEntities(self.character)
 
-	self:RecalculateStats()
 	self:SyncWalkspeed()
 end
 

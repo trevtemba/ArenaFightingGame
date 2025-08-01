@@ -1,7 +1,9 @@
-local LootDefinitions = {}
+local DROP_TYPES = require(game:GetService("ReplicatedStorage").Modules.core.DropTypes)
 
-LootDefinitions.Tiers = {
-	["Common"] = {
+local LootData = {}
+
+LootData.Tiers = {
+	[DROP_TYPES.Common] = {
 		Weight = 60,
 		Loot = {
 			{
@@ -12,7 +14,7 @@ LootDefinitions.Tiers = {
 			},
 		},
 	},
-	["Uncommon"] = {
+	[DROP_TYPES.Uncommon] = {
 		Weight = 60,
 		Loot = {
 			{
@@ -29,7 +31,7 @@ LootDefinitions.Tiers = {
 			},
 		},
 	},
-	["Rare"] = {
+	[DROP_TYPES.Rare] = {
 		Weight = 30,
 		Loot = {
 			{
@@ -40,7 +42,7 @@ LootDefinitions.Tiers = {
 			},
 		},
 	},
-	["Legendary"] = {
+	[DROP_TYPES.Legendary] = {
 		Weight = 10,
 		Loot = {
 			{
@@ -53,4 +55,4 @@ LootDefinitions.Tiers = {
 	},
 }
 
-return LootDefinitions
+return LootData

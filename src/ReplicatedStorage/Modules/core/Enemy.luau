@@ -2,6 +2,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local LootManager = require(ReplicatedStorage.Modules.core.LootManager)
 local CollisionManager = require(script.Parent.CollisionManager)
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
@@ -15,6 +16,7 @@ local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
 local StateHandler = require(script.Parent.StateHandler)
 
 local STATE = require(script.Parent:WaitForChild("State"))
+local DROP_TYPES = require(script.Parent.DropTypes)
 local ATTACK_STUN_TIME = 0.5
 
 local Enemy = {}
@@ -29,7 +31,7 @@ function Enemy.new(lootDrop)
 	self.name = ""
 	self.character = nil
 	self.humanoid = nil
-	self.teir = 0
+	self.tier = 0
 	self.target = nil
 	self.alive = false
 	self.active = false
@@ -76,6 +78,7 @@ function Enemy.new(lootDrop)
 	self._facingConn = nil
 
 	self.lootDrop = lootDrop
+
 	return self
 end
 
@@ -101,7 +104,7 @@ function Enemy:Init(stage, enemyType, rig)
 	self.name = config.name
 	self.currentHP = config.health
 	self.maxHP = config.health
-	self.teir = stage
+	self.tier = stage
 
 	self.humanoid.WalkSpeed = config.speed
 	self.humanoid.DisplayName = ""
@@ -349,7 +352,12 @@ function Enemy:Stun(duration)
 end
 
 function Enemy:Die()
-	--todo
+	if self.lootDrop and self.target.userId and self.alive then
+		self.alive = false
+		local rootPos = self.character.PrimaryPart.Position
+		LootManager.CreateLootOrb(rootPos, self.target.userId, self.lootDrop)
+		self.lootDrop = DROP_TYPES.None
+	end
 end
 
 -- AI LOGIC

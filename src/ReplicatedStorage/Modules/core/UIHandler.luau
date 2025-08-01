@@ -54,9 +54,9 @@ function UIHandler:ShowDamage(damage, damageType, crit)
 end
 
 function UIHandler:Calibrate()
-	local teir = self.billBoardGui.super.teirsuper.teirbase.teirbase2:FindFirstChildOfClass("TextLabel")
+	local tier = self.billBoardGui.super.teirsuper.teirbase.teirbase2:FindFirstChildOfClass("TextLabel")
 
-	teir.Text = self.owner.teir
+	tier.Text = self.owner.tier
 	self:CreateDividers()
 end
 

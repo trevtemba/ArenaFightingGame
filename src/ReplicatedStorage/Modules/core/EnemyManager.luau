@@ -14,24 +14,24 @@ local EnemyManager = {}
 
 local SPAWN_OFFSET_Y = 3
 
--- Rolls a drop type from weighted rates
-local function rollDrop(dropRates)
+local function rollDropType(dropRates)
 	local totalWeight = 0
-	for _, weight in pairs(dropRates) do
-		totalWeight += weight
+	for _, entry in ipairs(dropRates) do
+		totalWeight += entry.Weight
 	end
 
 	local roll = math.random() * totalWeight
+	print(roll)
 	local cumulative = 0
 
-	for dropType, weight in pairs(dropRates) do
-		cumulative += weight
+	for _, entry in ipairs(dropRates) do
+		cumulative += entry.Weight
 		if roll <= cumulative then
-			return dropType
+			return entry.Type
 		end
 	end
 
-	return DROP_TYPES.None -- fallback
+	return DROP_TYPES.None
 end
 
 local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr, lootDrop)
@@ -61,18 +61,19 @@ end
 function EnemyManager.SpawnS1Enemies(spawns, plr)
 	local meleeTemplate = enemies:WaitForChild("s1melee")
 	local rangedTemplate = enemies:WaitForChild("s1ranged")
-	local dropRates = EnemyData[1].droprates
-	local lootDrop = rollDrop(dropRates)
+	local dropRates = EnemyData[1].dropRates
+	local lootDrop = rollDropType(dropRates)
 
 	-- first 3 are melee
 	for i = 1, 1 do
 		spawnEnemy(meleeTemplate, "melee", spawns[i], 1, plr, lootDrop)
+		print("Enemy spawned with loot drop of: " .. lootDrop)
 	end
 
-	-- last 2 are ranged
-	for i = 4, 4 do
-		spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr, lootDrop)
-	end
+	-- -- last 2 are ranged
+	-- for i = 4, 4 do
+	-- 	spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr, lootDrop)
+	-- end
 
 	plr:SetEnemyTable(enemyMap)
 end

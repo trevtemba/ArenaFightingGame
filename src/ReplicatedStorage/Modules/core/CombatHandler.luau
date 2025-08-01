@@ -358,6 +358,9 @@ function CombatHandler:TakeDamage(attackData)
 	print(string.format("%s took %d damage", self.owner.name, totalDamage))
 
 	if self.owner.currentHP <= 0 then
+		if self.entityType == "Enemy" then
+			self.owner:Die()
+		end
 		self:Knock()
 	end
 end
@@ -448,7 +451,6 @@ function CombatHandler:M1Slow(speed)
 		if self._m1SlowId == currentId then
 			self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
 			if self.entityType == "Player" then
-				print("dfdfrs")
 				attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 			end
 		end
