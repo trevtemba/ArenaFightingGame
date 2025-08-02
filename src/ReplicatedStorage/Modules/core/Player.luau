@@ -8,6 +8,7 @@ local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 local Game = require(script.Parent:WaitForChild("Game"))
 
 local CollisionManager = require(script.Parent.CollisionManager)
+local InventoryHandler = require(script.Parent.InventoryHandler)
 local ItemHandler = require(script.Parent.ItemHandler)
 local Soul = require(script.Parent.Soul)
 local StateHandler = require(script.Parent.StateHandler)
@@ -40,6 +41,7 @@ function Player.new(plr, champion, rig)
 	self.physicsHandler = nil
 	self.itemHandler = nil
 	self.stateHandler = nil
+	self.inventoryHandler = nil
 
 	-- Runtime-modifiable baseStats
 	self.baseStats = {
@@ -94,6 +96,7 @@ function Player:Initialize()
 	self.physicsHandler = PhysicsHandler.new(self.character, "player", self.userId)
 	self.itemHandler = ItemHandler.new(self)
 	self.stateHandler = StateHandler.new()
+	self.inventoryHandler = InventoryHandler.new(self)
 
 	-- setup ragdoll and walkspeed
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
@@ -109,10 +112,10 @@ function Player:RecalculateStats()
 	for stat, val in pairs(self.baseStats) do
 		self.stats[stat] = val
 	end
-	if self.itemHandler then
-		for _, comp in pairs(self.itemHandler.components) do
-			if comp and comp.stats then
-				for stat, val in pairs(comp.stats) do
+	if self.inventoryHandler then
+		for _, item in pairs(self.inventoryHandler.activeItems) do
+			if item and item.stats then
+				for stat, val in pairs(item.stats) do
 					self.stats[stat] = (self.stats[stat] or 0) + val
 				end
 			end
@@ -231,25 +234,18 @@ end
 function Player:AddRandomComponent()
 	if self.itemHandler then
 		local randomComponent = self.itemHandler:RollComponent()
-		self:AddComponent(randomComponent)
-		print(self.itemHandler.components)
+		self:AddItemToInventory(randomComponent)
 	end
 end
 
-function Player:AddComponent(component)
-	if self.itemHandler then
-		self.itemHandler:AddComponent(component)
-		self:RecalculateStats()
+function Player:AddItemToInventory(itemId)
+	if self.inventoryHandler then
+		self.inventoryHandler:AddItem(itemId)
+		print(self.inventoryHandler.inventory)
 	end
 end
 
 function Player:AddRandomArtifact()
-	if self.itemHandler then
-		print("artifact todo")
-	end
-end
-
-function Player:AddArtifact()
 	if self.itemHandler then
 		print("artifact todo")
 	end

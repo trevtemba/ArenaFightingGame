@@ -43,15 +43,31 @@ function LootManager.CreateLootOrb(rootPos: Vector3, playerObj, tier: string)
 		clientEffects:FireAllClients("spawnOrb", { tier = tier, orbId = id })
 
 		task.delay(2, function()
-			orbClone.Touched:Connect(function(hit)
+			local connection
+			local debounce = false
+
+			connection = orbClone.Touched:Connect(function(hit)
+				if debounce then
+					return
+				end
+				debounce = true
+
 				local player = getPlayerFromTouch(hit)
 				if player and player.UserId == playerObj.userId then
 					local success, loot = LootManager.TryPickup(player.UserId, id)
 					if success and loot then
 						print("Player: " .. player.Name .. " collected: " .. loot.Name)
 						loot.Apply(playerObj)
+
+						connection:Disconnect()
 						orbClone:Destroy()
+					else
+						-- If pickup failed, allow retry after short delay
+						debounce = false
 					end
+				else
+					-- Not the correct player, allow retry
+					debounce = false
 				end
 			end)
 		end)

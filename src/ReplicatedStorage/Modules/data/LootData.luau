@@ -24,12 +24,12 @@ LootData.Tiers = {
 					playerObj:AddRandomComponent()
 				end,
 			},
-			{
-				Name = "Heal 15hp",
-				Apply = function(playerObj)
-					playerObj:AddHealth(15)
-				end,
-			},
+			-- {
+			-- 	Name = "Heal 15hp",
+			-- 	Apply = function(playerObj)
+			-- 		playerObj:AddHealth(15)
+			-- 	end,
+			-- },
 		},
 	},
 	[DROP_TYPES.Rare] = {

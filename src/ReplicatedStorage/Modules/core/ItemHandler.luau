@@ -8,7 +8,6 @@ function ItemHandler.new(owner)
 	local self = setmetatable({}, ItemHandler)
 	self.owner = owner
 	self.lootPool = {}
-	self.components = {}
 	return self
 end
 
@@ -25,14 +24,6 @@ function ItemHandler:SpawnAnvil(type)
 	elseif type == "item" then
 		print("item anvil logic")
 	end
-end
-
-function ItemHandler:AddComponent(componentId)
-	if not Items[componentId] then
-		warn("Attempted to add unknown component ID:", componentId)
-		return
-	end
-	table.insert(self.components, Items[componentId])
 end
 
 function ItemHandler:RollComponent()
@@ -69,8 +60,8 @@ function ItemHandler:MergeComponents(componentId1, componentId2)
 	end
 
 	local key = getRecipeKey(componentId1, componentId2)
-	local fusedItem = Items[key]
-	return fusedItem
+	local fusedItemId = Items[key]
+	return fusedItemId
 end
 
 return ItemHandler
