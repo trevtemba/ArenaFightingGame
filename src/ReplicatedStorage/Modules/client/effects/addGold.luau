@@ -1,6 +1,5 @@
 local tweenHelper = require(script.Parent.tweenHelper)
 local Player = game:GetService("Players").LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Debris = game:GetService("Debris")
 local soundHelper = require(script.Parent.soundHelper)
@@ -30,7 +29,6 @@ return function(argumentData)
 			coinFrame.Position = UDim2.fromScale(0.5, 0.5)
 			coinFrame.Visible = true
 
-			-- Find the coin model already inside the viewport
 			local coin3D = viewport:FindFirstChildWhichIsA("Model")
 			if not coin3D then
 				warn("No coin model found in viewport")
@@ -64,18 +62,23 @@ return function(argumentData)
 				coin3D:SetPrimaryPartCFrame(baseCFrame * CFrame.Angles(-yRotation, 0, 0))
 			end)
 
-			-- Step 1: Fade in
 			tweenHelper:Tween(
 				viewport,
-				{ time = 0.75, easingStyle = Enum.EasingStyle.Cubic, easingDirection = Enum.EasingDirection.Out },
+				{ time = 0.5, easingStyle = Enum.EasingStyle.Cubic, easingDirection = Enum.EasingDirection.Out },
 				{ ImageTransparency = 0 }
 			)
 			-- Step 1: Fade in
 			tweenHelper:Tween(coinFrame, {
-				time = spinDuration,
+				time = 0.5,
 				easingStyle = Enum.EasingStyle.Cubic,
 				easingDirection = Enum.EasingDirection.Out,
-			}, { Size = UDim2.fromOffset(32, 32) })
+			}, { Size = UDim2.fromOffset(64, 64) }, function()
+				tweenHelper:Tween(coinFrame, {
+					time = 0.5,
+					easingStyle = Enum.EasingStyle.Cubic,
+					easingDirection = Enum.EasingDirection.In,
+				}, { Size = UDim2.fromOffset(32, 32) })
+			end)
 
 			-- Step 2: Move to gold icon
 			local goalPosition = goldIcon.AbsolutePosition
@@ -89,7 +92,7 @@ return function(argumentData)
 				Position = finalPos,
 			}, function()
 				coinFrame:Destroy()
-				local coinSound = soundHelper.PlaySound("coinCollect", hudGui, 0.05)
+				local coinSound = soundHelper.PlaySound("coinCollect", hudGui, 0.075)
 				local current = tonumber(goldValue.Text) or 0
 				goldValue.Text = tostring(current + 1)
 				tweenHelper:Tween(goldIcon, {
@@ -101,7 +104,7 @@ return function(argumentData)
 				}, function()
 					-- Snap back to original size
 					tweenHelper:Tween(goldIcon, {
-						time = 0.25,
+						time = 0.1,
 						easingStyle = Enum.EasingStyle.Sine,
 						easingDirection = Enum.EasingDirection.Out,
 					}, {
