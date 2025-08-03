@@ -216,6 +216,7 @@ CombatContext:WaitForChild("Block").Pressed:Connect(function()
 
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
+		print("pressing block")
 		remote:FireServer(true)
 	end
 end)

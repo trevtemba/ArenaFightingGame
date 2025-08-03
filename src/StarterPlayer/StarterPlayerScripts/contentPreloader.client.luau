@@ -10,7 +10,7 @@ local UI = ReplicatedStorage:WaitForChild("UI")
 local assetsToPreload = {}
 
 -- Optional: show loading UI here
-for _, item in pairs(UI:WaitForChild("items"):GetDescendants()) do
+for _, item in pairs(UI:GetDescendants()) do
 	if item:IsA("ImageLabel") or item:IsA("ImageButton") then
 		table.insert(assetsToPreload, item)
 	end
