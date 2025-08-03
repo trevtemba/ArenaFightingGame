@@ -7,7 +7,7 @@ local function getUI()
 	local gui = Player:WaitForChild("PlayerGui")
 	local hud = gui:WaitForChild("HUD")
 	local inv = hud:WaitForChild("super"):WaitForChild("inventory")
-	return inv:WaitForChild("slots"), ReplicatedStorage:WaitForChild("UI"):WaitForChild("items"), hud
+	return inv:WaitForChild("slots"), UI:WaitForChild("items"), hud
 end
 
 return function(argumentData)
@@ -51,7 +51,7 @@ return function(argumentData)
 		print(finalPos)
 		tweenHelper:Tween(itemFrame, {
 			time = 0.75,
-			easingStyle = Enum.EasingStyle.Quad,
+			easingStyle = Enum.EasingStyle.Quart,
 			easingDirection = Enum.EasingDirection.In,
 		}, {
 			Position = finalPos,
@@ -68,7 +68,7 @@ return function(argumentData)
 					{ time = 0.75, easingStyle = Enum.EasingStyle.Cubic, easingDirection = Enum.EasingDirection.InOut },
 					{ BackgroundTransparency = 1 },
 					function()
-						--flashFrame:Destroy()
+						flashFrame:Destroy()
 					end
 				)
 			end)

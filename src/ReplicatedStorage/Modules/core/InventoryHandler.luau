@@ -12,6 +12,7 @@ function InventoryHandler.new(owner)
 	local self = setmetatable({}, InventoryHandler)
 	self.owner = owner
 	self.inventory = table.create(MAX_SLOTS, nil)
+	self.gold = 0
 	self.activeItems = {}
 	return self
 end
@@ -33,6 +34,14 @@ function InventoryHandler:AddItem(itemId)
 	end
 
 	return false -- Inventory full
+end
+
+function InventoryHandler:AddGold(amount)
+	self.gold += amount
+
+	clientEffects:FireAllClients("addGold", { amount = amount })
+
+	return true
 end
 
 function InventoryHandler:RemoveItem(slot)

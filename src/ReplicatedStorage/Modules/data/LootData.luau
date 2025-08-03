@@ -9,7 +9,7 @@ LootData.Tiers = {
 			{
 				Name = "Gold 2-5",
 				Apply = function(playerObj)
-					local amount = math.random(2, 5)
+					local amount = math.random(20, 50)
 					playerObj:AddGold(amount)
 				end,
 			},

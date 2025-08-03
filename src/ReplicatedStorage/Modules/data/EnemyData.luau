@@ -5,7 +5,7 @@ return {
 	[1] = {
 		melee = {
 			name = "Ranger",
-			health = 75,
+			health = 5,
 			durability = 0,
 			damage = 10,
 			pierce = 0,
@@ -31,10 +31,10 @@ return {
 		},
 		dropRates = {
 			{ Type = DROP_TYPES.None, Weight = 0 },
-			{ Type = DROP_TYPES.Common, Weight = 0 },
-			{ Type = DROP_TYPES.Uncommon, Weight = 95 },
+			{ Type = DROP_TYPES.Common, Weight = 100 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 0 },
 			{ Type = DROP_TYPES.Rare, Weight = 0 },
-			{ Type = DROP_TYPES.Legendary, Weight = 5 },
+			{ Type = DROP_TYPES.Legendary, Weight = 0 },
 		},
 	},
 	[2] = {

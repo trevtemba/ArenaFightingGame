@@ -7,8 +7,8 @@ local weldHelper = require(script.Parent:FindFirstChild("weldHelper"))
 local offsets = {
 	left = CFrame.new(2, 0, 0),
 	right = CFrame.new(-2, 0, 0),
-	forward = CFrame.new(0, 0, -2),
-	back = CFrame.new(0, 0, 2),
+	forward = CFrame.new(0, 0, 2),
+	back = CFrame.new(0, 0, -2),
 }
 return function(argumentData)
 	local target: Model = argumentData.target

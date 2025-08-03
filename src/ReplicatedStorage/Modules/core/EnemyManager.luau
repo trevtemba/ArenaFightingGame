@@ -70,8 +70,10 @@ function EnemyManager.SpawnS1Enemies(spawns, plr)
 		print("Enemy spawned with loot drop of: " .. lootDrop)
 	end
 
-	-- -- last 2 are ranged
+	-- last 2 are ranged
 	-- for i = 4, 4 do
+	-- 	local dropRates = EnemyData[1].dropRates
+	-- 	local lootDrop = rollDropType(dropRates)
 	-- 	spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr, lootDrop)
 	-- end
 

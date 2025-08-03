@@ -23,7 +23,6 @@ function Player.new(plr, champion, rig)
 	self.userId = plr.UserId
 	self.name = plr.Name
 	self.health = 100
-	self.gold = 0
 	self.tier = 1
 	self.xp = 0
 	self.champion = champion
@@ -228,7 +227,7 @@ function Player:AddHealth(amount)
 end
 
 function Player:AddGold(amount)
-	self.gold += amount
+	self.inventoryHandler:AddGold(amount)
 end
 
 function Player:AddRandomComponent()

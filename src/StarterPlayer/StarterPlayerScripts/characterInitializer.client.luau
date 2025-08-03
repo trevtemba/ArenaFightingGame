@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local cameraModule = require(ReplicatedStorage.Modules.client.cameraModule)
+local viewportHandler = require(ReplicatedStorage.Modules.client.viewportHandler)
 local AnimationHandler = require(game:GetService("ReplicatedStorage").Modules.client.animationModule)
 local ShiftlockModule = require(game:GetService("ReplicatedStorage").Modules.client.smoothShiftlock.SmoothShiftLock)
 
@@ -31,6 +32,7 @@ local function processCharacter(character)
 		charLoaded = true
 		ShiftlockModule.new()
 		cameraModule.normCam()
+		viewportHandler.InitCoin()
 	else
 		warn("Character does not have 'player' tag, skipping.")
 	end
