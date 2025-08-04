@@ -3,7 +3,7 @@ local StunHandler = {}
 
 local stunnedMap = {}
 
-function StunHandler.Stun(humanoid: Humanoid, duration: number, walkSpeed: number?)
+function StunHandler.Stun(humanoid: Humanoid, duration: number, walkSpeed: number?, removeServerStunState)
 	if not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -59,6 +59,7 @@ function StunHandler.Stun(humanoid: Humanoid, duration: number, walkSpeed: numbe
 			humanoid.WalkSpeed = originalSpeed
 			humanoid.JumpPower = originalJumpPower
 			humanoid.JumpHeight = originalJumpHeight
+			removeServerStunState()
 			char:SetAttribute("Stunned", false)
 		end
 

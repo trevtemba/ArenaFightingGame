@@ -404,16 +404,11 @@ function CombatHandler:Stun(stunTime, walkspeed)
 		totalStunTime = stunTime
 	end
 
-	StunModule.Stun(self.humanoid, totalStunTime, walkspeed)
-	local sessionId = (self._stunSessionId and 0 or 1) + 1
-	self._stunSessionId = sessionId
-
-	task.delay(stunTime, function()
-		if sessionId ~= self._stunSessionId then
-			return
-		end
+	StunModule.Stun(self.humanoid, totalStunTime, walkspeed, function()
 		self.owner.stateHandler:RemoveState(STATE.Stunned)
 	end)
+	local sessionId = (self._stunSessionId and 0 or 1) + 1
+	self._stunSessionId = sessionId
 end
 
 function CombatHandler:Flinch()
