@@ -1,3 +1,5 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local tableToString = require(ReplicatedStorage.Modules.tableToString)
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
@@ -258,4 +260,9 @@ end
 
 function Player:CharDie() end
 
+function Player:ReturnDev(devCode)
+	if devCode == "state" then
+		print("SERVER STATES: " .. tableToString(self.stateHandler:GetAllStates()))
+	end
+end
 return Player

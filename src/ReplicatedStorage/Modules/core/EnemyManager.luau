@@ -63,7 +63,7 @@ function EnemyManager.SpawnS1Enemies(spawns, plr)
 	local rangedTemplate = enemies:WaitForChild("s1ranged")
 
 	-- first 3 are melee
-	for i = 1, 2 do
+	for i = 1, 5 do
 		local dropRates = EnemyData[1].dropRates
 		local lootDrop = rollDropType(dropRates)
 		spawnEnemy(meleeTemplate, "melee", spawns[i], 1, plr, lootDrop)

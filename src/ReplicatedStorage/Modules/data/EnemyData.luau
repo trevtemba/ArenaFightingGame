@@ -31,10 +31,10 @@ return {
 		},
 		dropRates = {
 			{ Type = DROP_TYPES.None, Weight = 0 },
-			{ Type = DROP_TYPES.Common, Weight = 100 },
-			{ Type = DROP_TYPES.Uncommon, Weight = 0 },
-			{ Type = DROP_TYPES.Rare, Weight = 0 },
-			{ Type = DROP_TYPES.Legendary, Weight = 0 },
+			{ Type = DROP_TYPES.Common, Weight = 50 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 15 },
+			{ Type = DROP_TYPES.Legendary, Weight = 10 },
 		},
 	},
 	[2] = {

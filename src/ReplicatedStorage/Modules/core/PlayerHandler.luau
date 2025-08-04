@@ -36,5 +36,11 @@ function PlayerHandler.OnDash(plr: Player, direction)
 		playerObj:Dash(direction)
 	end
 end
+function PlayerHandler.OnDev(plr: Player, devCode)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:ReturnDev(devCode)
+	end
+end
 
 return PlayerHandler

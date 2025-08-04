@@ -10,6 +10,7 @@ local animationModule =
 local physicsModule =
 	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("physicsModule"))
 local STATE = require(ReplicatedStorage.Modules.core.State)
+local tableToString = require(ReplicatedStorage.Modules.tableToString)
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local BindableFunctions = ReplicatedStorage:WaitForChild("BindableFunctions")
@@ -245,6 +246,14 @@ CoreContext:WaitForChild("Shift").Released:Connect(function()
 	updateSprinting()
 	if activeKeyCount > 0 then
 		activeKeyCount -= 1
+	end
+end)
+
+CoreContext:WaitForChild("stateShow").Pressed:Connect(function()
+	print("CLIENT STATES: " .. tableToString(inputStateHandler:GetAllStates()))
+	local remote = ServerEvents:FindFirstChild("OnDev")
+	if remote then
+		remote:FireServer("state")
 	end
 end)
 
