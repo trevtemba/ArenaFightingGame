@@ -18,8 +18,9 @@ function viewportHandler.InitCoin()
 
 	-- Create and assign camera
 	local camera = Instance.new("Camera")
-	camera.CFrame = CFrame.new(Vector3.new(0, 0, 3), Vector3.new(0, 0, 0))
+	camera.CFrame = CFrame.new(0, 0, 5)
 	camera.Parent = viewport
+	viewport.CurrentCamera = camera
 
 	local coin3D = coinModel:Clone()
 	coin3D.Parent = viewport
@@ -27,7 +28,7 @@ function viewportHandler.InitCoin()
 	if not coin3D.PrimaryPart then
 		coin3D.PrimaryPart = coin3D:FindFirstChildWhichIsA("BasePart")
 	end
-	coin3D:SetPrimaryPartCFrame(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(90), math.rad(90)))
+	coin3D:SetPrimaryPartCFrame(CFrame.new(0, 0, 0) * CFrame.Angles(0, 0, 0))
 end
 
 return viewportHandler

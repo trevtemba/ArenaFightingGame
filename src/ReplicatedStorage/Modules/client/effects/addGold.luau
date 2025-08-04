@@ -2,6 +2,10 @@ local tweenHelper = require(script.Parent.tweenHelper)
 local Player = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
 local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ParticleEmitter = require(ReplicatedStorage.Modules.client.guiParticle.ParticleEmitter)
+local getRandFloat = require(ReplicatedStorage.Modules.getRandFloat)
+local goldParticles = ReplicatedStorage:WaitForChild("UI"):WaitForChild("goldParticles")
 local soundHelper = require(script.Parent.soundHelper)
 
 local function getUI()
@@ -21,6 +25,7 @@ return function(argumentData)
 		local goldValue = goldFrame:WaitForChild("base"):WaitForChild("gold")
 		local goldIcon = goldFrame:WaitForChild("iconBase"):WaitForChild("icon")
 		local orbSound = soundHelper.PlaySound("orbPickup", hudGui)
+		local goldParticleEmitter = ParticleEmitter.new(goldIcon.Parent, goldParticles)
 
 		for _ = 1, amount do
 			local coinFrame = coinTemplate:Clone()
@@ -59,15 +64,15 @@ return function(argumentData)
 				end
 
 				yRotation += math.rad(180) * dt
-				coin3D:SetPrimaryPartCFrame(baseCFrame * CFrame.Angles(-yRotation, 0, 0))
+				coin3D:SetPrimaryPartCFrame(baseCFrame * CFrame.Angles(0, yRotation, 0))
 			end)
 
+			-- Step 1: Fade in
 			tweenHelper:Tween(
 				viewport,
-				{ time = 0.5, easingStyle = Enum.EasingStyle.Cubic, easingDirection = Enum.EasingDirection.Out },
+				{ time = 0.5, easingStyle = Enum.EasingStyle.Quad, easingDirection = Enum.EasingDirection.Out },
 				{ ImageTransparency = 0 }
 			)
-			-- Step 1: Fade in
 			tweenHelper:Tween(coinFrame, {
 				time = 0.5,
 				easingStyle = Enum.EasingStyle.Cubic,
@@ -94,6 +99,7 @@ return function(argumentData)
 				coinFrame:Destroy()
 				local coinSound = soundHelper.PlaySound("coinCollect", hudGui, 0.075)
 				local current = tonumber(goldValue.Text) or 0
+
 				goldValue.Text = tostring(current + 1)
 				tweenHelper:Tween(goldIcon, {
 					time = 0.35,
@@ -111,11 +117,27 @@ return function(argumentData)
 						Size = UDim2.fromScale(1, 1),
 					})
 				end)
+				goldParticleEmitter:Emit(10)
+
+				goldParticleEmitter.onSpawn = function(particle)
+					particle.velocity = Vector2.new(math.random(-20, 20), math.random(-10, 10))
+					particle.transparency = 0
+					particle.maxAge = 1
+				end
+
+				goldParticleEmitter.onUpdate = function(particle, deltaTime)
+					particle.transparency = particle.transparency + 0.05
+					particle.position = particle.position - (particle.velocity / 3 * deltaTime)
+				end
 				Debris:AddItem(coinSound, 1)
 			end)
 
 			task.wait(0.05)
 		end
+
+		task.delay(1.5, function()
+			goldParticleEmitter:Destroy()
+		end)
 		Debris:AddItem(orbSound, 1)
 	end
 end
