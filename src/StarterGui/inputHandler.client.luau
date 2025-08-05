@@ -27,6 +27,7 @@ local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local attackDone = ClientEvents:WaitForChild("attackDone")
+local castDone = ClientEvents:WaitForChild("castDone")
 local inAir = ClientEvents:WaitForChild("inAir")
 local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
 
@@ -227,6 +228,19 @@ CombatContext:WaitForChild("Block").Released:Connect(function()
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		remote:FireServer(false)
+	end
+end)
+
+CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
+	if processDebounce("cast", 0.2) or not inputStateHandler:CanDo(STATE.Casting) then
+		return
+	end
+	inputStateHandler:SetState(STATE.Casting)
+
+	local remote = ServerEvents:FindFirstChild("OnCast")
+	if remote then
+		print("casting 1")
+		remote:FireServer(1)
 	end
 end)
 
@@ -443,6 +457,12 @@ end)
 
 attackDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Attacking)
+	setCanJump(true)
+	print("client can do movement")
+end)
+
+castDone.OnClientEvent:Connect(function()
+	inputStateHandler:RemoveState(STATE.Casting)
 	setCanJump(true)
 	print("client can do movement")
 end)

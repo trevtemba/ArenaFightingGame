@@ -59,11 +59,14 @@ function Player.new(plr, champion, rig)
 		stunResist = 0,
 	}
 
+	self.abilities = champion.abilities
+
 	-- (Base + Modifier)
 	self.stats = {}
 
 	self.damageTypes = {
 		attack = champion.attackDmgType,
+		ability = champion.attackDmgType,
 	}
 
 	-- Combat state
@@ -71,8 +74,6 @@ function Player.new(plr, champion, rig)
 	self.currentHP = champion.hp
 	self.maxEnergy = champion.energy
 	self.currentEnergy = champion.energy
-
-	self.cooldowns = champion.cooldowns
 
 	self.currentEnemies = {}
 	self.statusEffects = {
@@ -133,9 +134,15 @@ function Player:Damage(roundNum, enemyHP)
 	self.health = self.health - (roundNum + enemyHP / 10)
 end
 
-function Player:Attack(target, spaceHeld)
+function Player:Attack(spaceHeld)
 	if self.combatHandler then
-		self.combatHandler:HandleAttackInput(target, spaceHeld)
+		self.combatHandler:HandleAttackInput(spaceHeld)
+	end
+end
+
+function Player:Cast(abilitySlot)
+	if self.combatHandler then
+		self.combatHandler:HandleCastInput(abilitySlot)
 	end
 end
 

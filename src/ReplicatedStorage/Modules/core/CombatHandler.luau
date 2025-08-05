@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TouchInputService = game:GetService("TouchInputService")
 local animationModule = require(ReplicatedStorage.Modules.client.animationModule)
 local STATE = require(script.Parent.State)
+local abilityTypes = require(script.Parent.abilityTypes)
 local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
@@ -38,6 +39,7 @@ function CombatHandler.new(owner, entityType)
 	self.blockAnimSeq = 1
 	self.comboResetTime = 1 -- Seconds to reset combo
 	self.lastAttackTime = 0
+	self.lastCastTime = {}
 	self.airResetTime = 1.5
 	self.lastAirAttackTime = 0
 	self.bufferedAttack = false
@@ -46,6 +48,7 @@ function CombatHandler.new(owner, entityType)
 	self.attackerFloat = nil
 	self.targetFloat = nil
 	self._attackSessionId = nil
+	self._castSessionId = nil
 	self._blockBreakSessionId = nil
 	self._airFloatCoroutine = nil
 	self._m1SlowId = nil
@@ -67,6 +70,10 @@ function CombatHandler:HandleAttackInput(spaceHeld)
 	end
 end
 
+function CombatHandler:HandleCastInput(abilitySlot)
+	self:Cast(abilitySlot)
+end
+
 function CombatHandler:CanAttack()
 	local now = os.clock()
 	local timeSinceLastAttack = now - self.lastAttackTime
@@ -77,6 +84,23 @@ function CombatHandler:CanAttack()
 	local stateHandler = self.owner.stateHandler
 	local blockedStates = {
 		STATE.Attacking,
+		STATE.Stunned,
+		STATE.Ragdolled,
+	}
+
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+end
+
+function CombatHandler:CanCast(abilitySlot)
+	local now = os.clock()
+	local timeSinceLastCast = now - self.lastCastTime[abilitySlot]
+	if timeSinceLastCast < self.owner.stats.abilityCooldowns[abilitySlot] then
+		return false
+	end
+
+	local stateHandler = self.owner.stateHandler
+	local blockedStates = {
+		STATE.Casting,
 		STATE.Stunned,
 		STATE.Ragdolled,
 	}
@@ -106,6 +130,25 @@ function CombatHandler:CanStun()
 	}
 
 	return not stateHandler:HasAny(blockedStates)
+end
+
+function CombatHandler:Cast(abilitySlot)
+	if not self.humanoid and not self:CanCast(abilitySlot) then
+		return
+	end
+	if self.owner.stateHandler:HasState(STATE.Blocking) then
+		self:DisableBlock()
+	end
+
+	local now = os.clock()
+	local animName = "ability" .. tostring(abilitySlot)
+	self.owner.stateHandler:SetState(STATE.Casting)
+
+	self.lastCastTime[abilitySlot] = now
+
+	local ability = self.owner.abilities[abilitySlot]
+
+	ability:Cast(self, animName)
 end
 
 function CombatHandler:Attack(spaceHeld)
@@ -272,19 +315,25 @@ function CombatHandler:RestoreBreakBlock()
 	self.owner.animationHandler:Stop("blockBreak")
 end
 
-function CombatHandler:ApplyDamage(entity, blockable, attackType, knocksBack, isAirCombo)
+function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCombo, abilityDamage)
 	if not entity or not entity.combatHandler then
 		return
 	end
 
-	local base = self.owner.stats.attackDmg or 10
+	local base
+	if type == "attack" then
+		base = self.owner.stats.attackDmg or 10
+	elseif type == "ability" then
+		base = abilityDamage
+	end
+
 	local pierce = self.owner.stats.pierce or 0
 	local crit = self:determineCrit()
 	if crit then
 		print("hit crit")
 	end
 	local dmg = base * (crit and self.owner.stats.critMultiplier or 1)
-	local dmgType = self.owner.damageTypes[attackType]
+	local dmgType = self.owner.damageTypes[type]
 	local lookVector = self.owner.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector
 
 	local attackData = {

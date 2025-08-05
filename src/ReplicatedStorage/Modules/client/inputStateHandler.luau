@@ -60,6 +60,11 @@ function InputStateHandler:CanDo(state)
 		blockedStates = {
 			STATE.Casting,
 		}
+	elseif state == STATE.Casting then
+		blockedStates = {
+			STATE.Casting,
+			STATE.Stunned,
+		}
 	elseif state == STATE.Jumping then
 		blockedStates = {
 			STATE.Jumping,

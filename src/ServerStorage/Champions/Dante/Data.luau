@@ -16,15 +16,12 @@ return {
 	attackDmgType = "physical",
 
 	abilities = {
-		"Seismic Slam",
-		"Matrix Uplink",
-		"Flamethrower",
-		"Overdrive",
-	},
-	cooldowns = {
-		[1] = 3,
-		[2] = 3,
-		[3] = 3,
-		[4] = 25,
+		[1] = "Flamethrower",
+
+		[2] = "Matrix Uplink",
+
+		[3] = "Seismic Slam",
+
+		[4] = "Overdrive",
 	},
 }

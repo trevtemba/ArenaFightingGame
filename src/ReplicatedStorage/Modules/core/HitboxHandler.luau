@@ -54,6 +54,62 @@ function HitboxModule:CreatePlrHitbox(params)
 	Debris:AddItem(hitbox, params.duration or 0.2)
 end
 
+function HitboxModule:CreateConeHitbox(params)
+	print("CASTING CONE ABILITY")
+	assert(params.attacker, "Cone hitbox requires attacker")
+	assert(params.onHit, "Cone hitbox requires onHit callback")
+	assert(params.cframe, "Cone hitbox requires cframe (for origin and direction)")
+	assert(params.angle, "Cone hitbox requires angle in degrees")
+	assert(params.range, "Cone hitbox requires range")
+
+	local origin = params.cframe.Position
+	local forward = params.cframe.LookVector.Unit
+	local angleRad = math.rad(params.angle)
+	local cosAngle = math.cos(angleRad)
+	local range = params.range
+
+	-- Setup overlap
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.FilterDescendantsInstances = params.ignoreList or { params.attacker.character }
+	overlapParams.MaxParts = 100
+
+	local hitOnce = {}
+
+	-- Get nearby parts within range
+	local nearbyParts = Workspace:GetPartBoundsInRadius(origin, range, overlapParams)
+
+	for _, part in ipairs(nearbyParts) do
+		local model = part:FindFirstAncestorOfClass("Model")
+		if model and not hitOnce[model] then
+			local rootPart = model:FindFirstChild("HumanoidRootPart")
+			if rootPart then
+				local toTarget = (rootPart.Position - origin)
+				local distance = toTarget.Magnitude
+
+				if distance <= range then
+					local dirToTarget = toTarget.Unit
+					local dot = forward:Dot(dirToTarget)
+
+					if dot >= cosAngle then
+						local entity
+						if CollectionService:HasTag(model, "Enemy") then
+							entity = params.attacker:GetEnemyFromCharacter(model)
+						else
+							entity = params.attacker:GetPlayerFromCharacter(model)
+						end
+
+						if entity and entity ~= params.attacker then
+							hitOnce[model] = true
+							params.onHit(entity)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
 function HitboxModule:CreateNPCHitbox(params)
 	assert(params.attacker, "Hitbox requires attacker")
 	assert(params.onHit, "Hitbox requires onHit callback")
