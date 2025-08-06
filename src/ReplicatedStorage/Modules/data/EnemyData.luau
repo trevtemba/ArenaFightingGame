@@ -5,7 +5,7 @@ return {
 	[1] = {
 		melee = {
 			name = "Ranger",
-			health = 5,
+			health = 100,
 			durability = 0,
 			damage = 10,
 			pierce = 0,

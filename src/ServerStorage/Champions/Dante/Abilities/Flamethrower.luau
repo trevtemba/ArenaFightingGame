@@ -3,19 +3,21 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HitboxHandler = require(ReplicatedStorage.Modules.core.HitboxHandler)
 local STATE = require(ReplicatedStorage.Modules.core.State)
 local castDone = ReplicatedStorage.RemoteEvents.Client.castDone
+local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
+
 local Flamethrower = {}
 
 Flamethrower.Config = {
 	name = "Seismic Slam",
 	type = "Damage",
 	blockable = true,
-	knocksBack = true,
-	duration = 2.5,
+	knocksBack = false,
+	duration = 2,
 	cooldown = 5,
-	damage = 40,
+	damage = 25,
 	hitboxType = "cone",
 	hitboxParams = {
-		range = 10,
+		range = 50,
 		angle = 60,
 	},
 }
@@ -33,22 +35,30 @@ function Flamethrower:Cast(combatHandler, animName)
 		if combatHandler._castSessionId ~= sessionId then
 			return
 		end
-		HitboxHandler:CreateConeHitbox({
-			attacker = attacker,
-			cframe = attacker.character.PrimaryPart.CFrame,
-			range = self.Config.hitboxParams.range,
-			angle = self.Config.hitboxParams.angle,
-			onHit = function(entity)
-				combatHandler:ApplyDamage(
-					entity,
-					self.Config.blockable,
-					"ability",
-					self.Config.knocksBack,
-					nil,
-					self.Config.damage
-				)
-			end,
-		})
+
+		clientEffects:FireAllClients(
+			"flameThrower",
+			{ target = combatHandler.owner.character, duration = self.Config.duration }
+		)
+		for tick = 1, 4 do
+			HitboxHandler:CreateConeHitbox({
+				attacker = attacker,
+				cframe = attacker.character.PrimaryPart.CFrame,
+				range = self.Config.hitboxParams.range,
+				angle = self.Config.hitboxParams.angle,
+				onHit = function(entity)
+					combatHandler:ApplyDamage(
+						entity,
+						self.Config.blockable,
+						"ability",
+						self.Config.knocksBack,
+						nil,
+						self.Config.damage
+					)
+				end,
+			})
+			task.wait(0.5)
+		end
 	end)
 
 	task.delay(self.Config.duration, function()

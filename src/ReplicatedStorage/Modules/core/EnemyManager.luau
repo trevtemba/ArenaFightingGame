@@ -34,9 +34,10 @@ local function rollDropType(dropRates)
 	return DROP_TYPES.None
 end
 
-local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr, lootDrop)
+local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr, lootDrop, enemyNum)
 	local enemy = enemyTemplate:Clone()
 	enemy.Name = ""
+	enemy:SetAttribute("id", "enemy_" .. tostring(enemyNum))
 	local enemyObj = Enemy.new(lootDrop)
 	local plrPos = plr.character:GetPivot().Position
 
@@ -61,20 +62,19 @@ end
 function EnemyManager.SpawnS1Enemies(spawns, plr)
 	local meleeTemplate = enemies:WaitForChild("s1melee")
 	local rangedTemplate = enemies:WaitForChild("s1ranged")
-
 	-- first 3 are melee
-	for i = 1, 5 do
+	for enemyNum = 1, 5 do
 		local dropRates = EnemyData[1].dropRates
 		local lootDrop = rollDropType(dropRates)
-		spawnEnemy(meleeTemplate, "melee", spawns[i], 1, plr, lootDrop)
+		spawnEnemy(meleeTemplate, "melee", spawns[enemyNum], 1, plr, lootDrop, enemyNum)
 		print("Enemy spawned with loot drop of: " .. lootDrop)
 	end
 
 	-- last 2 are ranged
-	-- for i = 4, 4 do
+	-- for enemyNum = 4, 4 do
 	-- 	local dropRates = EnemyData[1].dropRates
 	-- 	local lootDrop = rollDropType(dropRates)
-	-- 	spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr, lootDrop)
+	-- 	spawnEnemy(rangedTemplate, "ranged", spawns[enemyNum], 1, plr, lootDrop)
 	-- end
 
 	plr:SetEnemyTable(enemyMap)

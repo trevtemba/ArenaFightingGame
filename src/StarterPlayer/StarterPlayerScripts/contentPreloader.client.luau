@@ -15,6 +15,8 @@ for _, item in pairs(UI:GetDescendants()) do
 		table.insert(assetsToPreload, item)
 	end
 end
+
+table.insert(assetsToPreload, Assets:WaitForChild("flameThrower"))
 -- Preload assets (this blocks only this script)
 ContentProvider:PreloadAsync(assetsToPreload)
 

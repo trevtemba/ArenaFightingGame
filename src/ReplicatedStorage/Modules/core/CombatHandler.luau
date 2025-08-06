@@ -10,11 +10,8 @@ local CollectionService = game:GetService("CollectionService")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TouchInputService = game:GetService("TouchInputService")
-local animationModule = require(ReplicatedStorage.Modules.client.animationModule)
+
 local STATE = require(script.Parent.State)
-local abilityTypes = require(script.Parent.abilityTypes)
-local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
 
@@ -352,7 +349,7 @@ function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCom
 	entity:TakeDamage(attackData)
 
 	self.owner.fxHandler:PlaySound("attack")
-	if not isAirCombo then
+	if type == "attack" and not isAirCombo then
 		self.owner.physicsHandler:SetWalkspeed(0)
 		self.owner.physicsHandler:MoveForward(lookVector, FLINCH_DISTANCE)
 	end
