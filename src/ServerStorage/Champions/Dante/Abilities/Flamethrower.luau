@@ -25,7 +25,7 @@ Flamethrower.Config = {
 function Flamethrower:Cast(combatHandler, animName)
 	local attacker = combatHandler.owner
 
-	combatHandler.owner.animationHandler:Play(animName, 0, 3, 1, false, "Action3")
+	combatHandler.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
 	-- When starting the attack (before connecting or right at anim start)
 	combatHandler._castSessionId = (combatHandler._castSessionId or 0) + 1
 	local sessionId = combatHandler._castSessionId

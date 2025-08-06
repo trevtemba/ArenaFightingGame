@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ItemHandler = require(script.Parent.ItemHandler)
 local Items = require(ReplicatedStorage.Modules.data.ItemData)
@@ -28,7 +29,11 @@ function InventoryHandler:AddItem(itemId)
 		if self.inventory[slot] == nil then
 			self.inventory[slot] = itemId
 			slotNum = slot
-			clientEffects:FireAllClients("addInventoryItem", { slotNum = slotNum, itemId = itemId })
+			clientEffects:FireClient(
+				Players:GetPlayerByUserId(self.owner.userId),
+				"addInventoryItem",
+				{ slotNum = slotNum, itemId = itemId }
+			)
 			return true
 		end
 	end
@@ -39,7 +44,7 @@ end
 function InventoryHandler:AddGold(amount)
 	self.gold += amount
 
-	clientEffects:FireAllClients("addGold", { amount = amount })
+	clientEffects:FireClient(Players:GetPlayerByUserId(self.owner.userId), "addGold", { amount = amount })
 
 	return true
 end

@@ -22,5 +22,12 @@ function ParticleHelper.EnablePart(part)
 		end
 	end
 end
+function ParticleHelper.DisablePart(part)
+	for _, v in part:GetDescendants() do
+		if v:IsA("ParticleEmitter") then
+			v.Enabled = false
+		end
+	end
+end
 
 return ParticleHelper

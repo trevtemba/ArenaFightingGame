@@ -1,6 +1,8 @@
 local Debris = game:GetService("Debris")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local particleHelper = require(script.Parent.particleHelper)
+local soundHelper = require(script.Parent.soundHelper)
 local weldHelper = require(script.Parent.weldHelper)
 local Assets = ReplicatedStorage:WaitForChild("Assets")
 
@@ -15,12 +17,14 @@ return function(argumentData)
 			flameThrowerClone.CFrame = rootPart.CFrame * CFrame.new(1.25, 0.75, -3.5)
 			local weld = weldHelper.WeldParts(rootPart, flameThrowerClone)
 			flameThrowerClone.Parent = game.Workspace:WaitForChild("Assets")
-			flameThrowerClone.flame.Enabled = true
+
+			soundHelper.PlaySound("flamethrower", flameThrowerClone, nil)
+			particleHelper.EnablePart(flameThrowerClone)
 
 			task.delay(duration, function()
-				flameThrowerClone.flame.Enabled = false
-				Debris:AddItem(flameThrowerClone, 5)
-				Debris:AddItem(weld, duration + 5)
+				particleHelper.DisablePart(flameThrowerClone)
+				Debris:AddItem(flameThrowerClone, 1)
+				Debris:AddItem(weld, duration + 1)
 			end)
 		end
 	end

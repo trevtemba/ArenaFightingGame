@@ -4,7 +4,6 @@ local RunService = game:GetService("RunService")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ParticleEmitter = require(ReplicatedStorage.Modules.client.guiParticle.ParticleEmitter)
-local getRandFloat = require(ReplicatedStorage.Modules.getRandFloat)
 local goldParticles = ReplicatedStorage:WaitForChild("UI"):WaitForChild("goldParticles")
 local soundHelper = require(script.Parent.soundHelper)
 

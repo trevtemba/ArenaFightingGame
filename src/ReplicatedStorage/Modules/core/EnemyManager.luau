@@ -63,7 +63,7 @@ function EnemyManager.SpawnS1Enemies(spawns, plr)
 	local meleeTemplate = enemies:WaitForChild("s1melee")
 	local rangedTemplate = enemies:WaitForChild("s1ranged")
 	-- first 3 are melee
-	for enemyNum = 1, 5 do
+	for enemyNum = 1, 1 do
 		local dropRates = EnemyData[1].dropRates
 		local lootDrop = rollDropType(dropRates)
 		spawnEnemy(meleeTemplate, "melee", spawns[enemyNum], 1, plr, lootDrop, enemyNum)
@@ -71,11 +71,11 @@ function EnemyManager.SpawnS1Enemies(spawns, plr)
 	end
 
 	-- last 2 are ranged
-	-- for enemyNum = 4, 4 do
-	-- 	local dropRates = EnemyData[1].dropRates
-	-- 	local lootDrop = rollDropType(dropRates)
-	-- 	spawnEnemy(rangedTemplate, "ranged", spawns[enemyNum], 1, plr, lootDrop)
-	-- end
+	for enemyNum = 4, 5 do
+		local dropRates = EnemyData[1].dropRates
+		local lootDrop = rollDropType(dropRates)
+		spawnEnemy(rangedTemplate, "ranged", spawns[enemyNum], 1, plr, lootDrop)
+	end
 
 	plr:SetEnemyTable(enemyMap)
 end

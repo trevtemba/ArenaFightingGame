@@ -467,7 +467,7 @@ function Enemy:RangedAttack()
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
 				crit = false,
-				blockable = false,
+				blockable = true,
 				knocksBack = false,
 				hitType = "blunt",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,

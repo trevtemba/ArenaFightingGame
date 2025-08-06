@@ -2,6 +2,7 @@ local Debris = game:GetService("Debris")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local highlightHelper = require(script.Parent.highlightHelper)
+local soundHelper = require(script.Parent.soundHelper)
 local Effects = ReplicatedStorage:WaitForChild("Effects")
 local Sounds = ReplicatedStorage:WaitForChild("Sounds")
 
@@ -15,13 +16,15 @@ return function(argumentData)
 		local outerTransparency = 1
 		local sound
 		if initiateType == "block" then
-			sound = Sounds:FindFirstChild("startBlock"):Clone()
+			sound = soundHelper.PlaySound("startBlock", target, 0.05)
 			highlightColor = Color3.fromRGB(255, 204, 19)
 			outerTransparency = 0.1
+		elseif initiateType == "cast" then
+			sound = soundHelper.PlaySound("cast", target, 0.05)
+			highlightColor = Color3.fromRGB(255, 204, 19)
+			innerTransparency = 1
+			outerTransparency = 0.1
 		end
-
-		sound.Parent = target
-		sound:Play()
 
 		local highlight = highlightHelper:highlightCharacter(
 			target,

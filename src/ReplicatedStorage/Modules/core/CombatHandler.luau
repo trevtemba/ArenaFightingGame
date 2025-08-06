@@ -145,6 +145,7 @@ function CombatHandler:Cast(abilitySlot)
 
 	local ability = self.owner.abilities[abilitySlot]
 
+	clientEffects:FireAllClients("initiate", { target = self.owner.character, initiateType = "cast" })
 	ability:Cast(self, animName)
 end
 

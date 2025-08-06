@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
+local hotbar = require(ReplicatedStorage.Modules.client.effects.UI.hotbar)
 local InputStateHandler = require(ReplicatedStorage.Modules.client.inputStateHandler)
 local camModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
 local animationModule =
@@ -236,7 +237,7 @@ CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
 		return
 	end
 	inputStateHandler:SetState(STATE.Casting)
-
+	hotbar.Cast({ abilitySlot = 1 })
 	local remote = ServerEvents:FindFirstChild("OnCast")
 	if remote then
 		print("casting 1")
