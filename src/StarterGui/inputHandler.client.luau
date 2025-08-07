@@ -233,11 +233,15 @@ CombatContext:WaitForChild("Block").Released:Connect(function()
 end)
 
 CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
-	if processDebounce("cast", 0.2) or not inputStateHandler:CanDo(STATE.Casting) then
+	if
+		processDebounce("cast1", player.Character:GetAttribute("abilityCd1"))
+		or not inputStateHandler:CanDo(STATE.Casting)
+	then
 		return
 	end
 	inputStateHandler:SetState(STATE.Casting)
 	hotbar.Cast({ abilitySlot = 1 })
+	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("abilityCd1"), abilitySlot = 1 })
 	local remote = ServerEvents:FindFirstChild("OnCast")
 	if remote then
 		print("casting 1")
@@ -465,7 +469,6 @@ end)
 castDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Casting)
 	setCanJump(true)
-	print("client can do movement")
 end)
 
 inAir.OnClientEvent:Connect(function(isActive)

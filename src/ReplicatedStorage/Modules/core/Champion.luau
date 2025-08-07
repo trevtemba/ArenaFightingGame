@@ -22,6 +22,7 @@ function Champion.new(data)
 	self.ranged = data.ranged
 	self.attackDmgType = data.attackDmgType
 	self.abilities = data.abilities or {}
+	self.cooldowns = data.cooldowns
 	self.passive = data.passive
 
 	return self

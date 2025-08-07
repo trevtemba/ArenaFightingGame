@@ -50,6 +50,7 @@ function ChampionFactory.newChampion(name)
 		ranged = data.ranged,
 		attackDmgType = data.attackDmgType,
 		abilities = abilities,
+		cooldowns = data.cooldowns,
 		passive = passive,
 	})
 	local rig = folder:FindFirstChild(name):Clone()

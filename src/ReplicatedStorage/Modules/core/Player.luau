@@ -56,6 +56,7 @@ function Player.new(plr, champion, rig)
 		critMultiplier = champion.critMultiplier,
 		speed = champion.speed,
 		range = champion.range,
+		abilityCooldowns = champion.cooldowns,
 		stunResist = 0,
 	}
 
@@ -122,6 +123,9 @@ function Player:RecalculateStats()
 				end
 			end
 		end
+	end
+	for slot, cooldown in ipairs(self.stats.abilityCooldowns) do
+		self.character:SetAttribute("abilityCd" .. tostring(slot), cooldown)
 	end
 end
 

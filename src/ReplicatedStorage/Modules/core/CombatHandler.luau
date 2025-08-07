@@ -2,6 +2,7 @@ local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local StunModule = require(script.Parent:WaitForChild("stunHandler"))
 local attackDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.attackDone
+local castDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.castDone
 local inAir = game:GetService("ReplicatedStorage").RemoteEvents.Client.inAir
 
 local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
@@ -73,9 +74,11 @@ end
 
 function CombatHandler:CanAttack()
 	local now = os.clock()
-	local timeSinceLastAttack = now - self.lastAttackTime
-	if timeSinceLastAttack < self.owner.stats.attackCooldown then
-		return false
+	if self.lastAttackTime then
+		local timeSinceLastAttack = now - self.lastAttackTime
+		if timeSinceLastAttack < self.owner.stats.attackCooldown then
+			return false
+		end
 	end
 
 	local stateHandler = self.owner.stateHandler
@@ -90,9 +93,11 @@ end
 
 function CombatHandler:CanCast(abilitySlot)
 	local now = os.clock()
-	local timeSinceLastCast = now - self.lastCastTime[abilitySlot]
-	if timeSinceLastCast < self.owner.stats.abilityCooldowns[abilitySlot] then
-		return false
+	if self.lastCastTime[abilitySlot] then
+		local timeSinceLastCast = now - self.lastCastTime[abilitySlot]
+		if timeSinceLastCast < self.owner.stats.abilityCooldowns[abilitySlot] then
+			return false
+		end
 	end
 
 	local stateHandler = self.owner.stateHandler
@@ -130,7 +135,8 @@ function CombatHandler:CanStun()
 end
 
 function CombatHandler:Cast(abilitySlot)
-	if not self.humanoid and not self:CanCast(abilitySlot) then
+	if not self.humanoid or not self:CanCast(abilitySlot) then
+		castDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 		return
 	end
 	if self.owner.stateHandler:HasState(STATE.Blocking) then
@@ -150,7 +156,8 @@ function CombatHandler:Cast(abilitySlot)
 end
 
 function CombatHandler:Attack(spaceHeld)
-	if not self.humanoid and not self:CanAttack() then
+	if not self.humanoid or not self:CanAttack() then
+		attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 		return
 	end
 	if self.owner.stateHandler:HasState(STATE.Blocking) then
@@ -259,7 +266,7 @@ function CombatHandler:Attack(spaceHeld)
 end
 
 function CombatHandler:EnableBlock()
-	if not self.humanoid and not self:CanBlock() then
+	if not self.humanoid or not self:CanBlock() then
 		return
 	end
 
@@ -437,7 +444,7 @@ function CombatHandler:determineCrit()
 end
 
 function CombatHandler:Stun(stunTime, walkspeed)
-	if not self.humanoid and not self:canStun() then
+	if not self.humanoid or not self:CanStun() then
 		return
 	end
 

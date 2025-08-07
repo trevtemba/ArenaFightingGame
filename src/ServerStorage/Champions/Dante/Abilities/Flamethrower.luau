@@ -13,7 +13,6 @@ Flamethrower.Config = {
 	blockable = true,
 	knocksBack = false,
 	duration = 2,
-	cooldown = 5,
 	damage = 25,
 	hitboxType = "cone",
 	hitboxParams = {
