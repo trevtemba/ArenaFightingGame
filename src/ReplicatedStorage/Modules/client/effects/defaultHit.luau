@@ -23,9 +23,11 @@ return function(argumentData)
 			if hitType == "blunt" then
 				clone = Effects.CoreEffects.bluntHitEffect:Clone()
 				sound = Sounds:FindFirstChild("impact"):Clone()
+				outerTransparency = 0.1
 			elseif hitType == "slash" then
 				clone = Effects.CoreEffects.slashHitEffect:Clone()
 				sound = Sounds:FindFirstChild("impact"):Clone()
+				outerTransparency = 0.1
 			elseif hitType == "block" then
 				clone = Effects.CoreEffects.blockHitEffect:Clone()
 				local num = math.random(1, 3)

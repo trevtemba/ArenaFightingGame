@@ -44,7 +44,7 @@ local Config = {
 	TRANSITION_SPRING_DAMPER = 0.7, --// Camera transition spring damper, test it out to see what works for you
 	CAMERA_TRANSITION_IN_SPEED = 10, --// How quickly locked camera moves to offset position
 	CAMERA_TRANSITION_OUT_SPEED = 14, --// How quickly locked camera moves back from offset position
-	LOCKED_CAMERA_OFFSET = Vector3.new(2, 0.25, 0), --// Locked camera offset
+	LOCKED_CAMERA_OFFSET = Vector3.new(0, 0, 0), --// Locked camera offset
 	--// Locked mouse icon
 	LOCKED_MOUSE_ICON = "rbxassetid://124289329770802",
 	--// Shift lock keybinds

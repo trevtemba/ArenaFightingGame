@@ -121,6 +121,7 @@ function Game:RegisterPlayer(playerObj)
 	self.players[playerObj.userId] = playerObj
 	self.characterToPlayer[playerObj.character] = playerObj
 	table.insert(self.alivePlayers, playerObj)
+	playerObj.character:SetAttribute("Player", true)
 	self:SortPlayersByHealth()
 end
 

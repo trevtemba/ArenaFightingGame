@@ -21,7 +21,7 @@ function LootManager.CreateLootOrb(rootPos: Vector3, playerObj, tier: string)
 
 	local function getPlayerFromTouch(part)
 		local character = part:FindFirstAncestorWhichIsA("Model")
-		if character then
+		if character and character:GetAttribute("Player") then
 			return Players:GetPlayerFromCharacter(character)
 		end
 		return nil
