@@ -22,7 +22,7 @@ local flinchEvent =
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
 
-local FLINCH_DISTANCE = 4
+local FLINCH_DISTANCE = 3
 
 local CombatHandler = {}
 CombatHandler.__index = CombatHandler
@@ -218,8 +218,12 @@ function CombatHandler:Attack(spaceHeld)
 
 	-- Play animation
 	self.owner.animationHandler:StopAll()
-	self.owner.animationHandler:Play(animName, 0, 3, 1, false, "Action3")
-	self:M1Slow(5)
+	self.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
+	if self.combo == self.maxCombo then
+		self:M1Slow(5)
+	else
+		self:M1Slow(self.owner.stats.speed)
+	end
 	-- When starting the attack (before connecting or right at anim start)
 	self._attackSessionId = (self._attackSessionId or 0) + 1
 	local sessionId = self._attackSessionId
@@ -350,8 +354,9 @@ function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCom
 		blockable = blockable,
 		knocksBack = knocksBack,
 		isAirCombo = isAirCombo,
-		hitType = "slash",
+		hitType = "blunt",
 		attackerLookVector = lookVector,
+		attackerPhysicsHandler = self.owner.physicsHandler,
 	}
 
 	entity:TakeDamage(attackData)
@@ -403,6 +408,8 @@ function CombatHandler:TakeDamage(attackData)
 		if attackData.knocksBack then
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 10)
 		else
+			attackData.attackerPhysicsHandler:SetWalkspeed(0)
+			attackData.attackerPhysicsHandler:MoveForward(attackData.attackerLookVector, FLINCH_DISTANCE)
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE)
 		end
 	end

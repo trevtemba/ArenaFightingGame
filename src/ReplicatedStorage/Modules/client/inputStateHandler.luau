@@ -1,4 +1,5 @@
 local STATE = require(script.Parent.Parent:WaitForChild("core"):WaitForChild("State"))
+local animationModule = require(script.Parent.animationModule)
 
 local InputStateHandler = {}
 InputStateHandler.__index = InputStateHandler
@@ -85,6 +86,9 @@ end
 -- Disables an input state
 function InputStateHandler:RemoveState(state)
 	self.states[state] = nil
+	if #self.states == 0 then
+		animationModule:Play("")
+	end
 end
 
 -- Checks if an input state is currently active
