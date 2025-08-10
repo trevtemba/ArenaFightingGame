@@ -12,24 +12,24 @@ local Game = require(script.Parent:WaitForChild("Game"))
 local CollisionManager = require(script.Parent.CollisionManager)
 local InventoryHandler = require(script.Parent.InventoryHandler)
 local ItemHandler = require(script.Parent.ItemHandler)
-local Soul = require(script.Parent.Soul)
+local SoulHandler = require(script.Parent.SoulHandler)
 local StateHandler = require(script.Parent.StateHandler)
 
 local Player = {}
 Player.__index = Player
 
-function Player.new(plr, champion, rig)
+function Player.new(plr, champion, rig, soulType)
 	local self = setmetatable({}, Player)
 
 	-- Game properties
 	self.userId = plr.UserId
 	self.name = plr.Name
 	self.health = 100
+	self.soulType = soulType
 	self.tier = 1
 	self.xp = 0
 	self.champion = champion
 	self.character = rig
-	self.soul = Soul.new("Engage")
 	self.ranged = champion.ranged
 	self.alive = true
 
@@ -43,6 +43,7 @@ function Player.new(plr, champion, rig)
 	self.itemHandler = nil
 	self.stateHandler = nil
 	self.inventoryHandler = nil
+	self.soulHandler = nil
 
 	-- Runtime-modifiable baseStats
 	self.baseStats = {
@@ -100,6 +101,7 @@ function Player:Initialize()
 	self.itemHandler = ItemHandler.new(self)
 	self.stateHandler = StateHandler.new()
 	self.inventoryHandler = InventoryHandler.new(self)
+	self.soulHandler = SoulHandler.new(self)
 
 	-- setup ragdoll and walkspeed
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
@@ -147,6 +149,12 @@ end
 function Player:Cast(abilitySlot)
 	if self.combatHandler then
 		self.combatHandler:HandleCastInput(abilitySlot)
+	end
+end
+
+function Player:SoulCast()
+	if self.combatHandler then
+		self.soulHandler:Cast()
 	end
 end
 

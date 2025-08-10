@@ -86,13 +86,14 @@ end
 -- Register players
 for _, plr in ipairs(joinedPlayers) do
 	local champion, rig = ChampionFactory.newChampion(selectedChampions[plr.UserId])
+	local soulType = "Engage" --this will be a pcall that fetches the respective players soul type from database
 	CollectionService:AddTag(rig, "player")
 	rig:SetPrimaryPartCFrame(plr.Character.PrimaryPart.CFrame)
 	plr.Character = rig
 
 	rig.Parent = workspace:WaitForChild("Players")
 
-	local playerObj = Player.new(plr, champion, rig)
+	local playerObj = Player.new(plr, champion, rig, soulType)
 	gameInstance:RegisterPlayer(playerObj)
 end
 

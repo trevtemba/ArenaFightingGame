@@ -200,7 +200,6 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	if processDebounce("attack", 0.2) or not inputStateHandler:CanDo(STATE.Attacking) then
 		return
 	end
-	inputStateHandler:ToggleIdle(false)
 	inputStateHandler:SetState(STATE.Attacking)
 	updateSprinting()
 
@@ -249,6 +248,23 @@ CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
 	if remote then
 		print("casting 1")
 		remote:FireServer(1)
+	end
+end)
+
+CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
+	if
+		processDebounce("soulAbility", player.Character:GetAttribute("soulAbilityCd"))
+		or not inputStateHandler:CanDo(STATE.SoulCasting)
+	then
+		return
+	end
+	inputStateHandler:SetState(STATE.SoulCasting)
+	hotbar.Cast({ abilitySlot = "soul" })
+	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd"), abilitySlot = "soul" })
+	local remote = ServerEvents:FindFirstChild("OnSoulCast")
+	if remote then
+		print("casting soul")
+		remote:FireServer()
 	end
 end)
 
@@ -491,7 +507,6 @@ if isCharLoaded:Invoke() then
 	local char = player.Character
 
 	inputStateHandler = InputStateHandler.new(humanoid)
-	inputStateHandler:ToggleIdle(true)
 	PlayerGui:FindFirstChild("Core").Enabled = true
 	PlayerGui:FindFirstChild("Freecammed").Enabled = true
 	humanoid.StateChanged:Connect(function(_, newState)

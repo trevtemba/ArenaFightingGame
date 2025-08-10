@@ -16,6 +16,13 @@ function PlayerHandler.OnCast(plr: Player, abilitySlot)
 	end
 end
 
+function PlayerHandler.OnSoulCast(plr: Player)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:SoulCast()
+	end
+end
+
 function PlayerHandler.OnBlock(plr: Player, activate)
 	local playerObj = Game:GetInstance():GetPlayer(plr, activate)
 	if playerObj then

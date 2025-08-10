@@ -3,6 +3,7 @@ local State = {
 	Idle = "idle",
 	Attacking = "attacking",
 	Casting = "casting",
+	SoulCasting = "soulcasting",
 	Sprinting = "sprinting",
 	Walking = "walking",
 	Jumping = "jumping",

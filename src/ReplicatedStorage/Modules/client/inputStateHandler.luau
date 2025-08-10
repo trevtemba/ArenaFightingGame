@@ -66,6 +66,11 @@ function InputStateHandler:CanDo(state)
 			STATE.Casting,
 			STATE.Stunned,
 		}
+	elseif state == STATE.SoulCasting then
+		blockedStates = {
+			STATE.Casting,
+			STATE.SoulCasting,
+		}
 	elseif state == STATE.Jumping then
 		blockedStates = {
 			STATE.Jumping,
@@ -86,10 +91,6 @@ end
 -- Disables an input state
 function InputStateHandler:RemoveState(state)
 	self.states[state] = nil
-	if #self.states == 0 then
-		print("idling")
-		self:ToggleIdle(true)
-	end
 end
 
 -- Checks if an input state is currently active
@@ -152,11 +153,4 @@ function InputStateHandler:ToggleHeldForFreecam()
 	end
 end
 
-function InputStateHandler:ToggleIdle(on)
-	if on then
-		animationModule.Play("idle", 0, false, "Idle")
-	else
-		animationModule.Stop("idle")
-	end
-end
 return InputStateHandler
