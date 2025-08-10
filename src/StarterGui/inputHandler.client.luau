@@ -200,6 +200,7 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	if processDebounce("attack", 0.2) or not inputStateHandler:CanDo(STATE.Attacking) then
 		return
 	end
+	inputStateHandler:ToggleIdle(false)
 	inputStateHandler:SetState(STATE.Attacking)
 	updateSprinting()
 
@@ -490,6 +491,7 @@ if isCharLoaded:Invoke() then
 	local char = player.Character
 
 	inputStateHandler = InputStateHandler.new(humanoid)
+	inputStateHandler:ToggleIdle(true)
 	PlayerGui:FindFirstChild("Core").Enabled = true
 	PlayerGui:FindFirstChild("Freecammed").Enabled = true
 	humanoid.StateChanged:Connect(function(_, newState)

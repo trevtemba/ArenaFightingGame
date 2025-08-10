@@ -87,7 +87,8 @@ end
 function InputStateHandler:RemoveState(state)
 	self.states[state] = nil
 	if #self.states == 0 then
-		animationModule:Play("")
+		print("idling")
+		self:ToggleIdle(true)
 	end
 end
 
@@ -151,4 +152,11 @@ function InputStateHandler:ToggleHeldForFreecam()
 	end
 end
 
+function InputStateHandler:ToggleIdle(on)
+	if on then
+		animationModule.Play("idle", 0, false, "Idle")
+	else
+		animationModule.Stop("idle")
+	end
+end
 return InputStateHandler
