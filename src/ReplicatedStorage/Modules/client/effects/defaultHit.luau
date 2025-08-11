@@ -1,6 +1,7 @@
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local highlightHelper = require(script.Parent.highlightHelper)
+local particleHelper = require(script.Parent.particleHelper)
 
 local Sounds = ReplicatedStorage:FindFirstChild("Sounds")
 local Effects = ReplicatedStorage:WaitForChild("Effects")
@@ -8,7 +9,8 @@ local Effects = ReplicatedStorage:WaitForChild("Effects")
 return function(argumentData)
 	local target: Model = argumentData.target
 	local hitType: string = argumentData.hitType
-	local knocksBack: boolean = argumentData.knocksBack
+	local knockBack: boolean = argumentData.knockBack
+	local attackerLookVector: Vector3 = argumentData.attackerLookVector
 	if target and hitType then
 		local rootPart = target:FindFirstChild("HumanoidRootPart")
 		if rootPart then
@@ -21,9 +23,11 @@ return function(argumentData)
 			if hitType == "blunt" then
 				clone = Effects.CoreEffects.bluntHitEffect:Clone()
 				sound = Sounds:FindFirstChild("impact"):Clone()
+				outerTransparency = 0.1
 			elseif hitType == "slash" then
 				clone = Effects.CoreEffects.slashHitEffect:Clone()
 				sound = Sounds:FindFirstChild("impact"):Clone()
+				outerTransparency = 0.1
 			elseif hitType == "block" then
 				clone = Effects.CoreEffects.blockHitEffect:Clone()
 				local num = math.random(1, 3)
@@ -41,17 +45,7 @@ return function(argumentData)
 			clone.Parent = rootPart
 			sound.Parent = target
 			sound:Play()
-			for _, v in clone:GetDescendants() do
-				if v:IsA("ParticleEmitter") then
-					if v:GetAttribute("EmitDelay") and v:GetAttribute("EmitDelay") > 0 then
-						task.delay(v:GetAttribute("EmitDelay"), function()
-							v:Emit(v:GetAttribute("EmitCount"))
-						end)
-					else
-						v:Emit(v:GetAttribute("EmitCount"))
-					end
-				end
-			end
+			particleHelper.EmitPart(clone)
 			local highlight = highlightHelper:highlightCharacter(
 				target,
 				highlightColor,
@@ -61,6 +55,19 @@ return function(argumentData)
 				"pulse",
 				0.25
 			)
+			if knockBack then
+				local knockBackClone = Effects.KnockbackEffect:Clone()
+				local knockBackSound = Sounds.knockback1:Clone()
+				local lookAtCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
+				knockBackClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-90), 0, 0)
+				knockBackClone.Parent = game.Workspace
+				knockBackSound.Parent = rootPart
+				knockBackSound:Play()
+				particleHelper.EmitPart(knockBackClone)
+
+				Debris:AddItem(knockBackClone, 1)
+				Debris:AddItem(knockBackSound, 1)
+			end
 			-- Cleanup
 			Debris:AddItem(clone, 1)
 			Debris:AddItem(sound, 1)

@@ -5,7 +5,7 @@ local tweenInfoBtns1 = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDir
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local vpFrame = script.Parent
-	:WaitForChild("classFrame")
+	:WaitForChild("Dante")
 	:WaitForChild("bruteFrame")
 	:WaitForChild("topFrame")
 	:WaitForChild("parFrame")

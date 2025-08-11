@@ -2,6 +2,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local LootManager = require(ReplicatedStorage.Modules.core.LootManager)
 local CollisionManager = require(script.Parent.CollisionManager)
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
@@ -15,6 +16,7 @@ local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
 local StateHandler = require(script.Parent.StateHandler)
 
 local STATE = require(script.Parent:WaitForChild("State"))
+local DROP_TYPES = require(script.Parent.DropTypes)
 local ATTACK_STUN_TIME = 0.5
 
 local Enemy = {}
@@ -22,18 +24,18 @@ Enemy.__index = Enemy
 
 -- CLASS SETUP --
 
-function Enemy.new()
+function Enemy.new(lootDrop)
 	local self = setmetatable({}, Enemy)
 
 	-- PROPERTIES
 	self.name = ""
 	self.character = nil
 	self.humanoid = nil
-	self.teir = 0
+	self.tier = 0
 	self.target = nil
 	self.alive = false
 	self.active = false
-	self.stats = {
+	self.baseStats = {
 		durability = 0,
 		damage = 0,
 		pierce = 0,
@@ -42,6 +44,9 @@ function Enemy.new()
 		critChance = 0,
 		speed = 18,
 	}
+
+	-- (Base + Modifier)
+	self.stats = {}
 
 	self.damageTypes = {
 		attack = nil,
@@ -72,6 +77,8 @@ function Enemy.new()
 	self._stunEndTime = nil
 	self._facingConn = nil
 
+	self.lootDrop = lootDrop
+
 	return self
 end
 
@@ -97,20 +104,20 @@ function Enemy:Init(stage, enemyType, rig)
 	self.name = config.name
 	self.currentHP = config.health
 	self.maxHP = config.health
-	self.teir = stage
+	self.tier = stage
 
 	self.humanoid.WalkSpeed = config.speed
 	self.humanoid.DisplayName = ""
 
-	self.stats["durability"] = config.durability
-	self.stats["damage"] = config.damage
-	self.stats["pierce"] = config.pierce
-	self.stats["range"] = config.range or 5
-	self.stats["attackCooldown"] = config.cooldown
-	self.stats["critChance"] = config.crit
-	self.stats["critMultiplier"] = config.critMultiplier
-	self.stats["speed"] = config.speed
-	self.stats["ranged"] = config.range > 15 and true or false
+	self.baseStats["durability"] = config.durability
+	self.baseStats["damage"] = config.damage
+	self.baseStats["pierce"] = config.pierce
+	self.baseStats["range"] = config.range or 5
+	self.baseStats["attackCooldown"] = config.cooldown
+	self.baseStats["critChance"] = config.crit
+	self.baseStats["critMultiplier"] = config.critMultiplier
+	self.baseStats["speed"] = config.speed
+	self.baseStats["ranged"] = config.range > 15 and true or false
 	self.damageTypes.attack = config.attackDmgType
 
 	if self.humanoid then
@@ -118,11 +125,11 @@ function Enemy:Init(stage, enemyType, rig)
 	end
 
 	-- load hitbox
-	if self.stats["ranged"] == false then -- Melee
+	if self.baseStats["ranged"] == false then -- Melee
 		local template = ServerStorage:FindFirstChild("meleeHitbox")
 		if template then
 			local hitbox = template:Clone()
-			hitbox.Size = Vector3.new(hitbox.Size.X, hitbox.Size.Y, self.stats["range"])
+			hitbox.Size = Vector3.new(hitbox.Size.X, hitbox.Size.Y, self.baseStats["range"])
 			hitbox.Parent = workspace
 			self.hitbox = hitbox
 		else
@@ -137,10 +144,26 @@ function Enemy:Init(stage, enemyType, rig)
 	self.physicsHandler = PhysicsHandler.new(self.character, "Enemy", nil)
 	self.stateHandler = StateHandler.new()
 
+	self:RecalculateStats()
 	self:SetState(STATE.Idle)
 	CollisionManager:SetCollisionGroupEntities(self.character)
 	print(string.format("✅ Built stage %d %s enemy (%s)", stage, enemyType, self.name))
 	print(self)
+end
+
+function Enemy:RecalculateStats()
+	for stat, val in pairs(self.baseStats) do
+		self.stats[stat] = val
+	end
+	if self.itemHandler then
+		for _, comp in pairs(self.itemHandler.components) do
+			if comp and comp.stats then
+				for stat, val in pairs(comp.stats) do
+					self.stats[stat] = (self.stats[stat] or 0) + val
+				end
+			end
+		end
+	end
 end
 
 -- STATE --
@@ -329,7 +352,13 @@ function Enemy:Stun(duration)
 end
 
 function Enemy:Die()
-	--todo
+	clientEffects:FireAllClients("dissolveCharacter", { target = self.character, killEffect = "default" })
+	if self.lootDrop ~= DROP_TYPES.None and self.target.userId and self.alive then
+		self.alive = false
+		local rootPos = self.character.PrimaryPart.Position
+		LootManager.CreateLootOrb(rootPos, self.target, self.lootDrop)
+		self.lootDrop = DROP_TYPES.None
+	end
 end
 
 -- AI LOGIC
@@ -395,6 +424,7 @@ function Enemy:MeleeAttack()
 				blockable = true,
 				hitType = "slash",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+				attackerPhysicsHandler = self.physicsHandler,
 			}
 			target:TakeDamage(attackData)
 
@@ -438,10 +468,11 @@ function Enemy:RangedAttack()
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
 				crit = false,
-				blockable = false,
+				blockable = true,
 				knocksBack = false,
 				hitType = "blunt",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+				attackerPhysicsHandler = self.physicsHandler,
 			}
 			target:TakeDamage(attackData)
 			self.damageDebounce = true

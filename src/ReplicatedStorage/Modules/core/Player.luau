@@ -1,3 +1,5 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local tableToString = require(ReplicatedStorage.Modules.tableToString)
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
@@ -7,26 +9,27 @@ local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
 
 local Game = require(script.Parent:WaitForChild("Game"))
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollisionManager = require(script.Parent.CollisionManager)
-local Soul = require(script.Parent.Soul)
+local InventoryHandler = require(script.Parent.InventoryHandler)
+local ItemHandler = require(script.Parent.ItemHandler)
+local SoulHandler = require(script.Parent.SoulHandler)
 local StateHandler = require(script.Parent.StateHandler)
 
 local Player = {}
 Player.__index = Player
 
-function Player.new(plr, champion, rig)
+function Player.new(plr, champion, rig, soulType)
 	local self = setmetatable({}, Player)
 
 	-- Game properties
 	self.userId = plr.UserId
 	self.name = plr.Name
 	self.health = 100
-	self.teir = 1
+	self.soulType = soulType
+	self.tier = 1
 	self.xp = 0
 	self.champion = champion
 	self.character = rig
-	self.soul = Soul.new("Engage")
 	self.ranged = champion.ranged
 	self.alive = true
 
@@ -37,10 +40,13 @@ function Player.new(plr, champion, rig)
 	self.combatHandler = nil
 	self.movementHandler = nil
 	self.physicsHandler = nil
+	self.itemHandler = nil
 	self.stateHandler = nil
+	self.inventoryHandler = nil
+	self.soulHandler = nil
 
-	-- Runtime-modifiable stats
-	self.stats = {
+	-- Runtime-modifiable baseStats
+	self.baseStats = {
 		durability = champion.durability,
 		attackDmg = champion.attackDmg,
 		magicDmg = champion.magicDmg,
@@ -51,11 +57,18 @@ function Player.new(plr, champion, rig)
 		critMultiplier = champion.critMultiplier,
 		speed = champion.speed,
 		range = champion.range,
+		abilityCooldowns = champion.cooldowns,
 		stunResist = 0,
 	}
 
+	self.abilities = champion.abilities
+
+	-- (Base + Modifier)
+	self.stats = {}
+
 	self.damageTypes = {
 		attack = champion.attackDmgType,
+		ability = champion.attackDmgType,
 	}
 
 	-- Combat state
@@ -63,8 +76,6 @@ function Player.new(plr, champion, rig)
 	self.currentHP = champion.hp
 	self.maxEnergy = champion.energy
 	self.currentEnergy = champion.energy
-
-	self.cooldowns = champion.cooldowns
 
 	self.currentEnemies = {}
 	self.statusEffects = {
@@ -78,6 +89,8 @@ function Player.new(plr, champion, rig)
 end
 
 function Player:Initialize()
+	self:RecalculateStats()
+
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
 	self.fxHandler = FXHandler.new(self.character)
@@ -85,7 +98,10 @@ function Player:Initialize()
 	self.combatHandler = CombatHandler.new(self, "Player")
 	self.movementHandler = MovementHandler.new(self)
 	self.physicsHandler = PhysicsHandler.new(self.character, "player", self.userId)
+	self.itemHandler = ItemHandler.new(self)
 	self.stateHandler = StateHandler.new()
+	self.inventoryHandler = InventoryHandler.new(self)
+	self.soulHandler = SoulHandler.new(self)
 
 	-- setup ragdoll and walkspeed
 	local humanoid = self.character:FindFirstChildOfClass("Humanoid")
@@ -97,13 +113,48 @@ function Player:Initialize()
 	self:SyncWalkspeed()
 end
 
+function Player:RecalculateStats()
+	for stat, val in pairs(self.baseStats) do
+		self.stats[stat] = val
+	end
+	if self.inventoryHandler then
+		for _, item in pairs(self.inventoryHandler.activeItems) do
+			if item and item.stats then
+				for stat, val in pairs(item.stats) do
+					self.stats[stat] = (self.stats[stat] or 0) + val
+				end
+			end
+		end
+	end
+	for slot, cooldown in ipairs(self.stats.abilityCooldowns) do
+		self.character:SetAttribute("abilityCd" .. tostring(slot), cooldown)
+	end
+end
+
+-- Apply incremental stat change (e.g. temporary buff)
+function Player:ApplyStat(stat, val)
+	self.stats[stat] = (self.stats[stat] or 0) + val
+end
+
 function Player:Damage(roundNum, enemyHP)
 	self.health = self.health - (roundNum + enemyHP / 10)
 end
 
-function Player:Attack(target, spaceHeld)
+function Player:Attack(spaceHeld)
 	if self.combatHandler then
-		self.combatHandler:HandleAttackInput(target, spaceHeld)
+		self.combatHandler:HandleAttackInput(spaceHeld)
+	end
+end
+
+function Player:Cast(abilitySlot)
+	if self.combatHandler then
+		self.combatHandler:HandleCastInput(abilitySlot)
+	end
+end
+
+function Player:SoulCast()
+	if self.combatHandler then
+		self.soulHandler:Cast()
 	end
 end
 
@@ -174,7 +225,7 @@ function Player:GetEnemyFromCharacter(character)
 end
 
 function Player:GetStat(stat)
-	-- First check dynamic player-modified stats
+	-- First check dynamic player-modified baseStats
 	if self.stats and self.stats[stat] ~= nil then
 		return self.stats[stat]
 	end
@@ -190,6 +241,47 @@ function Player:SyncWalkspeed()
 	end
 end
 
+-- ADDERS
+
+function Player:AddHealth(amount)
+	self.health += amount
+end
+
+function Player:AddGold(amount)
+	self.inventoryHandler:AddGold(amount)
+end
+
+function Player:AddRandomComponent()
+	if self.itemHandler then
+		local randomComponent = self.itemHandler:RollComponent()
+		self:AddItemToInventory(randomComponent)
+	end
+end
+
+function Player:AddItemToInventory(itemId)
+	if self.inventoryHandler then
+		self.inventoryHandler:AddItem(itemId)
+		print(self.inventoryHandler.inventory)
+	end
+end
+
+function Player:AddRandomArtifact()
+	if self.itemHandler then
+		print("artifact todo")
+	end
+end
+
+function Player:SpawnAnvil(type)
+	if self.itemHandler then
+		self.itemHandler:SpawnAnvil(type)
+	end
+end
+
 function Player:CharDie() end
 
+function Player:ReturnDev(devCode)
+	if devCode == "state" then
+		print("SERVER STATES: " .. tableToString(self.stateHandler:GetAllStates()))
+	end
+end
 return Player

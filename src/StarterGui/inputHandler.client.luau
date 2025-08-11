@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
+local hotbar = require(ReplicatedStorage.Modules.client.effects.UI.hotbar)
 local InputStateHandler = require(ReplicatedStorage.Modules.client.inputStateHandler)
 local camModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
 local animationModule =
@@ -10,6 +11,7 @@ local animationModule =
 local physicsModule =
 	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("physicsModule"))
 local STATE = require(ReplicatedStorage.Modules.core.State)
+local tableToString = require(ReplicatedStorage.Modules.tableToString)
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local BindableFunctions = ReplicatedStorage:WaitForChild("BindableFunctions")
@@ -26,6 +28,7 @@ local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local attackDone = ClientEvents:WaitForChild("attackDone")
+local castDone = ClientEvents:WaitForChild("castDone")
 local inAir = ClientEvents:WaitForChild("inAir")
 local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
 
@@ -209,13 +212,16 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("Block").Pressed:Connect(function()
+	print("pressed f")
 	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
+		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))
 		return
 	end
 	inputStateHandler:SetState(STATE.Blocking)
 
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
+		print("pressing block")
 		remote:FireServer(true)
 	end
 end)
@@ -225,6 +231,40 @@ CombatContext:WaitForChild("Block").Released:Connect(function()
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		remote:FireServer(false)
+	end
+end)
+
+CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
+	if
+		processDebounce("cast1", player.Character:GetAttribute("abilityCd1"))
+		or not inputStateHandler:CanDo(STATE.Casting)
+	then
+		return
+	end
+	inputStateHandler:SetState(STATE.Casting)
+	hotbar.Cast({ abilitySlot = 1 })
+	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("abilityCd1"), abilitySlot = 1 })
+	local remote = ServerEvents:FindFirstChild("OnCast")
+	if remote then
+		print("casting 1")
+		remote:FireServer(1)
+	end
+end)
+
+CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
+	if
+		processDebounce("soulAbility", player.Character:GetAttribute("soulAbilityCd"))
+		or not inputStateHandler:CanDo(STATE.SoulCasting)
+	then
+		return
+	end
+	inputStateHandler:SetState(STATE.SoulCasting)
+	hotbar.Cast({ abilitySlot = "soul" })
+	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd"), abilitySlot = "soul" })
+	local remote = ServerEvents:FindFirstChild("OnSoulCast")
+	if remote then
+		print("casting soul")
+		remote:FireServer()
 	end
 end)
 
@@ -244,6 +284,14 @@ CoreContext:WaitForChild("Shift").Released:Connect(function()
 	updateSprinting()
 	if activeKeyCount > 0 then
 		activeKeyCount -= 1
+	end
+end)
+
+CoreContext:WaitForChild("stateShow").Pressed:Connect(function()
+	print("CLIENT STATES: " .. tableToString(inputStateHandler:GetAllStates()))
+	local remote = ServerEvents:FindFirstChild("OnDev")
+	if remote then
+		remote:FireServer("state")
 	end
 end)
 
@@ -435,6 +483,11 @@ attackDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Attacking)
 	setCanJump(true)
 	print("client can do movement")
+end)
+
+castDone.OnClientEvent:Connect(function()
+	inputStateHandler:RemoveState(STATE.Casting)
+	setCanJump(true)
 end)
 
 inAir.OnClientEvent:Connect(function(isActive)

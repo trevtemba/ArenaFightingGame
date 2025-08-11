@@ -126,7 +126,6 @@ function PhysicsHandler:MoveForward(lookVector, distance)
 		if aAlign then
 			aAlign:Destroy()
 		end
-
 		aAlignPart:Destroy()
 		aAtt0:Destroy()
 	end)

@@ -1,8 +1,11 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DROP_TYPES = require(ReplicatedStorage.Modules.core.DropTypes)
+
 return {
 	[1] = {
 		melee = {
 			name = "Ranger",
-			health = 400,
+			health = 250,
 			durability = 0,
 			damage = 10,
 			pierce = 0,
@@ -15,7 +18,7 @@ return {
 		},
 		ranged = {
 			name = "Archer",
-			health = 750,
+			health = 150,
 			durability = 0,
 			damage = 20,
 			pierce = 0,
@@ -25,6 +28,13 @@ return {
 			critMultiplier = 1.75,
 			speed = 3,
 			attackDmgType = "physical",
+		},
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 0 },
+			{ Type = DROP_TYPES.Common, Weight = 50 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 15 },
+			{ Type = DROP_TYPES.Legendary, Weight = 10 },
 		},
 	},
 	[2] = {
@@ -54,6 +64,13 @@ return {
 			speed = 18,
 			attackDmgType = "physical",
 		},
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 25 },
+			{ Type = DROP_TYPES.Common, Weight = 25 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 20 },
+			{ Type = DROP_TYPES.Legendary, Weight = 5 },
+		},
 	},
 	[3] = {
 		melee = {
@@ -82,6 +99,13 @@ return {
 			speed = 18,
 			attackDmgType = "physical",
 		},
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 25 },
+			{ Type = DROP_TYPES.Common, Weight = 25 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 20 },
+			{ Type = DROP_TYPES.Legendary, Weight = 5 },
+		},
 	},
 	[4] = {
 		melee = {
@@ -109,6 +133,13 @@ return {
 			critMultiplier = 1.75,
 			speed = 18,
 			attackDmgType = "physical",
+		},
+		dropRates = {
+			{ Type = DROP_TYPES.None, Weight = 25 },
+			{ Type = DROP_TYPES.Common, Weight = 25 },
+			{ Type = DROP_TYPES.Uncommon, Weight = 25 },
+			{ Type = DROP_TYPES.Rare, Weight = 20 },
+			{ Type = DROP_TYPES.Legendary, Weight = 5 },
 		},
 	},
 }

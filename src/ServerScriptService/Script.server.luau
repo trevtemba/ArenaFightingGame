@@ -12,7 +12,7 @@ local Game = require(core:WaitForChild("Game"))
 local Player = require(core:WaitForChild("Player"))
 local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
 
-local toggleCamera = ClientEvents:WaitForChild("toggleCamera")
+local champChosenByServer = ClientEvents:WaitForChild("champChosenByServer")
 local ChampionSelectedEvent = ServerEvents:WaitForChild("ChampSelect")
 
 CollisionManager:Init()
@@ -23,7 +23,7 @@ local CHAMPION_PICK_TIME = 5
 local availableChampions = { "Dante" }
 
 local selectedChampions = {}
-math.randomseed(os.clock() * 1000000) -- for random calculations like crit
+math.randomseed(tick())
 
 -- Tracks when players are ready
 local joinedPlayers = {}
@@ -72,8 +72,8 @@ for _, plr in ipairs(joinedPlayers) do
 		local randomPick = availableChampions[math.random(1, #availableChampions)]
 		selectedChampions[plr.UserId] = randomPick
 		print(plr.Name .. " did not pick. Assigned random champion: " .. randomPick)
+		champChosenByServer:FireClient(plr, randomPick)
 	end
-	toggleCamera:FireAllClients("normal")
 end
 
 -- Wait for all characters to load
@@ -86,13 +86,14 @@ end
 -- Register players
 for _, plr in ipairs(joinedPlayers) do
 	local champion, rig = ChampionFactory.newChampion(selectedChampions[plr.UserId])
+	local soulType = "Engage" --this will be a pcall that fetches the respective players soul type from database
 	CollectionService:AddTag(rig, "player")
 	rig:SetPrimaryPartCFrame(plr.Character.PrimaryPart.CFrame)
 	plr.Character = rig
 
 	rig.Parent = workspace:WaitForChild("Players")
 
-	local playerObj = Player.new(plr, champion, rig)
+	local playerObj = Player.new(plr, champion, rig, soulType)
 	gameInstance:RegisterPlayer(playerObj)
 end
 

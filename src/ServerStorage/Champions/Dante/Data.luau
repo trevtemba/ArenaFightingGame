@@ -5,7 +5,7 @@ return {
 	attackDmg = 20,
 	magicDmg = 20,
 	attackSpeed = 1,
-	attackCooldown = 0.5,
+	attackCooldown = 0.45,
 	critChance = 0.25,
 	critMultiplier = 1.75,
 	pierce = 0,
@@ -16,15 +16,21 @@ return {
 	attackDmgType = "physical",
 
 	abilities = {
-		"Seismic Slam",
-		"Matrix Uplink",
-		"Flamethrower",
-		"Overdrive",
+		[1] = "Flamethrower",
+
+		[2] = "Matrix Uplink",
+
+		[3] = "Seismic Slam",
+
+		[4] = "Overdrive",
 	},
 	cooldowns = {
-		[1] = 3,
-		[2] = 3,
-		[3] = 3,
-		[4] = 25,
+		[1] = 5,
+
+		[2] = 5,
+
+		[3] = 5,
+
+		[4] = 5,
 	},
 }

@@ -1,7 +1,7 @@
-local module = {}
-
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
 
 local cameraInst = workspace:WaitForChild("Camera")
 local cameraPart = workspace:WaitForChild("MenuFolder"):WaitForChild("MenuCamera"):WaitForChild("menuCameraPart").CFrame
@@ -17,6 +17,8 @@ local bobAmplitude = 0.075 -- How far the camera bobs (height)
 local bobFrequency = 15 -- How fast the camera bobs
 local bobTime = 0
 
+local module = {}
+
 function module.menuCam()
 	repeat
 		task.wait()
@@ -27,8 +29,9 @@ function module.menuCam()
 end
 
 function module.normCam()
-	local camera = game.Workspace.Camera
+	local camera = game.Workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Custom
+	camera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 end
 
 -- FX

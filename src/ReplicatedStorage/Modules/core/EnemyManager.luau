@@ -1,8 +1,11 @@
 local Enemy = require(script.Parent:WaitForChild("Enemy"))
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ServerStorage = game:GetService("ServerStorage")
+local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
+local DROP_TYPES = require(script.Parent.DropTypes)
 local enemies = ServerStorage:WaitForChild("enemies")
 
 local enemyMap = {}
@@ -11,10 +14,31 @@ local EnemyManager = {}
 
 local SPAWN_OFFSET_Y = 3
 
-local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr)
+local function rollDropType(dropRates)
+	local totalWeight = 0
+	for _, entry in ipairs(dropRates) do
+		totalWeight += entry.Weight
+	end
+
+	local roll = math.random() * totalWeight
+	print(roll)
+	local cumulative = 0
+
+	for _, entry in ipairs(dropRates) do
+		cumulative += entry.Weight
+		if roll <= cumulative then
+			return entry.Type
+		end
+	end
+
+	return DROP_TYPES.None
+end
+
+local function spawnEnemy(enemyTemplate, enemyType, spawnCFrame, level, plr, lootDrop, enemyNum)
 	local enemy = enemyTemplate:Clone()
 	enemy.Name = ""
-	local enemyObj = Enemy.new()
+	enemy:SetAttribute("id", "enemy_" .. tostring(enemyNum))
+	local enemyObj = Enemy.new(lootDrop)
 	local plrPos = plr.character:GetPivot().Position
 
 	enemy.Parent = workspace
@@ -38,15 +62,19 @@ end
 function EnemyManager.SpawnS1Enemies(spawns, plr)
 	local meleeTemplate = enemies:WaitForChild("s1melee")
 	local rangedTemplate = enemies:WaitForChild("s1ranged")
-
 	-- first 3 are melee
-	for i = 1, 1 do
-		spawnEnemy(meleeTemplate, "melee", spawns[i], 1, plr)
+	for enemyNum = 1, 1 do
+		local dropRates = EnemyData[1].dropRates
+		local lootDrop = rollDropType(dropRates)
+		spawnEnemy(meleeTemplate, "melee", spawns[enemyNum], 1, plr, lootDrop, enemyNum)
+		print("Enemy spawned with loot drop of: " .. lootDrop)
 	end
 
 	-- last 2 are ranged
-	for i = 4, 4 do
-		spawnEnemy(rangedTemplate, "ranged", spawns[i], 1, plr)
+	for enemyNum = 4, 5 do
+		local dropRates = EnemyData[1].dropRates
+		local lootDrop = rollDropType(dropRates)
+		spawnEnemy(rangedTemplate, "ranged", spawns[enemyNum], 1, plr, lootDrop)
 	end
 
 	plr:SetEnemyTable(enemyMap)

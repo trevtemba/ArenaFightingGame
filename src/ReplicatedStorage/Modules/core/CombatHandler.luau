@@ -2,6 +2,7 @@ local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
 local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
 local StunModule = require(script.Parent:WaitForChild("stunHandler"))
 local attackDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.attackDone
+local castDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.castDone
 local inAir = game:GetService("ReplicatedStorage").RemoteEvents.Client.inAir
 
 local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
@@ -10,10 +11,8 @@ local CollectionService = game:GetService("CollectionService")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TouchInputService = game:GetService("TouchInputService")
-local animationModule = require(ReplicatedStorage.Modules.client.animationModule)
+
 local STATE = require(script.Parent.State)
-local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
 
@@ -23,7 +22,7 @@ local flinchEvent =
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
 
-local FLINCH_DISTANCE = 4
+local FLINCH_DISTANCE = 3
 
 local CombatHandler = {}
 CombatHandler.__index = CombatHandler
@@ -38,6 +37,7 @@ function CombatHandler.new(owner, entityType)
 	self.blockAnimSeq = 1
 	self.comboResetTime = 1 -- Seconds to reset combo
 	self.lastAttackTime = 0
+	self.lastCastTime = {}
 	self.airResetTime = 1.5
 	self.lastAirAttackTime = 0
 	self.bufferedAttack = false
@@ -46,6 +46,7 @@ function CombatHandler.new(owner, entityType)
 	self.attackerFloat = nil
 	self.targetFloat = nil
 	self._attackSessionId = nil
+	self._castSessionId = nil
 	self._blockBreakSessionId = nil
 	self._airFloatCoroutine = nil
 	self._m1SlowId = nil
@@ -67,16 +68,41 @@ function CombatHandler:HandleAttackInput(spaceHeld)
 	end
 end
 
+function CombatHandler:HandleCastInput(abilitySlot)
+	self:Cast(abilitySlot)
+end
+
 function CombatHandler:CanAttack()
 	local now = os.clock()
-	local timeSinceLastAttack = now - self.lastAttackTime
-	if timeSinceLastAttack < self.owner.stats.attackCooldown then
-		return false
+	if self.lastAttackTime then
+		local timeSinceLastAttack = now - self.lastAttackTime
+		if timeSinceLastAttack < self.owner.stats.attackCooldown then
+			return false
+		end
 	end
 
 	local stateHandler = self.owner.stateHandler
 	local blockedStates = {
 		STATE.Attacking,
+		STATE.Stunned,
+		STATE.Ragdolled,
+	}
+
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+end
+
+function CombatHandler:CanCast(abilitySlot)
+	local now = os.clock()
+	if self.lastCastTime[abilitySlot] then
+		local timeSinceLastCast = now - self.lastCastTime[abilitySlot]
+		if timeSinceLastCast < self.owner.stats.abilityCooldowns[abilitySlot] then
+			return false
+		end
+	end
+
+	local stateHandler = self.owner.stateHandler
+	local blockedStates = {
+		STATE.Casting,
 		STATE.Stunned,
 		STATE.Ragdolled,
 	}
@@ -108,8 +134,30 @@ function CombatHandler:CanStun()
 	return not stateHandler:HasAny(blockedStates)
 end
 
+function CombatHandler:Cast(abilitySlot)
+	if not self.humanoid or not self:CanCast(abilitySlot) then
+		castDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		return
+	end
+	if self.owner.stateHandler:HasState(STATE.Blocking) then
+		self:DisableBlock()
+	end
+
+	local now = os.clock()
+	local animName = "ability" .. tostring(abilitySlot)
+	self.owner.stateHandler:SetState(STATE.Casting)
+
+	self.lastCastTime[abilitySlot] = now
+
+	local ability = self.owner.abilities[abilitySlot]
+
+	clientEffects:FireAllClients("initiate", { target = self.owner.character, initiateType = "cast" })
+	ability:Cast(self, animName)
+end
+
 function CombatHandler:Attack(spaceHeld)
-	if not self.humanoid and not self:CanAttack() then
+	if not self.humanoid or not self:CanAttack() then
+		attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 		return
 	end
 	if self.owner.stateHandler:HasState(STATE.Blocking) then
@@ -170,8 +218,12 @@ function CombatHandler:Attack(spaceHeld)
 
 	-- Play animation
 	self.owner.animationHandler:StopAll()
-	self.owner.animationHandler:Play(animName, 0, 3, 1, false, "Action3")
-	self:M1Slow(5)
+	self.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
+	if self.combo == self.maxCombo then
+		self:M1Slow(5)
+	else
+		self:M1Slow(self.owner.stats.speed)
+	end
 	-- When starting the attack (before connecting or right at anim start)
 	self._attackSessionId = (self._attackSessionId or 0) + 1
 	local sessionId = self._attackSessionId
@@ -218,7 +270,7 @@ function CombatHandler:Attack(spaceHeld)
 end
 
 function CombatHandler:EnableBlock()
-	if not self.humanoid and not self:CanBlock() then
+	if not self.humanoid or not self:CanBlock() then
 		return
 	end
 
@@ -272,19 +324,25 @@ function CombatHandler:RestoreBreakBlock()
 	self.owner.animationHandler:Stop("blockBreak")
 end
 
-function CombatHandler:ApplyDamage(entity, blockable, attackType, knocksBack, isAirCombo)
+function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCombo, abilityDamage)
 	if not entity or not entity.combatHandler then
 		return
 	end
 
-	local base = self.owner.stats.attackDmg or 10
+	local base
+	if type == "attack" then
+		base = self.owner.stats.attackDmg or 10
+	elseif type == "ability" then
+		base = abilityDamage
+	end
+
 	local pierce = self.owner.stats.pierce or 0
 	local crit = self:determineCrit()
 	if crit then
 		print("hit crit")
 	end
 	local dmg = base * (crit and self.owner.stats.critMultiplier or 1)
-	local dmgType = self.owner.damageTypes[attackType]
+	local dmgType = self.owner.damageTypes[type]
 	local lookVector = self.owner.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector
 
 	local attackData = {
@@ -296,15 +354,17 @@ function CombatHandler:ApplyDamage(entity, blockable, attackType, knocksBack, is
 		blockable = blockable,
 		knocksBack = knocksBack,
 		isAirCombo = isAirCombo,
-		hitType = "slash",
+		hitType = "blunt",
 		attackerLookVector = lookVector,
+		attackerPhysicsHandler = self.owner.physicsHandler,
 	}
 
 	entity:TakeDamage(attackData)
 
 	self.owner.fxHandler:PlaySound("attack")
-	if not isAirCombo then
-		self.owner.physicsHandler:MoveForward(lookVector, 3)
+	if type == "attack" and not isAirCombo then
+		self.owner.physicsHandler:SetWalkspeed(0)
+		self.owner.physicsHandler:MoveForward(lookVector, FLINCH_DISTANCE)
 	end
 end
 
@@ -338,14 +398,18 @@ function CombatHandler:TakeDamage(attackData)
 	self.owner.currentHP = math.max(self.owner.currentHP - totalDamage, 0)
 	self.humanoid.Health = math.clamp(self.owner.currentHP, 0, self.humanoid.MaxHealth)
 
-	clientEffects:FireAllClients(
-		"defaultHit",
-		{ target = self.owner.character, hitType = attackData.hitType, knocksBack = attackData.knocksBack }
-	)
+	clientEffects:FireAllClients("defaultHit", {
+		target = self.owner.character,
+		hitType = attackData.hitType,
+		knockBack = attackData.knocksBack,
+		attackerLookVector = attackData.attackerLookVector,
+	})
 	if not attackData.isAirCombo then
 		if attackData.knocksBack then
-			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 6)
+			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 10)
 		else
+			attackData.attackerPhysicsHandler:SetWalkspeed(0)
+			attackData.attackerPhysicsHandler:MoveForward(attackData.attackerLookVector, FLINCH_DISTANCE)
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE)
 		end
 	end
@@ -355,6 +419,9 @@ function CombatHandler:TakeDamage(attackData)
 	print(string.format("%s took %d damage", self.owner.name, totalDamage))
 
 	if self.owner.currentHP <= 0 then
+		if self.entityType == "Enemy" then
+			self.owner:Die()
+		end
 		self:Knock()
 	end
 end
@@ -384,7 +451,7 @@ function CombatHandler:determineCrit()
 end
 
 function CombatHandler:Stun(stunTime, walkspeed)
-	if not self.humanoid and not self:canStun() then
+	if not self.humanoid or not self:CanStun() then
 		return
 	end
 
@@ -398,16 +465,11 @@ function CombatHandler:Stun(stunTime, walkspeed)
 		totalStunTime = stunTime
 	end
 
-	StunModule.Stun(self.humanoid, totalStunTime, walkspeed)
-	local sessionId = (self._stunSessionId and 0 or 1) + 1
-	self._stunSessionId = sessionId
-
-	task.delay(stunTime, function()
-		if sessionId ~= self._stunSessionId then
-			return
-		end
+	StunModule.Stun(self.humanoid, totalStunTime, walkspeed, function()
 		self.owner.stateHandler:RemoveState(STATE.Stunned)
 	end)
+	local sessionId = (self._stunSessionId and 0 or 1) + 1
+	self._stunSessionId = sessionId
 end
 
 function CombatHandler:Flinch()
@@ -445,7 +507,6 @@ function CombatHandler:M1Slow(speed)
 		if self._m1SlowId == currentId then
 			self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
 			if self.entityType == "Player" then
-				print("dfdfrs")
 				attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 			end
 		end

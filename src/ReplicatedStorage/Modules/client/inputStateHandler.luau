@@ -1,4 +1,5 @@
 local STATE = require(script.Parent.Parent:WaitForChild("core"):WaitForChild("State"))
+local animationModule = require(script.Parent.animationModule)
 
 local InputStateHandler = {}
 InputStateHandler.__index = InputStateHandler
@@ -59,6 +60,16 @@ function InputStateHandler:CanDo(state)
 	elseif state == STATE.Attacking then
 		blockedStates = {
 			STATE.Casting,
+		}
+	elseif state == STATE.Casting then
+		blockedStates = {
+			STATE.Casting,
+			STATE.Stunned,
+		}
+	elseif state == STATE.SoulCasting then
+		blockedStates = {
+			STATE.Casting,
+			STATE.SoulCasting,
 		}
 	elseif state == STATE.Jumping then
 		blockedStates = {
