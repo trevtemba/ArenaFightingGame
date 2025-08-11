@@ -27,12 +27,12 @@ function SoulHandler:Init()
 	self.ability = data.ability
 
 	self.animationHandler = AnimationHandler.new(self.character)
-
+	self.owner.character:SetAttribute("soulAbilityCd", self.cooldown)
 	CollisionManager:SetCollisionGroupEntities(self.character)
 end
 
 function SoulHandler:Cast()
-	self.data.ability:Cast()
+	self.ability:Cast(self)
 end
 
 return SoulHandler

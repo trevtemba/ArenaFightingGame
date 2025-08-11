@@ -350,6 +350,7 @@ function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCom
 		pierce = pierce,
 		stunTime = 1,
 		damageType = dmgType,
+		type = type,
 		crit = crit,
 		blockable = blockable,
 		knocksBack = knocksBack,
@@ -362,10 +363,10 @@ function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCom
 	entity:TakeDamage(attackData)
 
 	self.owner.fxHandler:PlaySound("attack")
-	if type == "attack" and not isAirCombo then
-		self.owner.physicsHandler:SetWalkspeed(0)
-		self.owner.physicsHandler:MoveForward(lookVector, FLINCH_DISTANCE)
-	end
+	-- if type == "attack" and not isAirCombo then
+	-- 	self.owner.physicsHandler:SetWalkspeed(0)
+	-- 	self.owner.physicsHandler:MoveForward(lookVector, FLINCH_DISTANCE)
+	-- end
 end
 
 function CombatHandler:TakeDamage(attackData)
@@ -408,8 +409,13 @@ function CombatHandler:TakeDamage(attackData)
 		if attackData.knocksBack then
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 10)
 		else
-			attackData.attackerPhysicsHandler:SetWalkspeed(0)
-			attackData.attackerPhysicsHandler:MoveForward(attackData.attackerLookVector, FLINCH_DISTANCE)
+			if attackData.type == "attack" then
+				attackData.attackerPhysicsHandler:SetWalkspeed(0)
+				attackData.attackerPhysicsHandler:MoveForward(attackData.attackerLookVector, FLINCH_DISTANCE)
+				task.delay(0.75, function()
+					attackData.attackerPhysicsHandler:SetWalkspeed(12)
+				end)
+			end
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE)
 		end
 	end
@@ -494,7 +500,7 @@ function CombatHandler:M1Slow(speed)
 	self._m1SlowId = (self._m1SlowId or 0) + 1
 	local currentId = self._m1SlowId
 
-	task.spawn(function()
+	task.defer(function()
 		while os.clock() - self.lastAttackTime < m1SlowDelay do
 			task.wait(0.05)
 			-- If a new M1Slow was triggered, abort this one

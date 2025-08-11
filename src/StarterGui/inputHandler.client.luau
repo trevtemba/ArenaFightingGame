@@ -29,6 +29,7 @@ local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local attackDone = ClientEvents:WaitForChild("attackDone")
 local castDone = ClientEvents:WaitForChild("castDone")
+local soulCastDone = ClientEvents:WaitForChild("soulCastDone")
 local inAir = ClientEvents:WaitForChild("inAir")
 local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
 
@@ -259,8 +260,8 @@ CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 		return
 	end
 	inputStateHandler:SetState(STATE.SoulCasting)
-	hotbar.Cast({ abilitySlot = "soul" })
-	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd"), abilitySlot = "soul" })
+	hotbar.SoulCast()
+	hotbar.SoulCooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd") })
 	local remote = ServerEvents:FindFirstChild("OnSoulCast")
 	if remote then
 		print("casting soul")
@@ -487,6 +488,11 @@ end)
 
 castDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Casting)
+	setCanJump(true)
+end)
+
+soulCastDone.OnClientEvent:Connect(function()
+	inputStateHandler:RemoveState(STATE.SoulCasting)
 	setCanJump(true)
 end)
 
