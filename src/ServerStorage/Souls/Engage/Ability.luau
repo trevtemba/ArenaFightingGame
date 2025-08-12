@@ -8,12 +8,11 @@ local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.c
 local Ability = {}
 
 Ability.Config = {
-	name = "Seismic Slam",
+	name = "Love tap",
 	type = "Damage",
 	blockable = true,
 	knocksBack = false,
-	duration = 2,
-	damage = 25,
+	damage = 5,
 	hitboxType = "cone",
 	hitboxParams = {
 		range = 50,

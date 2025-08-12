@@ -34,5 +34,8 @@ end
 function SoulHandler:Cast()
 	self.ability:Cast(self)
 end
+function SoulHandler:Show()
+	print("showing soul")
+end
 
 return SoulHandler

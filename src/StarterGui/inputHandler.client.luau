@@ -269,6 +269,17 @@ CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 	end
 end)
 
+CoreContext:WaitForChild("ShowSoul").Pressed:Connect(function()
+	if processDebounce("showSoul", 1) then
+		return
+	end
+
+	local remote = ServerEvents:FindFirstChild("OnSoulShow")
+	if remote then
+		remote:FireServer()
+	end
+end)
+
 CoreContext:WaitForChild("Shift").Pressed:Connect(function()
 	if processDebounce("shift", 0.1) then
 		return

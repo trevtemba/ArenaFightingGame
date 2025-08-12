@@ -23,6 +23,13 @@ function PlayerHandler.OnSoulCast(plr: Player)
 	end
 end
 
+function PlayerHandler.OnSoulShow(plr: Player)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:SoulShow()
+	end
+end
+
 function PlayerHandler.OnBlock(plr: Player, activate)
 	local playerObj = Game:GetInstance():GetPlayer(plr, activate)
 	if playerObj then

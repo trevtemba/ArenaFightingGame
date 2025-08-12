@@ -158,6 +158,12 @@ function Player:SoulCast()
 	end
 end
 
+function Player:SoulShow()
+	if self.combatHandler then
+		self.soulHandler:Show()
+	end
+end
+
 function Player:Block(activate)
 	if self.combatHandler then
 		if activate then
