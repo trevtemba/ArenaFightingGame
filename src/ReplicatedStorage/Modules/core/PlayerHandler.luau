@@ -23,10 +23,10 @@ function PlayerHandler.OnSoulCast(plr: Player)
 	end
 end
 
-function PlayerHandler.OnSoulShow(plr: Player)
+function PlayerHandler.OnSoulVisibleToggle(plr: Player, visible)
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
-		playerObj:SoulShow()
+		playerObj:ToggleSoulVisibility(visible)
 	end
 end
 

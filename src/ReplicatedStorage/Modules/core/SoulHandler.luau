@@ -2,11 +2,9 @@ local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
-local Workspace = game:GetService("Workspace")
 local Souls = ServerStorage.Souls
 local CollisionManager = require(script.Parent.CollisionManager)
-
-local mockRootPart = ReplicatedStorage:WaitForChild("Misc"):FindFirstChild("MockRootPart")
+local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
 
 local SoulHandler = {}
 SoulHandler.__index = SoulHandler
@@ -37,7 +35,7 @@ function SoulHandler:Init()
 	self.instanceObjects = self:AttachToPlayer()
 	self.owner.character:SetAttribute("soulAbilityCd", self.cooldown)
 	CollisionManager:SetCollisionGroupEntities(self.character)
-	task.delay(1, function()
+	task.defer(function()
 		self.animationHandler:Play("idle", nil, nil, nil, true, "Idle")
 	end)
 end
@@ -53,12 +51,12 @@ function SoulHandler:AttachToPlayer()
 	alignP.Name = "SoulAttach"
 	alignP.Mode = Enum.PositionAlignmentMode.OneAttachment
 	alignP.MaxForce = 5e5
-	alignP.Responsiveness = 20
+	alignP.Responsiveness = 50
 
 	local alignO = Instance.new("AlignOrientation")
 	alignO.Name = "SoulAttach"
 	alignO.Mode = Enum.OrientationAlignmentMode.OneAttachment
-	alignO.Responsiveness = 20
+	alignO.Responsiveness = 50
 
 	alignP.Attachment0 = att0
 	alignP.Parent = self.character:FindFirstChild("physicsAssets")
@@ -81,8 +79,18 @@ end
 function SoulHandler:Cast()
 	self.ability:Cast(self)
 end
-function SoulHandler:Show()
-	print("showing soul")
+function SoulHandler:ToggleVisibility(visible)
+	if visible then
+		clientEffects:FireAllClients(
+			"toggleSoulVisibility",
+			{ target = self.character, visible = true, particleSkin = "default" }
+		)
+	else
+		clientEffects:FireAllClients(
+			"toggleSoulVisibility",
+			{ target = self.character, visible = false, particleSkin = "default" }
+		)
+	end
 end
 
 return SoulHandler

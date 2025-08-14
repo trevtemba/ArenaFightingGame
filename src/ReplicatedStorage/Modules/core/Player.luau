@@ -158,9 +158,9 @@ function Player:SoulCast()
 	end
 end
 
-function Player:SoulShow()
+function Player:ToggleSoulVisibility(visible)
 	if self.combatHandler then
-		self.soulHandler:Show()
+		self.soulHandler:ToggleVisibility(visible)
 	end
 end
 

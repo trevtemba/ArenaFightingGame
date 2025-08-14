@@ -13,6 +13,7 @@ function InputStateHandler.new(humanoid)
 	-- Track current input holds
 	self.heldInputs = {}
 	self.walking = nil
+	self.soulVisible = false
 	return self
 end
 

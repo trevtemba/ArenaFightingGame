@@ -274,9 +274,12 @@ CoreContext:WaitForChild("ShowSoul").Pressed:Connect(function()
 		return
 	end
 
-	local remote = ServerEvents:FindFirstChild("OnSoulShow")
+	inputStateHandler.soulVisible = not inputStateHandler.soulVisible
+	local visible = inputStateHandler.soulVisible
+
+	local remote = ServerEvents:FindFirstChild("OnSoulVisibleToggle")
 	if remote then
-		remote:FireServer()
+		remote:FireServer(visible)
 	end
 end)
 
