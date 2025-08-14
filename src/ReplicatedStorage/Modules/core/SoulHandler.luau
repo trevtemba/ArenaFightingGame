@@ -1,5 +1,5 @@
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
-
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
@@ -32,44 +32,50 @@ function SoulHandler:Init()
 	self.ability = data.ability
 
 	self.character.Parent = game.Workspace.Assets
-	self.instanceObjects = self:AttachToPlayer()
-
 	self.animationHandler = AnimationHandler.new(self.character)
+
+	self.instanceObjects = self:AttachToPlayer()
 	self.owner.character:SetAttribute("soulAbilityCd", self.cooldown)
 	CollisionManager:SetCollisionGroupEntities(self.character)
+	task.delay(1, function()
+		self.animationHandler:Play("idle", nil, nil, nil, true, "Idle")
+	end)
 end
 
 function SoulHandler:AttachToPlayer()
 	local playerCharacter = self.owner.character
 
 	local att0 = Instance.new("Attachment")
-	att0.Name = "SoulAttach" .. "_Base"
+	att0.Name = "SoulAttach" .. ""
 	att0.Parent = self.character.PrimaryPart
-
-	local att1 = Instance.new("Attachment")
-	att1.Name = "SoulAttach" .. "_Target"
-	att1.Parent = playerCharacter.PrimaryPart
 
 	local alignP = Instance.new("AlignPosition")
 	alignP.Name = "SoulAttach"
-	alignP.Mode = Enum.PositionAlignmentMode.TwoAttachment
+	alignP.Mode = Enum.PositionAlignmentMode.OneAttachment
 	alignP.MaxForce = 5e5
-	alignP.Responsiveness = 200
+	alignP.Responsiveness = 20
 
 	local alignO = Instance.new("AlignOrientation")
 	alignO.Name = "SoulAttach"
-	alignO.Mode = Enum.OrientationAlignmentMode.TwoAttachment
-	alignO.Responsiveness = 200
+	alignO.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	alignO.Responsiveness = 20
 
 	alignP.Attachment0 = att0
-	alignP.Attachment1 = att1
 	alignP.Parent = self.character:FindFirstChild("physicsAssets")
 
 	alignO.Attachment0 = att0
-	alignO.Attachment1 = att1
 	alignO.Parent = self.character:FindFirstChild("physicsAssets")
 
-	return alignP, alignO, att0, att1
+	task.defer(function()
+		RunService.Stepped:Connect(function()
+			alignP.Position = playerCharacter.PrimaryPart.Position
+				+ (playerCharacter.PrimaryPart.CFrame.lookVector * -3)
+				+ (playerCharacter.PrimaryPart.CFrame.rightVector * 3)
+			alignO.CFrame = playerCharacter.PrimaryPart.CFrame
+		end)
+	end)
+
+	return alignP, alignO, att0
 end
 
 function SoulHandler:Cast()
