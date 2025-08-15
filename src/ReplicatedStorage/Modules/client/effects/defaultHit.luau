@@ -1,9 +1,9 @@
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local animHelper = require(script.Parent.animHelper)
-local animationModule = require(ReplicatedStorage.Modules.client.animationModule)
 local highlightHelper = require(script.Parent.highlightHelper)
 local particleHelper = require(script.Parent.particleHelper)
+local soundHelper = require(script.Parent.soundHelper)
 
 local Sounds = ReplicatedStorage:FindFirstChild("Sounds")
 local Effects = ReplicatedStorage:WaitForChild("Effects")
@@ -21,10 +21,35 @@ return function(argumentData)
 			local highlightColor = Color3.fromRGB(255, 0, 0)
 			local innerTransparency = 0.85
 			local outerTransparency = 1
+			local windClone = Effects:FindFirstChild("Wind"):FindFirstChild("wind"):Clone()
+
 			if hitType ~= "block" then
 				if knockBack then
+					local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
+					local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
+					windClone.Parent = rootPart
 					animHelper:StopAll(target)
-					animHelper:PlayAnimation(target, "knockBack", 0.2, nil, nil, false, "Action4")
+					local knockBackAnim = animHelper:PlayAnimation(target, "knockBack", 0.2, nil, nil, false, "Action4")
+
+					local shockWaveClone = Effects:FindFirstChild("CleanShockwave"):Clone()
+					local lookAtCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
+					shockWaveClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-90), 0, 0)
+					shockWaveClone.Parent = game.Workspace
+					particleHelper.EmitPart(shockWaveClone)
+					particleHelper.EmitPart(windClone)
+					dustParticleAtt.Parent = rootPart
+					particleHelper.EnablePart(dustParticleAtt)
+
+					task.delay(1, function()
+						particleHelper.DisablePart(dustParticleAtt)
+						Debris:AddItem(dustParticleAtt, 1)
+					end)
+					animHelper:ConnectStopped(knockBackAnim, function()
+						animHelper:PlayAnimation(target, "getUp", 0.2, nil, nil, false, "Action4")
+					end)
+					Debris:AddItem(shockWaveClone, 1)
+					Debris:AddItem(knockBackSound, 1)
+					Debris:AddItem(windClone, 1)
 				else
 					local track1 = "impactleft"
 					local track2 = "impactright"
@@ -70,20 +95,21 @@ return function(argumentData)
 				"pulse",
 				0.25
 			)
-			if knockBack then
-				local knockBackClone = Effects.KnockbackEffect:Clone()
-				local knockBackSound = Sounds.knockback1:Clone()
-				local lookAtCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
-				knockBackClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-90), 0, 0)
-				knockBackClone.Parent = game.Workspace
-				knockBackSound.Parent = rootPart
-				knockBackSound:Play()
-				particleHelper.EmitPart(knockBackClone)
+			-- if knockBack then
+			-- 	local knockBackSound = Sounds.knockback1:Clone()
+			-- 	local knockBackClone = Effects.KnockbackEffect:Clone()
+			-- 	local lookAtCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
+			-- 	knockBackClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-90), 0, 0)
+			-- 	knockBackClone.Parent = game.Workspace
+			-- 	particleHelper.EmitPart(knockBackClone)
+			-- 	knockBackSound.Parent = rootPart
+			-- 	knockBackSound:Play()
 
-				Debris:AddItem(knockBackClone, 1)
-				Debris:AddItem(knockBackSound, 1)
-			end
+			-- 	Debris:AddItem(knockBackClone, 1)
+			-- 	Debris:AddItem(knockBackSound, 1)
+			-- end
 			-- Cleanup
+
 			Debris:AddItem(clone, 1)
 			Debris:AddItem(sound, 1)
 			Debris:AddItem(highlight, 1)

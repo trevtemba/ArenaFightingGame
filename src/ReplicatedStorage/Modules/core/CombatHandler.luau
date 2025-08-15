@@ -367,7 +367,7 @@ function CombatHandler:TakeDamage(attackData)
 		if self._blockBreakSessionId then
 			self:RestoreBreakBlock()
 		end
-		self:Stun(attackData.stunTime + (attackData.knocksBack and 0.5 or 0), 3)
+		self:Stun(attackData.stunTime + (attackData.knocksBack and 2 or 0), 3)
 		self:Flinch()
 	elseif self.entityType == "Enemy" then
 		self.owner:SetState(STATE.Stunned, attackData.stunTime + (attackData.knocksBack and 1 or 0))
@@ -400,23 +400,23 @@ function CombatHandler:TakeDamage(attackData)
 		knockBack = attackData.knocksBack,
 		attackerLookVector = attackData.attackerLookVector,
 	})
+	if CollectionService:HasTag(attackerChar, "Player") then
+		clientEffects:FireClient(
+			Players:GetPlayerFromCharacter(attackerChar),
+			"fireCamera",
+			{ knockBack = attackData.knocksBack, victim = false }
+		)
+	end
+	if CollectionService:HasTag(targetChar, "Player") then
+		clientEffects:FireClient(
+			Players:GetPlayerFromCharacter(targetChar),
+			"fireCamera",
+			{ knockBack = attackData.knocksBack, victim = true }
+		)
+	end
 	if not attackData.isAirCombo then
 		if attackData.knocksBack then
-			if CollectionService:HasTag(attackerChar, "Player") then
-				clientEffects:FireClient(
-					Players:GetPlayerFromCharacter(attackerChar),
-					"fireCamera",
-					{ flashType = "knockBack", victim = false }
-				)
-			end
-			if CollectionService:HasTag(targetChar, "Player") then
-				clientEffects:FireClient(
-					Players:GetPlayerFromCharacter(targetChar),
-					"fireCamera",
-					{ flashType = "knockBack", victim = true }
-				)
-			end
-			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 15, 5)
+			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 20, 3.5)
 		else
 			if attackData.type == "attack" then
 				attackData.attackerPhysicsHandler:SetWalkspeed(0)

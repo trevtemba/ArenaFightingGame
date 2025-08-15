@@ -424,6 +424,7 @@ function Enemy:MeleeAttack()
 				crit = false,
 				blockable = true,
 				hitType = "slash",
+				knocksBack = true,
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
 				attackerPhysicsHandler = self.physicsHandler,
 			}
@@ -510,6 +511,9 @@ function Enemy:Flinch(knocksBack)
 	self.animationHandler:StopAll()
 	if knocksBack then
 		self.animationHandler:Play("knockBack", 0.1, nil, nil, false, "Action4")
+		self.animationHandler:ConnectStopped("knockBack", function()
+			self.animationHandler:Play("getUp", 0.1, nil, nil, false, "Action4")
+		end)
 	else
 		local track1 = "impactleft"
 		local track2 = "impactright"

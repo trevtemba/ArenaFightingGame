@@ -15,7 +15,8 @@ function AnimHelper:PlayAnimation(rig, name, fadeTime, weight, speed, looped, pr
 	end
 
 	local humanoid = rig:FindFirstChild("Humanoid")
-	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
 
 	-- Find animation by name
 	local animInstance = self.AnimationsFolder:FindFirstChild(name)
@@ -55,6 +56,23 @@ function AnimHelper:StopAll(rig)
 	for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
 		track:Stop(0)
 	end
+end
+
+function AnimHelper:ConnectStopped(track, callback)
+	if not track or typeof(callback) ~= "function" then
+		warn("AnimHelper: Invalid track or callback for ConnectStopped")
+		return
+	end
+	return track.Stopped:Connect(callback)
+end
+
+-- Connect function to animation marker reached
+function AnimHelper:ConnectMarker(track, markerName, callback)
+	if not track or typeof(markerName) ~= "string" or typeof(callback) ~= "function" then
+		warn("AnimHelper: Invalid parameters for ConnectMarker")
+		return
+	end
+	return track:GetMarkerReachedSignal(markerName):Connect(callback)
 end
 
 return AnimHelper
