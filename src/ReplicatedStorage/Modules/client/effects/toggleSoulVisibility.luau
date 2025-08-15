@@ -15,7 +15,8 @@ return function(argumentData)
 
 	if target and particleSkin then
 		local targetTransparency = visible and 0.25 or 1
-		local sound = soundHelper.PlaySound("soulPoof", target.PrimaryPart, 0.025)
+		local soundName = visible and "soulPoofIn" or "soulPoofOut"
+		local sound = soundHelper.PlaySound(soundName, target.PrimaryPart, 0.025)
 		local particleAtt = SoulEffects:FindFirstChild(particleSkin):Clone()
 		particleAtt.Parent = target.PrimaryPart
 

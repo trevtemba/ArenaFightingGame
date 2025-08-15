@@ -1,6 +1,9 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local CameraShaker = require(ReplicatedStorage.Modules.client.cameraShaker.CameraShaker)
+local tweenHelper = require(ReplicatedStorage.Modules.client.effects.tweenHelper)
 local player = Players.LocalPlayer
 
 local cameraInst = workspace:WaitForChild("Camera")
@@ -84,6 +87,59 @@ function module.CameraShakeLight(character, duration)
 
 		humanoid.CameraOffset = Vector3.new(0, 0, 0)
 	end)
+end
+
+function module.Flash(data)
+	local camera = workspace.CurrentCamera or data.camera
+	local tim = data.tim or 1
+	local request = data.request
+
+	if request and script.Effects:FindFirstChild(request) then
+		local effect = script.Effects[request]:Clone()
+		effect.Parent = camera
+		effect.Enabled = true
+
+		game.Debris:AddItem(effect, tim)
+	else
+		warn(request, "does not exist in effects folder!")
+	end
+end
+
+function module.Blur(data)
+	local camera = workspace.CurrentCamera or data.camera
+	local tim1, tim2 = data.tim1 or 0.5, data.tim2
+	local EasingStyleDirc = data.EasingStyleDirc or Enum.EasingDirection.Out
+	local EasingStyleDirc2 = data.EasingStyleDirc or EasingStyleDirc
+	local EasingStyle = data.EasingStyle or Enum.EasingStyle.Sine
+	local EasingStyle2 = data.EasingStyle2 or EasingStyle
+	local size = data.size or 7
+	local wait_till_normalFov = data.wait_till_normalFov or tim1
+
+	coroutine.wrap(function()
+		local blur = script.Effects["Blur"]:Clone()
+		blur.Parent = camera
+		blur.Size = 0
+
+		-- tween
+		tweenHelper:Tween(blur, { tim1, EasingStyle, EasingStyleDirc }, { Size = size }):Play()
+
+		task.wait(wait_till_normalFov)
+
+		tweenHelper:Tween(blur, { tim2 or tim1, EasingStyle2, EasingStyleDirc }, { Size = 0 })
+
+		game.Debris:AddItem(blur, tim2 or tim1)
+	end)()
+end
+
+function module.Shake(data)
+	local camera = workspace.CurrentCamera or data.camera
+	local camShake = CameraShaker.new(Enum.RenderPriority.Camera.Value, function(shakeCFrame)
+		camera.CFrame = camera.CFrame * shakeCFrame
+	end)
+
+	local shake = data.shake or "Bump"
+	camShake:Start()
+	camShake:Shake(CameraShaker.Presets[shake])
 end
 
 function module.EnableSprintPOV()

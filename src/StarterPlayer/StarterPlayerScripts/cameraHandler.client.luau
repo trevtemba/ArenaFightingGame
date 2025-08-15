@@ -5,7 +5,6 @@ local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local ClientEvents = RemoteEvents:WaitForChild("Client")
 
 local attackEvent = ClientEvents:WaitForChild("attack")
-local flinchEvent = ClientEvents:WaitForChild("flinch")
 local sprintEvent = ClientEvents:WaitForChild("sprint")
 
 local TweenService = game:GetService("TweenService")
@@ -81,13 +80,6 @@ attackEvent.OnClientEvent:Connect(function(effectType)
 			)
 			fovTween:Play()
 		end)
-	end
-end)
-
-flinchEvent.OnClientEvent:Connect(function(effectType)
-	if effectType == "impact" then
-		camShake:Start()
-		camShake:Shake(CameraShaker.Presets.Impact)
 	end
 end)
 

@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Assets = ReplicatedStorage:WaitForChild("Assets")
 local UI = ReplicatedStorage:WaitForChild("UI")
 local Effects = ReplicatedStorage:WaitForChild("Effects")
+local Animations = ReplicatedStorage:WaitForChild("Animations")
 
 local assetsToPreload = {}
 
@@ -18,6 +19,12 @@ end
 
 for _, item in pairs(Effects:GetDescendants()) do
 	if item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") then
+		table.insert(assetsToPreload, item)
+	end
+end
+
+for _, item in pairs(Animations:GetDescendants()) do
+	if item:IsA("Animation") then
 		table.insert(assetsToPreload, item)
 	end
 end

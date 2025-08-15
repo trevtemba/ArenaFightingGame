@@ -21,7 +21,7 @@ end
 
 -- Function to process the character if it has the "player" tag
 local function processCharacter(character)
-	if CollectionService:HasTag(character, "player") then
+	if CollectionService:HasTag(character, "Player") then
 		print("Processing tagged player character:", character.Name)
 		local humanoid = character:WaitForChild("Humanoid")
 		local animator = humanoid:WaitForChild("Animator")

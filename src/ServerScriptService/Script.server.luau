@@ -87,7 +87,7 @@ end
 for _, plr in ipairs(joinedPlayers) do
 	local champion, rig = ChampionFactory.newChampion(selectedChampions[plr.UserId])
 	local soulType = "Engage" --this will be a pcall that fetches the respective players soul type from database
-	CollectionService:AddTag(rig, "player")
+	CollectionService:AddTag(rig, "Player")
 	rig:SetPrimaryPartCFrame(plr.Character.PrimaryPart.CFrame)
 	plr.Character = rig
 

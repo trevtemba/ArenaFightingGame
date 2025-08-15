@@ -16,9 +16,6 @@ local STATE = require(script.Parent.State)
 
 local meleeHitbox = ServerStorage:WaitForChild("meleeHitbox")
 
-local flinchEvent =
-	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("flinch")
-
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
 
@@ -363,10 +360,6 @@ function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCom
 	entity:TakeDamage(attackData)
 
 	self.owner.fxHandler:PlaySound("attack")
-	-- if type == "attack" and not isAirCombo then
-	-- 	self.owner.physicsHandler:SetWalkspeed(0)
-	-- 	self.owner.physicsHandler:MoveForward(lookVector, FLINCH_DISTANCE)
-	-- end
 end
 
 function CombatHandler:TakeDamage(attackData)
@@ -382,6 +375,8 @@ function CombatHandler:TakeDamage(attackData)
 	end
 
 	self.owner.stateHandler:RemoveState(STATE.Attacking)
+	local targetChar = self.owner.character
+	local attackerChar = attackData.attackerPhysicsHandler.character
 	local durability = self.owner.stats["durability"]
 	local multiplier = nil
 	local totalDamage = nil
@@ -400,13 +395,27 @@ function CombatHandler:TakeDamage(attackData)
 	self.humanoid.Health = math.clamp(self.owner.currentHP, 0, self.humanoid.MaxHealth)
 
 	clientEffects:FireAllClients("defaultHit", {
-		target = self.owner.character,
+		target = targetChar,
 		hitType = attackData.hitType,
 		knockBack = attackData.knocksBack,
 		attackerLookVector = attackData.attackerLookVector,
 	})
 	if not attackData.isAirCombo then
 		if attackData.knocksBack then
+			if CollectionService:HasTag(attackerChar, "Player") then
+				clientEffects:FireClient(
+					Players:GetPlayerFromCharacter(attackerChar),
+					"fireCamera",
+					{ flashType = "knockBack", victim = false }
+				)
+			end
+			if CollectionService:HasTag(targetChar, "Player") then
+				clientEffects:FireClient(
+					Players:GetPlayerFromCharacter(targetChar),
+					"fireCamera",
+					{ flashType = "knockBack", victim = true }
+				)
+			end
 			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 10)
 		else
 			if attackData.type == "attack" then
@@ -479,17 +488,16 @@ function CombatHandler:Stun(stunTime, walkspeed)
 end
 
 function CombatHandler:Flinch()
-	local track1 = "impactleft"
-	local track2 = "impactright"
+	-- local track1 = "impactleft"
+	-- local track2 = "impactright"
 
-	-- Randomly choose one of the impact animations
-	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+	-- -- Randomly choose one of the impact animations
+	-- local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 
-	if chosenTrack then
-		self.owner.animationHandler:StopAll()
-		self.owner.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
-		flinchEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "impact")
-	end
+	-- if chosenTrack then
+	-- 	self.owner.animationHandler:StopAll()
+	-- 	self.owner.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
+	-- end
 end
 
 function CombatHandler:M1Slow(speed)
