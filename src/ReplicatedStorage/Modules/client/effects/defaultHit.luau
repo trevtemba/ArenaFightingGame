@@ -21,15 +21,19 @@ return function(argumentData)
 			local highlightColor = Color3.fromRGB(255, 0, 0)
 			local innerTransparency = 0.85
 			local outerTransparency = 1
-			if knockBack then
-				animHelper:PlayAnimation(target, "knockBack", 0.2, nil, nil, false, "Action4")
-			else
-				local track1 = "impactleft"
-				local track2 = "impactright"
+			if hitType ~= "block" then
+				if knockBack then
+					animHelper:StopAll(target)
+					animHelper:PlayAnimation(target, "knockBack", 0.2, nil, nil, false, "Action4")
+				else
+					local track1 = "impactleft"
+					local track2 = "impactright"
 
-				-- Randomly choose one of the impact animations
-				local chosenTrack = math.random(1, 2) == 1 and track1 or track2
-				animHelper:PlayAnimation(target, chosenTrack, 0.2, nil, nil, false, "Action4")
+					-- Randomly choose one of the impact animations
+					local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+					animHelper:StopAll(target)
+					animHelper:PlayAnimation(target, chosenTrack, 0.2, nil, nil, false, "Action4")
+				end
 			end
 			if hitType == "blunt" then
 				clone = Effects.CoreEffects.bluntHitEffect:Clone()

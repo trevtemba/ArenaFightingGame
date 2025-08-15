@@ -54,7 +54,7 @@ function PhysicsHandler:applyImpulse(lookVector, direction)
 end
 
 -- Setup helper
-function PhysicsHandler:createAirFloat(character, name)
+function PhysicsHandler:createAirFloat(character, name, knockBack)
 	local oldAP = self.physicsAssets:FindFirstChildOfClass("AlignPosition")
 	if oldAP then
 		oldAP:Destroy()
@@ -76,7 +76,7 @@ function PhysicsHandler:createAirFloat(character, name)
 	align.Name = name
 	align.Mode = Enum.PositionAlignmentMode.TwoAttachment
 	align.MaxForce = 5e5
-	align.Responsiveness = 20
+	align.Responsiveness = knockBack and knockBack or 20
 
 	align.Attachment0 = att0
 	align.Attachment1 = att1
@@ -132,14 +132,14 @@ function PhysicsHandler:MoveForward(lookVector, distance)
 	-- self:applyImpulse(lookVector, distance)
 end
 
-function PhysicsHandler:MoveBackward(attackerLookVector, distance)
+function PhysicsHandler:MoveBackward(attackerLookVector, distance, knockBack)
 	if not self.hrp then
 		return
 	end
-	local aAlign, aAlignPart, aAtt0, _ = self:createAirFloat(self.character, "moveBackward")
+	local aAlign, aAlignPart, aAtt0, _ = self:createAirFloat(self.character, "moveBackward", knockBack)
 
 	aAlignPart.CFrame = CFrame.new(aAlignPart.Position + (attackerLookVector and attackerLookVector or 0) * distance)
-	task.delay(0.3, function()
+	task.delay(knockBack and knockBack or 0.3, function()
 		aAlign:Destroy()
 		aAlignPart:Destroy()
 		aAtt0:Destroy()

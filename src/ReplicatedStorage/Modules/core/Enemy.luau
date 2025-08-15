@@ -506,17 +506,21 @@ function Enemy:TakeDamage(attackData)
 	end
 end
 
-function Enemy:Flinch()
+function Enemy:Flinch(knocksBack)
 	self.animationHandler:StopAll()
-	-- local track1 = "impactleft"
-	-- local track2 = "impactright"
+	if knocksBack then
+		self.animationHandler:Play("knockBack", 0.1, nil, nil, false, "Action4")
+	else
+		local track1 = "impactleft"
+		local track2 = "impactright"
 
-	-- -- Randomly choose one of the impact animations
-	-- local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+		-- Randomly choose one of the impact animations
+		local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 
-	-- if chosenTrack then
-	-- 	self.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
-	-- end
+		if chosenTrack then
+			self.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
+		end
+	end
 end
 
 function Enemy:FadeOutProjectile(projectile)

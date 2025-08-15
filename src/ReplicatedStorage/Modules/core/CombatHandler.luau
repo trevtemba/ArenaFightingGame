@@ -367,11 +367,11 @@ function CombatHandler:TakeDamage(attackData)
 		if self._blockBreakSessionId then
 			self:RestoreBreakBlock()
 		end
-		self:Stun(attackData.stunTime, 3)
+		self:Stun(attackData.stunTime + (attackData.knocksBack and 0.5 or 0), 3)
 		self:Flinch()
 	elseif self.entityType == "Enemy" then
-		self.owner:SetState(STATE.Stunned, attackData.stunTime)
-		self.owner:Flinch()
+		self.owner:SetState(STATE.Stunned, attackData.stunTime + (attackData.knocksBack and 1 or 0))
+		self.owner:Flinch(attackData.knocksBack)
 	end
 
 	self.owner.stateHandler:RemoveState(STATE.Attacking)
@@ -416,7 +416,7 @@ function CombatHandler:TakeDamage(attackData)
 					{ flashType = "knockBack", victim = true }
 				)
 			end
-			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 10)
+			self.owner.physicsHandler:MoveBackward(attackData.attackerLookVector, FLINCH_DISTANCE * 15, 5)
 		else
 			if attackData.type == "attack" then
 				attackData.attackerPhysicsHandler:SetWalkspeed(0)

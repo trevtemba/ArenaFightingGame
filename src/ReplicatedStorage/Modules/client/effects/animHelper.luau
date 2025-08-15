@@ -40,4 +40,21 @@ function AnimHelper:PlayAnimation(rig, name, fadeTime, weight, speed, looped, pr
 	return track
 end
 
+function AnimHelper:StopAll(rig)
+	if not rig or not rig:FindFirstChild("Humanoid") then
+		warn("AnimHelper: Invalid rig provided")
+		return
+	end
+
+	local humanoid = rig:FindFirstChild("Humanoid")
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		return
+	end
+
+	for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+		track:Stop(0)
+	end
+end
+
 return AnimHelper
