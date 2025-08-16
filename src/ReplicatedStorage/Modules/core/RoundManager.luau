@@ -10,21 +10,21 @@ local arenas = ServerStorage:WaitForChild("arenas")
 
 local arenaSpawnPositions = {
 	-- Arena 1
-	CFrame.new(-925, 1, -925),
+	CFrame.new(-925, 0.5, -925),
 	-- Arena 2
-	CFrame.new(-925, 1, -285),
+	CFrame.new(-925, 0.5, -285),
 	-- Arena 3
-	CFrame.new(-925, 1, -300),
+	CFrame.new(-925, 0.5, -300),
 	-- Arena 4
-	CFrame.new(-925, 1, 925),
+	CFrame.new(-925, 0.5, 925),
 	-- Arena 5
-	CFrame.new(-510, 1, -925),
+	CFrame.new(-510, 0.5, -925),
 	-- Arena 6
-	CFrame.new(-510, 1, -285),
+	CFrame.new(-510, 0.5, -285),
 	-- Arena 7
-	CFrame.new(-510, 1, -300),
+	CFrame.new(-510, 0.5, -300),
 	-- Arena 8
-	CFrame.new(-510, 1, 925),
+	CFrame.new(-510, 0.5, 925),
 }
 
 local RoundManager = {}

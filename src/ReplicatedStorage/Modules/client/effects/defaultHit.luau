@@ -11,6 +11,7 @@ local Effects = ReplicatedStorage:WaitForChild("Effects")
 return function(argumentData)
 	local target: Model = argumentData.target
 	local hitType: string = argumentData.hitType
+	local airComboAction: string = argumentData.airComboAction
 	local knockBack: boolean = argumentData.knockBack
 	local attackerLookVector: Vector3 = argumentData.attackerLookVector
 	if target and hitType then
@@ -22,13 +23,40 @@ return function(argumentData)
 			local innerTransparency = 0.85
 			local outerTransparency = 1
 			local windClone = Effects:FindFirstChild("Wind"):FindFirstChild("wind"):Clone()
-
+			animHelper:StopAll(target)
 			if hitType ~= "block" then
-				if knockBack then
+				if airComboAction then
+					if airComboAction == "downslam" then
+						local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
+						local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
+						windClone.Parent = rootPart
+
+						animHelper:PlayAnimation(target, "falling", 0.2, nil, nil, true, "Action")
+						local shockWaveClone = Effects:FindFirstChild("CleanShockwave"):Clone()
+						local lookAtCFrame =
+							CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
+						shockWaveClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-135), 0, 0)
+						shockWaveClone.Parent = game.Workspace
+						particleHelper.EmitPart(shockWaveClone)
+						particleHelper.EmitPart(windClone)
+						dustParticleAtt.Parent = rootPart
+						particleHelper.EnablePart(dustParticleAtt)
+
+						task.delay(1, function()
+							particleHelper.DisablePart(dustParticleAtt)
+							Debris:AddItem(dustParticleAtt, 1)
+						end)
+
+						Debris:AddItem(shockWaveClone, 1)
+						Debris:AddItem(knockBackSound, 1)
+						Debris:AddItem(windClone, 1)
+					elseif airComboAction == "knockup" then
+						animHelper:PlayAnimation(target, "knockedUp", 0.2, nil, nil, true, "Action")
+					end
+				elseif knockBack then
 					local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
 					local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
 					windClone.Parent = rootPart
-					animHelper:StopAll(target)
 					local knockBackAnim = animHelper:PlayAnimation(target, "knockBack", 0.2, nil, nil, false, "Action4")
 
 					local shockWaveClone = Effects:FindFirstChild("CleanShockwave"):Clone()
@@ -45,7 +73,7 @@ return function(argumentData)
 						Debris:AddItem(dustParticleAtt, 1)
 					end)
 					animHelper:ConnectStopped(knockBackAnim, function()
-						animHelper:PlayAnimation(target, "getUp", 0.2, nil, nil, false, "Action4")
+						animHelper:PlayAnimation(target, "getUp", 0.2, nil, nil, false, "Action2")
 					end)
 					Debris:AddItem(shockWaveClone, 1)
 					Debris:AddItem(knockBackSound, 1)

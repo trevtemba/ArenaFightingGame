@@ -507,24 +507,30 @@ function Enemy:TakeDamage(attackData)
 	end
 end
 
-function Enemy:Flinch(knocksBack)
-	self.animationHandler:StopAll()
-	if knocksBack then
-		self.animationHandler:Play("knockBack", 0.1, nil, nil, false, "Action4")
-		self.animationHandler:ConnectStopped("knockBack", function()
-			self.animationHandler:Play("getUp", 0.1, nil, nil, false, "Action4")
-		end)
-	else
-		local track1 = "impactleft"
-		local track2 = "impactright"
+function Enemy:Flinch(knocksBack, airComboAction)
+	-- self.animationHandler:StopAll()
+	-- if airComboAction then
+	-- 	if airComboAction == "downslam" then
+	-- 		self.animationHandler:Play("falling", 0.1, nil, nil, true, "Action4")
+	-- 	elseif airComboAction == "knockup" then
+	-- 		self.animationHandler:Play("knockedUp", 0.1, nil, nil, true, "Action4")
+	-- 	end
+	-- elseif knocksBack then
+	-- 	self.animationHandler:Play("knockBack", 0.1, nil, nil, false, "Action4")
+	-- 	self.animationHandler:ConnectStopped("knockBack", function()
+	-- 		self.animationHandler:Play("getUp", 0.1, nil, nil, false, "Action4")
+	-- 	end)
+	-- else
+	-- 	local track1 = "impactleft"
+	-- 	local track2 = "impactright"
 
-		-- Randomly choose one of the impact animations
-		local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+	-- 	-- Randomly choose one of the impact animations
+	-- 	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 
-		if chosenTrack then
-			self.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
-		end
-	end
+	-- 	if chosenTrack then
+	-- 		self.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
+	-- 	end
+	-- end
 end
 
 function Enemy:FadeOutProjectile(projectile)

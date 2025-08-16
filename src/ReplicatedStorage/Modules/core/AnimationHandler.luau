@@ -1,7 +1,6 @@
 -- AnimationHandler.lua
 local AnimationHandler = {}
 AnimationHandler.__index = AnimationHandler
-RunService = game:GetService("RunService")
 local DEFAULT_WALKSPEED = 18
 
 function AnimationHandler.new(rig)
