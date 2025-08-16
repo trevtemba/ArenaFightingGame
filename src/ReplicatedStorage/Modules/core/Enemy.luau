@@ -508,7 +508,7 @@ function Enemy:TakeDamage(attackData)
 end
 
 function Enemy:Flinch(knocksBack, airComboAction)
-	-- self.animationHandler:StopAll()
+	self.animationHandler:StopAll()
 	-- if airComboAction then
 	-- 	if airComboAction == "downslam" then
 	-- 		self.animationHandler:Play("falling", 0.1, nil, nil, true, "Action4")

@@ -534,6 +534,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 	local targetState = targetEntity.stateHandler
 
 	local function disableInAir()
+		self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
 		self.attackerFloat = nil
 		self.targetFloat = nil
 
@@ -575,12 +576,11 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		if self._airFloatCoroutine then
 			task.cancel(self._airFloatCoroutine)
 		end
-		self._airFloatCoroutine = task.spawn(function()
+		self._airFloatCoroutine = task.defer(function()
 			while os.clock() - self.lastAirAttackTime < self.airResetTime do
 				task.wait(0.1)
 			end
 
-			self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
 			disableInAir()
 		end)
 	elseif airComboAction == "continue" then
@@ -645,7 +645,6 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			end
 
 			task.delay(0.5, function()
-				self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
 				disableInAir()
 			end)
 		end
@@ -659,12 +658,10 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		tAlignPart.CFrame = CFrame.new(tAlignPart.Position + attackerLookVector * distance)
 
 		task.delay(0.5, function()
-			self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
 			disableInAir()
 		end)
 	elseif airComboAction == "downm1" then
 		print("downm1")
-		self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
 		disableInAir()
 	else
 		warn("Invalid air combo action:", airComboAction)
