@@ -11,7 +11,6 @@ local CollisionManager = require(ReplicatedStorage.Modules.core.CollisionManager
 local Game = require(core:WaitForChild("Game"))
 local Player = require(core:WaitForChild("Player"))
 local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
-
 local champChosenByServer = ClientEvents:WaitForChild("champChosenByServer")
 local ChampionSelectedEvent = ServerEvents:WaitForChild("ChampSelect")
 
@@ -20,6 +19,8 @@ local gameInstance = Game:GetInstance()
 
 local MAX_PLAYERS = 1
 local CHAMPION_PICK_TIME = 5
+local TRAINING_MODE = true
+
 local availableChampions = { "Dante" }
 
 local selectedChampions = {}
@@ -101,4 +102,4 @@ print(gameInstance.players)
 
 print(gameInstance.portal)
 
-gameInstance:Run()
+gameInstance:Run(TRAINING_MODE)

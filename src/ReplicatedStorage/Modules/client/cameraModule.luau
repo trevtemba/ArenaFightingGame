@@ -94,8 +94,8 @@ function module.Flash(data)
 	local tim = data.tim or 1
 	local request = data.request
 
-	if request and script.Effects:FindFirstChild(request) then
-		local effect = script.Effects[request]:Clone()
+	if request and script.Parent.camEffects:FindFirstChild(request) then
+		local effect = script.Parent.camEffects[request]:Clone()
 		effect.Parent = camera
 		effect.Enabled = true
 
@@ -116,7 +116,7 @@ function module.Blur(data)
 	local wait_till_normalFov = data.wait_till_normalFov or tim1
 
 	coroutine.wrap(function()
-		local blur = script.Effects["Blur"]:Clone()
+		local blur = script.Parent.camEffects["Blur"]:Clone()
 		blur.Parent = camera
 		blur.Size = 0
 

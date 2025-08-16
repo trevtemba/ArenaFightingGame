@@ -1,4 +1,5 @@
 local Round = require(script.Parent:WaitForChild("Round"))
+local DummyFolder = game.Workspace:FindFirstChild("Dummy")
 
 local portalMsg = {
 	"Extra augment round",
@@ -69,44 +70,55 @@ function Game:NextRound()
 	end
 end
 
-function Game:Run()
-	print(string.format("Start of stage %d", self.stage))
-	self:incrementPlayerComponentPools()
-	while self.currentRoundIndex < #self.roundQueue do
-		-- Intermission
-		for i = 5, 1, -1 do
-			print("Intermission: " .. i)
-			wait(1)
+function Game:Run(TRAINING_MODE)
+	if TRAINING_MODE then
+		local roundType = 5
+		if roundType then
+			local currRound = Round.new(roundType, self.stage)
+			self.currentRound = currRound
+			currRound:Start(self.alivePlayers)
+		else
+			print("No more rounds.")
+		end
+	else
+		print(string.format("Start of stage %d", self.stage))
+		self:incrementPlayerComponentPools()
+		while self.currentRoundIndex < #self.roundQueue do
+			-- Intermission
+			for i = 5, 1, -1 do
+				print("Intermission: " .. i)
+				wait(1)
+			end
+
+			-- Start round
+			self:NextRound()
+
+			if self.currentRoundIndex == 3 then
+				self.stage += 1
+				self:incrementPlayerComponentPools()
+				print(string.format("Start of stage %d", self.stage))
+				-- elseif self.currentRoundIndex == 9 then
+				-- 	self.stage += 1
+				-- 	print(string.format("Start of stage %d", self.stage))
+				-- elseif self.currentRoundIndex == 15 then
+				-- 	self.stage += 1
+				-- 	print(string.format("Start of stage %d", self.stage))
+				-- elseif self.currentRoundIndex == 21 then
+				-- 	self.stage += 1
+				-- 	print(string.format("Start of stage %d", self.stage))
+			end
+
+			local round = self.currentRound
+
+			-- Drive the timer manually
+			while not round:IsFinished() do
+				round:Update(1)
+				wait(1)
+			end
 		end
 
-		-- Start round
-		self:NextRound()
-
-		if self.currentRoundIndex == 3 then
-			self.stage += 1
-			self:incrementPlayerComponentPools()
-			print(string.format("Start of stage %d", self.stage))
-			-- elseif self.currentRoundIndex == 9 then
-			-- 	self.stage += 1
-			-- 	print(string.format("Start of stage %d", self.stage))
-			-- elseif self.currentRoundIndex == 15 then
-			-- 	self.stage += 1
-			-- 	print(string.format("Start of stage %d", self.stage))
-			-- elseif self.currentRoundIndex == 21 then
-			-- 	self.stage += 1
-			-- 	print(string.format("Start of stage %d", self.stage))
-		end
-
-		local round = self.currentRound
-
-		-- Drive the timer manually
-		while not round:IsFinished() do
-			round:Update(1)
-			wait(1)
-		end
+		print("All rounds complete!")
 	end
-
-	print("All rounds complete!")
 end
 
 function Game:GetInstance()

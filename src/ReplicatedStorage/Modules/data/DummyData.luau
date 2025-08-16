@@ -1,15 +1,39 @@
 return {
-	["attack"] = {
-		name = "AttackDummy",
-		health = 10000,
-		durability = 0,
-		damage = 1,
-		pierce = 0,
-		range = 4,
-		cooldown = 1,
-		crit = 0,
+	attacking = {
+		hp = 1000,
+		energy = 100,
+		durability = 10,
+		attackDmg = 20,
+		magicDmg = 20,
+		attackSpeed = 1,
+		attackCooldown = 0.45,
+		critChance = 0.25,
 		critMultiplier = 1.75,
-		speed = 18,
+		pierce = 0,
+		speed = 12,
+		range = 5,
+		soulType = "Engage",
+
+		ranged = false,
 		attackDmgType = "physical",
+
+		abilities = {
+			[1] = "Fireball",
+
+			[2] = "Counter",
+
+			[3] = "Barrage",
+
+			[4] = "Ice",
+		},
+		cooldowns = {
+			[1] = 5,
+
+			[2] = 5,
+
+			[3] = 5,
+
+			[4] = 5,
+		},
 	},
 }

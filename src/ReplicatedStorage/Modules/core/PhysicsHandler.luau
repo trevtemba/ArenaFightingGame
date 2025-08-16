@@ -19,7 +19,7 @@ function PhysicsHandler.new(rig, entityType, userId)
 	self.hrp = rig:FindFirstChild("HumanoidRootPart")
 	self.humanoid = rig:FindFirstChildOfClass("Humanoid")
 	self.entityType = entityType
-	self.userId = entityType == "player" and userId or nil
+	self.userId = entityType == "Player" and userId or nil
 	self.physicsAssets = Instance.new("Folder")
 
 	self.physicsAssets.Name = "physicsAssets"

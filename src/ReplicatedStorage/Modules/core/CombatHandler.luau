@@ -553,7 +553,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		self.lastAirAttackTime = os.clock()
 		attackerState:SetState(STATE.InAirCombo)
 		targetState:SetState(STATE.InAirCombo)
-		clientEffects:FireAllClients("flashStep", { target = self.owner.character, duration = 0.9 })
+		clientEffects:FireAllClients("flashStep", { target = self.owner.character, duration = 0.6 })
 		inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), true)
 		if CollectionService:HasTag(targetEntity.character, "Player") then
 			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), true)
@@ -569,7 +569,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		self.attackerFloat = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
 		self.targetFloat = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
 
-		task.delay(0.75, function()
+		task.delay(0.5, function()
 			self.attackerFloat.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 20, 0)
 		end)
 		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 20, 0)
