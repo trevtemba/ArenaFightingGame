@@ -553,7 +553,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		self.lastAirAttackTime = os.clock()
 		attackerState:SetState(STATE.InAirCombo)
 		targetState:SetState(STATE.InAirCombo)
-
+		clientEffects:FireAllClients("flashStep", { target = self.owner.character, duration = 0.9 })
 		inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), true)
 		if CollectionService:HasTag(targetEntity.character, "Player") then
 			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), true)
@@ -561,16 +561,18 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 
 		-- Create floating constraints
 		local aAlign, aAlignPart, aAtt0, aAtt1 =
-			self.owner.physicsHandler:createAirFloat(self.owner.character, "airFloat")
+			self.owner.physicsHandler:createAirFloat(self.owner.character, "airFloat", 100)
 		local tAlign, tAlignPart, tAtt0, tAtt1 =
-			targetEntity.physicsHandler:createAirFloat(targetEntity.character, "airFloat")
+			targetEntity.physicsHandler:createAirFloat(targetEntity.character, "airFloat", 20)
 
 		-- Store for reuse
 		self.attackerFloat = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
 		self.targetFloat = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
 
-		self.attackerFloat.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 40, 0)
-		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 40, 0)
+		task.delay(0.75, function()
+			self.attackerFloat.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 20, 0)
+		end)
+		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 20, 0)
 
 		-- Cleanup timer
 		if self._airFloatCoroutine then

@@ -1,8 +1,6 @@
 local Debris = game:GetService("Debris")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ParticleEmitter = require(ReplicatedStorage.Modules.client.guiParticle.ParticleEmitter)
-local animHelper = require(script.Parent.animHelper)
 local highlightHelper = require(script.Parent.highlightHelper)
 local particleHelper = require(script.Parent.particleHelper)
 local soundHelper = require(script.Parent.soundHelper)
@@ -14,7 +12,7 @@ return function(argumentData)
 	local combo: number = argumentData.combo
 
 	if target and weapon then
-		rootpart = target:FindFirstChild("HumanoidRootPart")
+		local rootpart = target:FindFirstChild("HumanoidRootPart")
 		if combo and rootpart then
 			if combo == 5 then
 				local highlightColor = Color3.fromRGB(255, 255, 255)
@@ -35,8 +33,8 @@ return function(argumentData)
 				if weapon == "fist" then
 					bbFlashClone.Parent = target:FindFirstChild("Right Leg")
 				end
-				bbOverHeadClone.Parent = target:FindFirstChild("Head")
-				bbOverHeadClone.CFrame = bbOverHeadClone.CFrame * CFrame.new(0, 1, 0)
+				bbOverHeadClone.Parent = rootpart
+				bbOverHeadClone.CFrame = bbOverHeadClone.CFrame * CFrame.new(0, 3, 0)
 				particleHelper.EmitPart(bbFlashClone)
 				particleHelper.EmitPart(bbOverHeadClone)
 				task.delay(0.35, function()

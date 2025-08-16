@@ -15,6 +15,7 @@ return function(argumentData)
 	local airComboAction: string = argumentData.airComboAction
 	local knockBack: boolean = argumentData.knockBack
 	local attackerLookVector: Vector3 = argumentData.attackerLookVector
+
 	if target and hitType then
 		local rootPart = target:FindFirstChild("HumanoidRootPart")
 		if rootPart then
@@ -110,7 +111,6 @@ return function(argumentData)
 						animHelper:PlayAnimation(target, "getUp", 0.1, nil, nil, false, "Action2")
 					end)
 					Debris:AddItem(shockWaveClone, 1)
-					Debris:AddItem(dustParticleAtt, 1)
 					Debris:AddItem(knockBackSound, 1)
 					Debris:AddItem(windClone, 1)
 				else
