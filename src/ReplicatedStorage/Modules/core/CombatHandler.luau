@@ -130,7 +130,9 @@ end
 
 function CombatHandler:Cast(abilitySlot)
 	if not self.humanoid or not self:CanCast(abilitySlot) then
-		castDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		if self.entityType == "Player" then
+			castDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		end
 		return
 	end
 	if self.owner.stateHandler:HasState(STATE.Blocking) then
@@ -151,7 +153,9 @@ end
 
 function CombatHandler:Attack(spaceHeld)
 	if not self.humanoid or not self:CanAttack() then
-		attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		if self.entityType == "Player" then
+			attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		end
 		return
 	end
 	if self.owner.stateHandler:HasState(STATE.Blocking) then
@@ -544,7 +548,9 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		attackerState:RemoveState(STATE.InAirCombo)
 		targetState:RemoveState(STATE.InAirCombo)
 
-		inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), false)
+		if self.entityType == "Player" then
+			inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), false)
+		end
 		if CollectionService:HasTag(targetEntity.character, "Player") then
 			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), false)
 		end
@@ -557,7 +563,9 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		attackerState:SetState(STATE.InAirCombo)
 		targetState:SetState(STATE.InAirCombo)
 		clientEffects:FireAllClients("flashStep", { target = self.owner.character, duration = 0.6 })
-		inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), true)
+		if self.entityType == "Player" then
+			inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), true)
+		end
 		if CollectionService:HasTag(targetEntity.character, "Player") then
 			inAir:FireClient(Players:GetPlayerByUserId(targetEntity.userId), true)
 		end

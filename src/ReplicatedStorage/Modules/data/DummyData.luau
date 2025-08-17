@@ -11,7 +11,7 @@ return {
 		critMultiplier = 1.75,
 		pierce = 0,
 		speed = 12,
-		range = 5,
+		range = 6,
 		soulType = "Engage",
 
 		ranged = false,
@@ -48,7 +48,7 @@ return {
 		critMultiplier = 1.75,
 		pierce = 0,
 		speed = 12,
-		range = 5,
+		range = 6,
 		soulType = "Engage",
 
 		ranged = false,
@@ -85,7 +85,7 @@ return {
 		critMultiplier = 1.75,
 		pierce = 0,
 		speed = 12,
-		range = 5,
+		range = 6,
 		soulType = "Engage",
 
 		ranged = false,

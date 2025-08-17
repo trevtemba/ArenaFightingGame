@@ -146,8 +146,18 @@ function Dummy:Activate()
 	elseif self.type == "uptilt" then
 		task.defer(function()
 			while self.character:FindFirstChildOfClass("Humanoid") do
-				self:Attack(true)
-				task.wait(0.1)
+				print(self.combatHandler.combo)
+				if self.combatHandler.combo < self.combatHandler.maxCombo then
+					self:Attack(true)
+					if self.stateHandler:HasState(STATE.InAirCombo) then
+						task.wait(0.1)
+					else
+						task.wait(1)
+					end
+				elseif self.combatHandler.combo >= self.combatHandler.maxCombo then
+					self:Attack(false)
+					task.wait(1)
+				end
 			end
 		end)
 	end
