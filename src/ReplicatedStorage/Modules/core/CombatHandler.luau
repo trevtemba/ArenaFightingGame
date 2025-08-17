@@ -159,7 +159,7 @@ function CombatHandler:Attack(spaceHeld)
 	end
 
 	local now = os.clock()
-	local blockable = self.combo < self.maxCombo
+	local blockable
 	local isAirCombo = false
 	local knocksBack = false
 	local airComboAction
@@ -172,6 +172,7 @@ function CombatHandler:Attack(spaceHeld)
 	if now - self.lastAttackTime > self.comboResetTime then
 		self.combo = 1
 	end
+	blockable = self.combo < self.maxCombo
 	self.lastAttackTime = now
 
 	cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 2)
@@ -236,7 +237,9 @@ function CombatHandler:Attack(spaceHeld)
 				if isAirCombo then
 					self:handleAirCombo(entity, airComboAction)
 				end
-				attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
+				if self.entityType == "Player" then
+					attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
+				end
 			end,
 			hitboxTemplate = "meleeHitbox",
 			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -3),
@@ -362,7 +365,7 @@ function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCom
 end
 
 function CombatHandler:TakeDamage(attackData)
-	if self.entityType == "Player" then
+	if self.entityType == "Player" or self.entityType == "Dummy" then
 		if self._blockBreakSessionId then
 			self:RestoreBreakBlock()
 		end

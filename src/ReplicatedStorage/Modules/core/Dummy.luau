@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TouchInputService = game:GetService("TouchInputService")
 local DummyData = require(ReplicatedStorage.Modules.data.DummyData)
 local tableToString = require(ReplicatedStorage.Modules.tableToString)
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
@@ -12,6 +13,7 @@ local CollisionManager = require(script.Parent.CollisionManager)
 local InventoryHandler = require(script.Parent.InventoryHandler)
 local ItemHandler = require(script.Parent.ItemHandler)
 local SoulHandler = require(script.Parent.SoulHandler)
+local STATE = require(script.Parent.State)
 local StateHandler = require(script.Parent.StateHandler)
 
 local Dummy = {}
@@ -21,6 +23,7 @@ function Dummy.new(rig, type)
 	local self = setmetatable({}, Dummy)
 
 	-- Game properties
+	self.name = type .. "Dummy"
 	self.health = 100
 	self.type = type
 	self.soulType = DummyData[type].soulType
@@ -77,8 +80,6 @@ function Dummy.new(rig, type)
 		["burning"] = { duration = 5, dps = 10 },
 	}
 
-	self:Initialize()
-
 	return self
 end
 
@@ -91,7 +92,7 @@ function Dummy:Initialize()
 	self.uiHandler = UIHandler.new(self)
 	self.combatHandler = CombatHandler.new(self, "Dummy")
 	self.movementHandler = MovementHandler.new(self)
-	self.physicsHandler = PhysicsHandler.new(self.character, "Dummy", self.userId)
+	self.physicsHandler = PhysicsHandler.new(self.character, "Dummy", nil)
 	self.stateHandler = StateHandler.new()
 	self.soulHandler = SoulHandler.new(self)
 
@@ -127,10 +128,28 @@ end
 
 function Dummy:Activate()
 	if self.type == "attacking" then
-		while self.character.humanoid do
-			self:Attack()
-			task.wait(0.1)
-		end
+		task.defer(function()
+			while self.character:FindFirstChildOfClass("Humanoid") do
+				self:Attack(false)
+				task.wait(0.1)
+			end
+		end)
+	elseif self.type == "blocking" then
+		task.defer(function()
+			while self.character:FindFirstChildOfClass("Humanoid") do
+				if not self.stateHandler:HasState(STATE.Blocking) then
+					self.combatHandler:EnableBlock()
+				end
+				task.wait(0.1)
+			end
+		end)
+	elseif self.type == "uptilt" then
+		task.defer(function()
+			while self.character:FindFirstChildOfClass("Humanoid") do
+				self:Attack(true)
+				task.wait(0.1)
+			end
+		end)
 	end
 end
 
@@ -170,9 +189,10 @@ function Dummy:TakeDamage(attackData) --todo, enemyposition so we can make block
 	end
 end
 
-function Dummy:SetPlayerTable(players)
-	self.currentPlayers = players
-	print(self.currentEnemies)
+function Dummy:SetPlayerTable(plrObjs)
+	for _, plrObj in pairs(plrObjs) do
+		self.currentPlayers[plrObj.character] = plrObj
+	end
 end
 
 function Dummy:GetPlayerFromCharacter(character)

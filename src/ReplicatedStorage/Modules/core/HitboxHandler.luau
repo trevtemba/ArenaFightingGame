@@ -38,7 +38,7 @@ function HitboxModule:CreatePlrHitbox(params)
 		local model = part:FindFirstAncestorOfClass("Model")
 		if model and not hitOnce[model] then
 			local entity = nil
-			if CollectionService:HasTag(model, "Enemy") then
+			if CollectionService:HasTag(model, "Enemy") or CollectionService:HasTag(model, "Dummy") then
 				entity = params.attacker:GetEnemyFromCharacter(model)
 			else
 				entity = params.attacker:GetPlayerFromCharacter(model)

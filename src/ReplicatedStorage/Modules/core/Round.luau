@@ -9,11 +9,11 @@ local roundTypes = {
 }
 
 local roundDuration = {
-	[1] = 60,
-	[2] = 60,
-	[3] = 30,
-	[4] = 60,
-	[5] = 1000,
+	60,
+	60,
+	30,
+	60,
+	1000,
 }
 local Round = {}
 
@@ -25,7 +25,7 @@ function Round.new(typeIndex, stage)
 	self.type = typeIndex
 	self.name = roundTypes[typeIndex]
 	self.stage = stage
-	self.duration = roundDuration.typeIndex
+	self.duration = roundDuration[typeIndex]
 	self.elapsed = 0
 	self.active = false
 	self.onComplete = nil -- optional callback
@@ -46,7 +46,7 @@ function Round:Start(plrObjs)
 	elseif self.type == 4 then
 		RoundManager.RunCarousel(self.stage, plrObjs)
 	elseif self.type == 5 then
-		RoundManager.RunTraining(self.stage, plrObjs)
+		RoundManager.RunTraining(plrObjs)
 	end
 
 	print("Started " .. self.name .. " round for " .. self.duration .. " seconds.")

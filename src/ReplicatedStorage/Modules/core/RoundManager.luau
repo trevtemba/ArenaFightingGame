@@ -4,7 +4,6 @@ local Players = game:GetService("Players")
 local EnemyManager = require(script.Parent:WaitForChild("EnemyManager"))
 local RemoteEvents = game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents")
 local ClientEvents = RemoteEvents:WaitForChild("Client")
-local Dummies = game:GetService("Workspace"):FindFirstChild("Dummies")
 local ServerStorage = game:GetService("ServerStorage")
 local Dummy = require(script.Parent.Dummy)
 
@@ -71,19 +70,27 @@ function RoundManager.RunPve(stage, plrObjs)
 	end
 end
 
-function RoundManager.RunTraining(stage, plrObjs)
+function RoundManager.RunTraining(plrObjs)
 	local activeDummies = {}
-	for _, plr in ipairs(plrObjs) do
-		ClientEvents:WaitForChild("switchContext"):FireClient(Players:GetPlayerFromCharacter(plr.character), "Combat")
-	end
+	local Dummies = game:GetService("Workspace"):FindFirstChild("Dummies")
 
 	for _, dummyRig in pairs(Dummies:GetChildren()) do
-		if dummyRig:IsA("Model") then
-			local dummyObj = Dummy.new(dummyRig, dummyRig:GetAttribute("type"))
-			dummyObj:SetPlayerTable(plrObjs)
-			dummyObj:Activate()
-			table.insert(activeDummies, dummyObj)
+		local dummyObj = Dummy.new(dummyRig, dummyRig:GetAttribute("type"))
+		CollectionService:AddTag(dummyRig, "Dummy")
+		if not dummyObj then
+			warn("something wrong with the dummy obj construction")
 		end
+		activeDummies[dummyRig] = dummyObj
+		dummyObj:Initialize()
+		dummyObj:SetPlayerTable(plrObjs)
+		dummyObj:Activate()
+		table.insert(activeDummies, dummyObj)
+	end
+
+	for _, plrObj in ipairs(plrObjs) do
+		plrObj:SetEnemyTable(activeDummies)
+		ClientEvents:WaitForChild("switchContext")
+			:FireClient(Players:GetPlayerFromCharacter(plrObj.character), "Combat")
 	end
 end
 

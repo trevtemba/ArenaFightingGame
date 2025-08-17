@@ -212,7 +212,7 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	end
 end)
 
-CombatContext:WaitForChild("Block").Pressed:Connect(function()
+CombatContext.Block.Pressed:Connect(function()
 	print("pressed f")
 	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
 		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))

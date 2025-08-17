@@ -27,7 +27,7 @@ end
 function SoulHandler:Init()
 	local data = require(Souls:FindFirstChild(self.owner.soulType):FindFirstChild("Data"))
 	self.cooldown = data.cooldown
-	self.character = data.rig
+	self.character = data.rig:Clone()
 	self.ability = data.ability
 
 	self.character.Parent = game.Workspace.Assets

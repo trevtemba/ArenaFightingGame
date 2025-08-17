@@ -74,6 +74,11 @@ function Game:Run(TRAINING_MODE)
 	if TRAINING_MODE then
 		local roundType = 5
 		if roundType then
+			-- Intermission
+			for i = 5, 1, -1 do
+				print("Intermission: " .. i)
+				task.wait(1)
+			end
 			local currRound = Round.new(roundType, self.stage)
 			self.currentRound = currRound
 			currRound:Start(self.alivePlayers)
@@ -87,7 +92,7 @@ function Game:Run(TRAINING_MODE)
 			-- Intermission
 			for i = 5, 1, -1 do
 				print("Intermission: " .. i)
-				wait(1)
+				task.wait(1)
 			end
 
 			-- Start round
