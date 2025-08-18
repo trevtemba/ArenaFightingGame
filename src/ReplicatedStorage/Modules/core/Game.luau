@@ -75,7 +75,7 @@ function Game:Run(TRAINING_MODE)
 		local roundType = 5
 		if roundType then
 			-- Intermission
-			for i = 5, 1, -1 do
+			for i = 3, 1, -1 do
 				print("Intermission: " .. i)
 				task.wait(1)
 			end

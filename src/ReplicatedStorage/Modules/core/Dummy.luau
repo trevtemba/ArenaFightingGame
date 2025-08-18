@@ -3,7 +3,6 @@ local TouchInputService = game:GetService("TouchInputService")
 local DummyData = require(ReplicatedStorage.Modules.data.DummyData)
 local tableToString = require(ReplicatedStorage.Modules.tableToString)
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
-local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local MovementHandler = require(script.Parent:WaitForChild("MovementHandler"))
@@ -34,7 +33,6 @@ function Dummy.new(rig, type)
 
 	--Modules
 	self.animationHandler = nil
-	self.fxHandler = nil
 	self.uiHandler = nil
 	self.combatHandler = nil
 	self.movementHandler = nil
@@ -88,7 +86,6 @@ function Dummy:Initialize()
 
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
-	self.fxHandler = FXHandler.new(self.character)
 	self.uiHandler = UIHandler.new(self)
 	self.combatHandler = CombatHandler.new(self, "Dummy")
 	self.movementHandler = MovementHandler.new(self)
@@ -146,7 +143,6 @@ function Dummy:Activate()
 	elseif self.type == "uptilt" then
 		task.defer(function()
 			while self.character:FindFirstChildOfClass("Humanoid") do
-				print(self.combatHandler.combo)
 				if self.combatHandler.combo < self.combatHandler.maxCombo then
 					self:Attack(true)
 					if self.stateHandler:HasState(STATE.InAirCombo) then
@@ -191,7 +187,7 @@ function Dummy:TakeDamage(attackData) --todo, enemyposition so we can make block
 			if attackData.blockable then
 				self.combatHandler:BlockDamage()
 			else
-				self.combatHandler:BreakBlock()
+				self.combatHandler:BreakBlock(attackData.attackAction, attackData.attackerLookVector)
 			end
 		else
 			self.combatHandler:TakeDamage(attackData)

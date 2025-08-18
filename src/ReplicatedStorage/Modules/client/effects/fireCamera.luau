@@ -3,11 +3,24 @@ local cameraModule = require(ReplicatedStorage.Modules.client.cameraModule)
 local tweenHelper = require(script.Parent.tweenHelper)
 local FlashLighting = game:GetService("Lighting"):FindFirstChild("Flash")
 
+local function isStrong(attackAction)
+	if
+		attackAction == "knockback"
+		or attackAction == "downslam"
+		or attackAction == "knockup"
+		or attackAction == "airknockback"
+	then
+		return true
+	else
+		return false
+	end
+end
+
 return function(argumentData)
-	local knockBack: boolean = argumentData.knockBack
+	local attackAction: boolean = argumentData.attackAction
 	local victim: boolean = argumentData.victim
 
-	if knockBack then
+	if isStrong(attackAction) then
 		if victim then
 			cameraModule.Shake({ shake = "Mid_Bump2" })
 			cameraModule.Flash({ request = "white", tim = 0.08 })

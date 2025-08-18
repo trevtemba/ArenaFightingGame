@@ -12,7 +12,7 @@ local Effects = ReplicatedStorage:WaitForChild("Effects")
 return function(argumentData)
 	local target: Model = argumentData.target
 	local hitType: string = argumentData.hitType
-	local airComboAction: string = argumentData.airComboAction
+	local attackAction: string = argumentData.attackAction
 	local knockBack: boolean = argumentData.knockBack
 	local attackerLookVector: Vector3 = argumentData.attackerLookVector
 
@@ -26,8 +26,9 @@ return function(argumentData)
 			local outerTransparency = 1
 			local windClone = Effects:FindFirstChild("Wind"):FindFirstChild("wind"):Clone()
 			if hitType ~= "block" then
-				if airComboAction then
-					if airComboAction == "downslam" then
+				print(attackAction)
+				if attackAction then
+					if attackAction == "downslam" then
 						local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
 						local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
 						windClone.Parent = rootPart
@@ -51,7 +52,7 @@ return function(argumentData)
 						Debris:AddItem(shockWaveClone, 1)
 						Debris:AddItem(knockBackSound, 1)
 						Debris:AddItem(windClone, 1)
-					elseif airComboAction == "knockup" then
+					elseif attackAction == "knockup" then
 						local risingLinesClone =
 							Effects:FindFirstChild("RiseLines"):FindFirstChild("ParticleEmitter"):Clone()
 						local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
@@ -78,7 +79,7 @@ return function(argumentData)
 						Debris:AddItem(shockWaveClone, 1)
 						Debris:AddItem(knockBackSound, 1)
 						Debris:AddItem(windClone, 1)
-					elseif airComboAction == "continue" then
+					elseif attackAction == "continue" then
 						local track1 = "impactleft"
 						local track2 = "impactright"
 
@@ -86,42 +87,53 @@ return function(argumentData)
 						local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 						animHelper:StopAll(target)
 						animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
+					elseif knockBack and (attackAction == "knockback" or attackAction == "cast") then
+						local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
+						local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
+						windClone.Parent = rootPart
+						local knockBackAnim =
+							animHelper:PlayAnimation(target, "knockBack", 0.1, nil, nil, false, "Action4")
+
+						local shockWaveClone = Effects:FindFirstChild("CleanShockwave"):Clone()
+						local lookAtCFrame =
+							CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
+						shockWaveClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-90), 0, 0)
+						shockWaveClone.Parent = game.Workspace
+						particleHelper.EmitPart(shockWaveClone)
+						particleHelper.EmitPart(windClone)
+
+						dustParticleAtt.Parent = rootPart
+						particleHelper.EnablePart(dustParticleAtt)
+
+						task.delay(1, function()
+							particleHelper.DisablePart(dustParticleAtt)
+							Debris:AddItem(dustParticleAtt, 1)
+						end)
+						animHelper:ConnectStopped(knockBackAnim, function()
+							animHelper:PlayAnimation(target, "getUp", 0.1, nil, nil, false, "Action2")
+						end)
+						Debris:AddItem(shockWaveClone, 1)
+						Debris:AddItem(knockBackSound, 1)
+						Debris:AddItem(windClone, 1)
+					elseif attackAction == "default" or attackAction == "aircontinue" then
+						if hitType ~= "blockBreak" then
+							local track1 = "impactleft"
+							local track2 = "impactright"
+
+							-- Randomly choose one of the impact animations
+							local chosenTrack = math.random(1, 2) == 1 and track1 or track2
+							animHelper:StopAll(target)
+							animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
+						end
 					end
-				elseif knockBack then
-					local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
-					local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
-					windClone.Parent = rootPart
-					local knockBackAnim = animHelper:PlayAnimation(target, "knockBack", 0.1, nil, nil, false, "Action4")
-
-					local shockWaveClone = Effects:FindFirstChild("CleanShockwave"):Clone()
-					local lookAtCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
-					shockWaveClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-90), 0, 0)
-					shockWaveClone.Parent = game.Workspace
-					particleHelper.EmitPart(shockWaveClone)
-					particleHelper.EmitPart(windClone)
-
-					dustParticleAtt.Parent = rootPart
-					particleHelper.EnablePart(dustParticleAtt)
-
-					task.delay(1, function()
-						particleHelper.DisablePart(dustParticleAtt)
-						Debris:AddItem(dustParticleAtt, 1)
-					end)
-					animHelper:ConnectStopped(knockBackAnim, function()
-						animHelper:PlayAnimation(target, "getUp", 0.1, nil, nil, false, "Action2")
-					end)
-					Debris:AddItem(shockWaveClone, 1)
-					Debris:AddItem(knockBackSound, 1)
-					Debris:AddItem(windClone, 1)
-				else
-					local track1 = "impactleft"
-					local track2 = "impactright"
-
-					-- Randomly choose one of the impact animations
-					local chosenTrack = math.random(1, 2) == 1 and track1 or track2
-					animHelper:StopAll(target)
-					animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
 				end
+			else
+				local track1 = "blockImpactRight"
+				local track2 = "blockImpactLeft"
+
+				-- Randomly choose one of the impact animations
+				local chosenTrack = argumentData.blockAnimSequence == 1 and track1 or track2
+				animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
 			end
 			if hitType == "blunt" then
 				clone = Effects.CoreEffects.bluntHitEffect:Clone()
@@ -158,19 +170,7 @@ return function(argumentData)
 				"pulse",
 				0.25
 			)
-			-- if knockBack then
-			-- 	local knockBackSound = Sounds.knockback1:Clone()
-			-- 	local knockBackClone = Effects.KnockbackEffect:Clone()
-			-- 	local lookAtCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + attackerLookVector.Unit)
-			-- 	knockBackClone.CFrame = lookAtCFrame * CFrame.Angles(math.rad(-90), 0, 0)
-			-- 	knockBackClone.Parent = game.Workspace
-			-- 	particleHelper.EmitPart(knockBackClone)
-			-- 	knockBackSound.Parent = rootPart
-			-- 	knockBackSound:Play()
 
-			-- 	Debris:AddItem(knockBackClone, 1)
-			-- 	Debris:AddItem(knockBackSound, 1)
-			-- end
 			-- Cleanup
 			Debris:AddItem(highlight, 1)
 			Debris:AddItem(clone, 1)

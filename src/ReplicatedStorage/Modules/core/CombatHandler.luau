@@ -166,7 +166,6 @@ function CombatHandler:Attack(spaceHeld)
 	local blockable
 	local isAirCombo = false
 	local knocksBack = false
-	local airComboAction
 	local cooldown
 	local animName
 
@@ -183,34 +182,40 @@ function CombatHandler:Attack(spaceHeld)
 	knocksBack = self.combo == self.maxCombo
 	animName = "m" .. tostring(self.combo)
 
+	-- DETERMINE ATTACK ACTION
+	local attackAction = self.combo == self.maxCombo and "knockback" or "default"
+	local stunTime = attackAction == "default" and 1 or 3.25
+
 	if spaceHeld then
 		if not self.owner.stateHandler:HasState(STATE.InAirCombo) then
 			if self.combo < self.maxCombo then
 				animName = "knockUp"
 				isAirCombo = true
-				airComboAction = "knockup"
+				attackAction = "knockup"
 			else
 				print("combo ender, normal knockback")
 			end
 		else
 			if self.combo < self.maxCombo then
 				isAirCombo = true
-				airComboAction = "continue"
+				attackAction = "aircontinue"
 			else
 				animName = "airKnockBack"
 				isAirCombo = true
-				airComboAction = "knockback"
+				attackAction = "knockback"
+				stunTime = 1.5
 			end
 		end
 	else
 		if self.owner.stateHandler:HasState(STATE.InAirCombo) then
 			if self.combo < self.maxCombo then
 				isAirCombo = true
-				airComboAction = "downm1"
+				attackAction = "downm1"
 			else
 				animName = "downSlam"
 				isAirCombo = true
-				airComboAction = "downslam"
+				attackAction = "downslam"
+				stunTime = 2.5
 			end
 		end
 	end
@@ -237,9 +242,18 @@ function CombatHandler:Attack(spaceHeld)
 		local params = {
 			attacker = self.owner,
 			onHit = function(entity)
-				self:ApplyDamage(entity, blockable, "attack", knocksBack, isAirCombo, nil, airComboAction)
+				self:ApplyDamage({
+					entity = entity,
+					blockable = blockable,
+					type = "attack",
+					knocksBack = knocksBack,
+					isAirCombo = isAirCombo,
+					abilityDamage = nil,
+					attackAction = attackAction,
+					stunTime = stunTime,
+				})
 				if isAirCombo then
-					self:handleAirCombo(entity, airComboAction)
+					self:handleAirCombo(entity, attackAction)
 				end
 				if self.entityType == "Player" then
 					attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
@@ -279,7 +293,10 @@ function CombatHandler:EnableBlock()
 	clientEffects:FireAllClients("initiate", { target = self.owner.character, initiateType = "block" })
 	self.owner.stateHandler:SetState(STATE.Blocking)
 	self.owner.physicsHandler:SetWalkspeed(5)
-	self.owner.animationHandler:Play("block", nil, nil, nil, true, "Action")
+	clientEffects:FireAllClients(
+		"handleEffect",
+		{ target = self.owner.character, effectType = "block", activate = true }
+	)
 end
 
 function CombatHandler:DisableBlock()
@@ -289,20 +306,34 @@ function CombatHandler:DisableBlock()
 
 	self.owner.stateHandler:RemoveState(STATE.Blocking)
 	self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
-	self.owner.animationHandler:Stop("block")
+	clientEffects:FireAllClients(
+		"handleEffect",
+		{ target = self.owner.character, effectType = "block", activate = false }
+	)
 end
 
-function CombatHandler:BreakBlock()
+function CombatHandler:BreakBlock(attackAction, attackerLookVector)
 	if not self.humanoid then
 		return
 	end
 	self:DisableBlock()
 	self:Stun(2, 0)
-	self.owner.fxHandler:EnableParticlePart("DizzyEffect", "Head")
+	print(attackAction)
 	self.owner.physicsHandler:SetWalkspeed(0)
 	self.owner.animationHandler:StopAll()
-	self.owner.animationHandler:Play("blockBreak", nil, nil, nil, true, "Action4")
-	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = "blockBreak" })
+	clientEffects:FireAllClients("handleEffect", {
+		target = self.owner.character,
+		effectType = "blockBreak",
+		activate = true,
+		ignoreAnim = attackAction == "downslam",
+	})
+	clientEffects:FireAllClients("defaultHit", {
+		target = self.owner.character,
+		hitType = "blockBreak",
+		attackAction = attackAction,
+		knockBack = false,
+		attackerLookVector = attackerLookVector,
+	})
 
 	self._blockBreakSessionId = (self._blockBreakSessionId or 0) + 1
 	local sessionId = self._blockBreakSessionId
@@ -320,17 +351,28 @@ function CombatHandler:RestoreBreakBlock()
 		return
 	end
 	self._blockBreakSessionId = nil
-
-	self.owner.fxHandler:DisableParticlePart("DizzyEffect", "Head")
+	clientEffects:FireAllClients(
+		"handleEffect",
+		{ target = self.owner.character, effectType = "blockBreak", activate = false }
+	)
 	self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
 	self.owner.animationHandler:Stop("blockBreak")
 end
 
-function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCombo, abilityDamage, airComboAction)
+function CombatHandler:ApplyDamage(attackData)
+	local entity = attackData.entity
+	local blockable = attackData.blockable
+	local type = attackData.type
+	local knocksBack = attackData.knocksBack
+	local isAirCombo = attackData.isAirCombo
+	local abilityDamage = attackData.abilityDamage
+	local attackAction = attackData.attackAction
+	local stunTime = attackData.stunTime
+
 	if not entity or not entity.combatHandler then
 		return
 	end
-	print(airComboAction)
+
 	local base
 	if type == "attack" then
 		base = self.owner.stats.attackDmg or 10
@@ -347,25 +389,23 @@ function CombatHandler:ApplyDamage(entity, blockable, type, knocksBack, isAirCom
 	local dmgType = self.owner.damageTypes[type]
 	local lookVector = self.owner.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector
 
-	local attackData = {
+	local newAttackData = {
 		damage = dmg,
 		pierce = pierce,
-		stunTime = 1,
+		stunTime = stunTime,
 		damageType = dmgType,
 		type = type,
 		crit = crit,
 		blockable = blockable,
 		knocksBack = knocksBack,
 		isAirCombo = isAirCombo,
-		airComboAction = airComboAction,
 		hitType = "blunt",
 		attackerLookVector = lookVector,
 		attackerPhysicsHandler = self.owner.physicsHandler,
+		attackAction = attackAction,
 	}
 
-	entity:TakeDamage(attackData)
-
-	self.owner.fxHandler:PlaySound("attack")
+	entity:TakeDamage(newAttackData)
 end
 
 function CombatHandler:TakeDamage(attackData)
@@ -373,11 +413,11 @@ function CombatHandler:TakeDamage(attackData)
 		if self._blockBreakSessionId then
 			self:RestoreBreakBlock()
 		end
-		self:Stun(attackData.stunTime + (attackData.knocksBack and 2 or 0), 3)
-		self:Flinch()
+		self.owner.animationHandler:StopAll()
+		self:Stun(attackData.stunTime, 3)
 	elseif self.entityType == "Enemy" then
-		self.owner:SetState(STATE.Stunned, attackData.stunTime + (attackData.knocksBack and 2 or 0))
-		self.owner:Flinch(attackData.knocksBack, attackData.airComboAction)
+		self.owner.animationHandler:StopAll()
+		self.owner:SetState(STATE.Stunned, attackData.stunTime)
 	end
 
 	self.owner.stateHandler:RemoveState(STATE.Attacking)
@@ -403,7 +443,7 @@ function CombatHandler:TakeDamage(attackData)
 	clientEffects:FireAllClients("defaultHit", {
 		target = targetChar,
 		hitType = attackData.hitType,
-		airComboAction = attackData.airComboAction,
+		attackAction = attackData.attackAction,
 		knockBack = attackData.knocksBack,
 		attackerLookVector = attackData.attackerLookVector,
 	})
@@ -411,14 +451,14 @@ function CombatHandler:TakeDamage(attackData)
 		clientEffects:FireClient(
 			Players:GetPlayerFromCharacter(attackerChar),
 			"fireCamera",
-			{ knockBack = attackData.knocksBack, victim = false }
+			{ attackAction = attackData.attackAction, victim = false }
 		)
 	end
 	if CollectionService:HasTag(targetChar, "Player") then
 		clientEffects:FireClient(
 			Players:GetPlayerFromCharacter(targetChar),
 			"fireCamera",
-			{ knockBack = attackData.knocksBack, victim = true }
+			{ attackAction = attackData.attackAction, victim = true }
 		)
 	end
 	if not attackData.isAirCombo then
@@ -449,20 +489,16 @@ function CombatHandler:TakeDamage(attackData)
 end
 
 function CombatHandler:BlockDamage()
-	local track = "blockImpactRight"
-
 	if self.blockAnimSeq == 1 then
 		self.blockAnimSeq = 2
 	else
-		track = "blockImpactLeft"
 		self.blockAnimSeq = 1
 	end
 
-	if track then
-		self.owner.animationHandler:Play(track, nil, nil, nil, false, "Action2")
-	end
-
-	clientEffects:FireAllClients("defaultHit", { target = self.owner.character, hitType = "block" })
+	clientEffects:FireAllClients(
+		"defaultHit",
+		{ target = self.owner.character, hitType = "block", blockAnimSequence = self.blockAnimSeq }
+	)
 end
 
 function CombatHandler:determineCrit()
@@ -494,19 +530,6 @@ function CombatHandler:Stun(stunTime, walkspeed)
 	self._stunSessionId = sessionId
 end
 
-function CombatHandler:Flinch()
-	-- local track1 = "impactleft"
-	-- local track2 = "impactright"
-
-	-- -- Randomly choose one of the impact animations
-	-- local chosenTrack = math.random(1, 2) == 1 and track1 or track2
-
-	-- if chosenTrack then
-	-- 	self.owner.animationHandler:StopAll()
-	-- 	self.owner.animationHandler:Play(chosenTrack, 0.1, nil, nil, false, "Action4")
-	-- end
-end
-
 function CombatHandler:M1Slow(speed)
 	self.owner.physicsHandler:SetWalkspeed(speed)
 	local m1SlowDelay = self.combo < self.maxCombo and 1 or 1.5
@@ -534,7 +557,7 @@ function CombatHandler:M1Slow(speed)
 	end)
 end
 
-function CombatHandler:handleAirCombo(targetEntity, airComboAction)
+function CombatHandler:handleAirCombo(targetEntity, attackAction)
 	local attackerRoot = self.owner.character:FindFirstChild("HumanoidRootPart")
 	local targetRoot = targetEntity.character:FindFirstChild("HumanoidRootPart")
 	local attackerState = self.owner.stateHandler
@@ -558,7 +581,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		self._airFloatCoroutine = nil
 	end
 
-	if airComboAction == "knockup" then
+	if attackAction == "knockup" then
 		self.lastAirAttackTime = os.clock()
 		attackerState:SetState(STATE.InAirCombo)
 		targetState:SetState(STATE.InAirCombo)
@@ -596,7 +619,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 
 			disableInAir()
 		end)
-	elseif airComboAction == "continue" then
+	elseif attackAction == "aircontinue" then
 		-- Offset: attacker moves slightly forward, target moves back
 		if self.attackerFloat and self.targetFloat then
 			print("continuing")
@@ -609,7 +632,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 			aAlignPart.CFrame = CFrame.new(aAlignPart.Position + attackerLookVector * distance)
 			tAlignPart.CFrame = CFrame.new(tAlignPart.Position + attackerLookVector * distance)
 		end
-	elseif airComboAction == "downslam" then
+	elseif attackAction == "downslam" then
 		if self._airFloatCoroutine then
 			task.cancel(self._airFloatCoroutine)
 		end
@@ -661,8 +684,7 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 				disableInAir()
 			end)
 		end
-	elseif airComboAction == "knockback" then
-		print("knocksback")
+	elseif attackAction == "airknockback" or attackAction == "knockback" then
 		self.lastAirAttackTime = os.clock()
 		local tAlignPart = self.targetFloat.alignPart
 		local attackerLookVector = attackerRoot.CFrame.LookVector
@@ -673,11 +695,11 @@ function CombatHandler:handleAirCombo(targetEntity, airComboAction)
 		task.delay(0.5, function()
 			disableInAir()
 		end)
-	elseif airComboAction == "downm1" then
+	elseif attackAction == "downm1" then
 		print("downm1")
 		disableInAir()
 	else
-		warn("Invalid air combo action:", airComboAction)
+		warn("Invalid air combo action:", attackAction)
 	end
 end
 
