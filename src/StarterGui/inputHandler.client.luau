@@ -155,12 +155,10 @@ CoreContext:WaitForChild("Jump").Pressed:Connect(function()
 
 	--setCanJump(false)
 	inputStateHandler:HeldOn("space")
-	print("holding space")
 end)
 
 CoreContext:WaitForChild("Jump").Released:Connect(function()
 	inputStateHandler:HeldOff("space")
-	print("letting go of space")
 end)
 
 CoreContext:WaitForChild("Dash").Pressed:Connect(function()

@@ -3,7 +3,14 @@ local StunHandler = {}
 
 local stunnedMap = {}
 
-function StunHandler.Stun(humanoid: Humanoid, duration: number, walkSpeed: number?, removeServerStunState)
+function StunHandler.Stun(
+	humanoid: Humanoid,
+	duration: number,
+	walkSpeed: number?,
+	sessionId: number,
+	removeServerStunState
+)
+	print(duration)
 	if not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -31,6 +38,7 @@ function StunHandler.Stun(humanoid: Humanoid, duration: number, walkSpeed: numbe
 	humanoid.WalkSpeed = newSpeed
 	humanoid.JumpPower = 0
 	humanoid.JumpHeight = 0
+	print("STUNNING")
 	char:SetAttribute("Stunned", true)
 
 	local changedConn = humanoid.Changed:Connect(function()
@@ -41,28 +49,21 @@ function StunHandler.Stun(humanoid: Humanoid, duration: number, walkSpeed: numbe
 
 	local stunInfo = {
 		conn = changedConn,
-		active = true,
 	}
 
 	stunnedMap[humanoid] = stunInfo
+	task.defer(function()
+		task.wait(duration)
 
-	task.spawn(function()
-		local startTime = tick()
-		while tick() - startTime < duration do
-			if not stunInfo.active then
-				return
-			end -- cancelled
-			task.wait(0.1)
-		end
-
-		if stunInfo.active and humanoid:IsDescendantOf(game) then
+		-- ✅ Only the latest stun session gets to un-stun
+		if humanoid:IsDescendantOf(game) and sessionId == humanoid:GetAttribute("CurrentStunId") then
+			print("UNSTUNNING")
 			humanoid.WalkSpeed = originalSpeed
 			humanoid.JumpPower = originalJumpPower
 			humanoid.JumpHeight = originalJumpHeight
 			removeServerStunState()
 			char:SetAttribute("Stunned", false)
 		end
-
 		if stunInfo.conn then
 			stunInfo.conn:Disconnect()
 		end

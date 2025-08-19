@@ -26,7 +26,6 @@ return function(argumentData)
 			local outerTransparency = 1
 			local windClone = Effects:FindFirstChild("Wind"):FindFirstChild("wind"):Clone()
 			if hitType ~= "block" then
-				print(attackAction)
 				if attackAction then
 					if attackAction == "downslam" then
 						local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()

@@ -192,6 +192,7 @@ function CombatHandler:Attack(spaceHeld)
 				animName = "knockUp"
 				isAirCombo = true
 				attackAction = "knockup"
+				stunTime = 1.25
 			else
 				print("combo ender, normal knockback")
 			end
@@ -409,6 +410,7 @@ function CombatHandler:ApplyDamage(attackData)
 end
 
 function CombatHandler:TakeDamage(attackData)
+	print(attackData.attackAction)
 	if self.entityType == "Player" or self.entityType == "Dummy" then
 		if self._blockBreakSessionId then
 			self:RestoreBreakBlock()
@@ -523,11 +525,13 @@ function CombatHandler:Stun(stunTime, walkspeed)
 		totalStunTime = stunTime
 	end
 
-	StunModule.Stun(self.humanoid, totalStunTime, walkspeed, function()
+	local sessionId = (self._stunSessionId and self._stunSessionId or 0) + 1
+	self._stunSessionId = sessionId
+	self.humanoid:SetAttribute("CurrentStunId", sessionId)
+
+	StunModule.Stun(self.humanoid, totalStunTime, walkspeed, sessionId, function()
 		self.owner.stateHandler:RemoveState(STATE.Stunned)
 	end)
-	local sessionId = (self._stunSessionId and 0 or 1) + 1
-	self._stunSessionId = sessionId
 end
 
 function CombatHandler:M1Slow(speed)

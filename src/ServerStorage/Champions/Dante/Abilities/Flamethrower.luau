@@ -19,6 +19,7 @@ Flamethrower.Config = {
 		range = 50,
 		angle = 60,
 	},
+	stunTime = 1,
 }
 
 function Flamethrower:Cast(combatHandler, animName)
@@ -46,14 +47,16 @@ function Flamethrower:Cast(combatHandler, animName)
 				range = self.Config.hitboxParams.range,
 				angle = self.Config.hitboxParams.angle,
 				onHit = function(entity)
-					combatHandler:ApplyDamage(
-						entity,
-						self.Config.blockable,
-						"ability",
-						self.Config.knocksBack,
-						nil,
-						self.Config.damage
-					)
+					combatHandler:ApplyDamage({
+						entity = entity,
+						blockable = self.Config.blockable,
+						type = "ability",
+						knocksBack = self.Config.knocksBack,
+						isAirCombo = nil,
+						abilityDamage = self.Config.damage,
+						attackAction = "default",
+						stunTime = self.Config.stunTime,
+					})
 				end,
 			})
 			task.wait(0.5)

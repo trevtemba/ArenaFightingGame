@@ -120,7 +120,7 @@ function HitboxModule:CreateConeHitbox(params)
 
 					if dot >= cosAngle then
 						local entity
-						if CollectionService:HasTag(model, "Enemy") then
+						if CollectionService:HasTag(model, "Enemy") or CollectionService:HasTag(model, "Dummy") then
 							entity = params.attacker:GetEnemyFromCharacter(model)
 						else
 							entity = params.attacker:GetPlayerFromCharacter(model)
