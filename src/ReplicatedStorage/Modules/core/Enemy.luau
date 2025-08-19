@@ -340,7 +340,6 @@ function Enemy:Stun(duration)
 	self._stunEndTime = now + duration
 
 	self.character.Humanoid:MoveTo(self.character.HumanoidRootPart.Position)
-	self:Flinch()
 
 	task.delay(duration, function()
 		-- Only reset if no newer stun has occurred
@@ -420,11 +419,14 @@ function Enemy:MeleeAttack()
 				pierce = self.stats.pierce,
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
+				type = "attack",
 				crit = false,
 				blockable = true,
 				hitType = "slash",
+				knocksBack = false,
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
 				attackerPhysicsHandler = self.physicsHandler,
+				attackAction = "default",
 			}
 			target:TakeDamage(attackData)
 
@@ -467,12 +469,14 @@ function Enemy:RangedAttack()
 				pierce = self.stats.pierce,
 				stunTime = ATTACK_STUN_TIME,
 				damageType = self.damageTypes.attack,
+				type = "attack",
 				crit = false,
 				blockable = true,
 				knocksBack = false,
 				hitType = "blunt",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
 				attackerPhysicsHandler = self.physicsHandler,
+				attackAction = "default",
 			}
 			target:TakeDamage(attackData)
 			self.damageDebounce = true
@@ -501,19 +505,6 @@ end
 function Enemy:TakeDamage(attackData)
 	if self.combatHandler then
 		self.combatHandler:TakeDamage(attackData)
-	end
-end
-
-function Enemy:Flinch()
-	self.animationHandler:StopAll()
-	local track1 = "impactleft"
-	local track2 = "impactright"
-
-	-- Randomly choose one of the impact animations
-	local chosenTrack = math.random(1, 2) == 1 and track1 or track2
-
-	if chosenTrack then
-		self.animationHandler:Play(chosenTrack, 0.1, 2)
 	end
 end
 

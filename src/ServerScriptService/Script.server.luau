@@ -11,7 +11,6 @@ local CollisionManager = require(ReplicatedStorage.Modules.core.CollisionManager
 local Game = require(core:WaitForChild("Game"))
 local Player = require(core:WaitForChild("Player"))
 local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
-
 local champChosenByServer = ClientEvents:WaitForChild("champChosenByServer")
 local ChampionSelectedEvent = ServerEvents:WaitForChild("ChampSelect")
 
@@ -20,6 +19,8 @@ local gameInstance = Game:GetInstance()
 
 local MAX_PLAYERS = 1
 local CHAMPION_PICK_TIME = 5
+local TRAINING_MODE = true
+
 local availableChampions = { "Dante" }
 
 local selectedChampions = {}
@@ -87,7 +88,7 @@ end
 for _, plr in ipairs(joinedPlayers) do
 	local champion, rig = ChampionFactory.newChampion(selectedChampions[plr.UserId])
 	local soulType = "Engage" --this will be a pcall that fetches the respective players soul type from database
-	CollectionService:AddTag(rig, "player")
+	CollectionService:AddTag(rig, "Player")
 	rig:SetPrimaryPartCFrame(plr.Character.PrimaryPart.CFrame)
 	plr.Character = rig
 
@@ -101,4 +102,4 @@ print(gameInstance.players)
 
 print(gameInstance.portal)
 
-gameInstance:Run()
+gameInstance:Run(TRAINING_MODE)

@@ -23,6 +23,13 @@ function PlayerHandler.OnSoulCast(plr: Player)
 	end
 end
 
+function PlayerHandler.OnSoulVisibleToggle(plr: Player, visible)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:ToggleSoulVisibility(visible)
+	end
+end
+
 function PlayerHandler.OnBlock(plr: Player, activate)
 	local playerObj = Game:GetInstance():GetPlayer(plr, activate)
 	if playerObj then

@@ -29,6 +29,7 @@ local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local attackDone = ClientEvents:WaitForChild("attackDone")
 local castDone = ClientEvents:WaitForChild("castDone")
+local soulCastDone = ClientEvents:WaitForChild("soulCastDone")
 local inAir = ClientEvents:WaitForChild("inAir")
 local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
 
@@ -154,12 +155,10 @@ CoreContext:WaitForChild("Jump").Pressed:Connect(function()
 
 	--setCanJump(false)
 	inputStateHandler:HeldOn("space")
-	print("holding space")
 end)
 
 CoreContext:WaitForChild("Jump").Released:Connect(function()
 	inputStateHandler:HeldOff("space")
-	print("letting go of space")
 end)
 
 CoreContext:WaitForChild("Dash").Pressed:Connect(function()
@@ -211,7 +210,7 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	end
 end)
 
-CombatContext:WaitForChild("Block").Pressed:Connect(function()
+CombatContext.Block.Pressed:Connect(function()
 	print("pressed f")
 	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
 		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))
@@ -259,12 +258,26 @@ CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 		return
 	end
 	inputStateHandler:SetState(STATE.SoulCasting)
-	hotbar.Cast({ abilitySlot = "soul" })
-	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd"), abilitySlot = "soul" })
+	hotbar.SoulCast()
+	hotbar.SoulCooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd") })
 	local remote = ServerEvents:FindFirstChild("OnSoulCast")
 	if remote then
 		print("casting soul")
 		remote:FireServer()
+	end
+end)
+
+CoreContext:WaitForChild("ShowSoul").Pressed:Connect(function()
+	if processDebounce("showSoul", 1) then
+		return
+	end
+
+	inputStateHandler.soulVisible = not inputStateHandler.soulVisible
+	local visible = inputStateHandler.soulVisible
+
+	local remote = ServerEvents:FindFirstChild("OnSoulVisibleToggle")
+	if remote then
+		remote:FireServer(visible)
 	end
 end)
 
@@ -487,6 +500,11 @@ end)
 
 castDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Casting)
+	setCanJump(true)
+end)
+
+soulCastDone.OnClientEvent:Connect(function()
+	inputStateHandler:RemoveState(STATE.SoulCasting)
 	setCanJump(true)
 end)
 

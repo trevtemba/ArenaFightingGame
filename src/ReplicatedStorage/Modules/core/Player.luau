@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local tableToString = require(ReplicatedStorage.Modules.tableToString)
 local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
-local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
 local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
 local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
 local MovementHandler = require(script.Parent:WaitForChild("MovementHandler"))
@@ -35,7 +34,6 @@ function Player.new(plr, champion, rig, soulType)
 
 	--Modules
 	self.animationHandler = nil
-	self.fxHandler = nil
 	self.uiHandler = nil
 	self.combatHandler = nil
 	self.movementHandler = nil
@@ -93,7 +91,6 @@ function Player:Initialize()
 
 	-- load asset handlers
 	self.animationHandler = AnimationHandler.new(self.character)
-	self.fxHandler = FXHandler.new(self.character)
 	self.uiHandler = UIHandler.new(self)
 	self.combatHandler = CombatHandler.new(self, "Player")
 	self.movementHandler = MovementHandler.new(self)
@@ -158,6 +155,12 @@ function Player:SoulCast()
 	end
 end
 
+function Player:ToggleSoulVisibility(visible)
+	if self.combatHandler then
+		self.soulHandler:ToggleVisibility(visible)
+	end
+end
+
 function Player:Block(activate)
 	if self.combatHandler then
 		if activate then
@@ -190,7 +193,7 @@ function Player:TakeDamage(attackData) --todo, enemyposition so we can make bloc
 			if attackData.blockable then
 				self.combatHandler:BlockDamage()
 			else
-				self.combatHandler:BreakBlock()
+				self.combatHandler:BreakBlock(attackData.attackAction, attackData.attackerLookVector)
 			end
 		else
 			self.combatHandler:TakeDamage(attackData)

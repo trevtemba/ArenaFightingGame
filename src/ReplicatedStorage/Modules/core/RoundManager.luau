@@ -1,39 +1,40 @@
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 
 local EnemyManager = require(script.Parent:WaitForChild("EnemyManager"))
 local RemoteEvents = game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents")
 local ClientEvents = RemoteEvents:WaitForChild("Client")
-
 local ServerStorage = game:GetService("ServerStorage")
+local Dummy = require(script.Parent.Dummy)
 
 local arenas = ServerStorage:WaitForChild("arenas")
 
 local arenaSpawnPositions = {
 	-- Arena 1
-	CFrame.new(-925, 1, -925),
+	CFrame.new(-925, 0.5, -925),
 	-- Arena 2
-	CFrame.new(-925, 1, -285),
+	CFrame.new(-925, 0.5, -285),
 	-- Arena 3
-	CFrame.new(-925, 1, -300),
+	CFrame.new(-925, 0.5, -300),
 	-- Arena 4
-	CFrame.new(-925, 1, 925),
+	CFrame.new(-925, 0.5, 925),
 	-- Arena 5
-	CFrame.new(-510, 1, -925),
+	CFrame.new(-510, 0.5, -925),
 	-- Arena 6
-	CFrame.new(-510, 1, -285),
+	CFrame.new(-510, 0.5, -285),
 	-- Arena 7
-	CFrame.new(-510, 1, -300),
+	CFrame.new(-510, 0.5, -300),
 	-- Arena 8
-	CFrame.new(-510, 1, 925),
+	CFrame.new(-510, 0.5, 925),
 }
 
 local RoundManager = {}
 
-function RoundManager.RunPve(stage, plrs)
+function RoundManager.RunPve(stage, plrObjs)
 	local pveArena = arenas:WaitForChild("pve")
 	local arena = pveArena:WaitForChild("arenaModel")
 
-	for i, plr in ipairs(plrs) do
+	for i, plrObj in ipairs(plrObjs) do
 		-- spawn an arena
 		local plrArena = arena:Clone()
 		plrArena:PivotTo(arenaSpawnPositions[i] * CFrame.Angles(0, math.rad(90), 0))
@@ -51,12 +52,13 @@ function RoundManager.RunPve(stage, plrs)
 
 		-- spawn player
 		local plrFinalCFrame = plrSpawn.CFrame * CFrame.new(0, 3, 0)
-		plr.character:PivotTo(plrFinalCFrame)
-		ClientEvents:WaitForChild("switchContext"):FireClient(Players:GetPlayerFromCharacter(plr.character), "Combat")
+		plrObj.character:PivotTo(plrFinalCFrame)
+		ClientEvents:WaitForChild("switchContext")
+			:FireClient(Players:GetPlayerFromCharacter(plrObj.character), "Combat")
 		-- spawn the enemies in each of the arenas
 
 		if stage == 1 then
-			EnemyManager.SpawnS1Enemies(enemySpawns, plr)
+			EnemyManager.SpawnS1Enemies(enemySpawns, plrObj)
 			print("level 1 npcs spawned")
 		elseif stage == 2 then
 			print("level 2 npcs spawned")
@@ -68,7 +70,31 @@ function RoundManager.RunPve(stage, plrs)
 	end
 end
 
-function RoundManager.RunPvp(stage, plrs)
+function RoundManager.RunTraining(plrObjs)
+	local activeDummies = {}
+	local Dummies = game:GetService("Workspace"):FindFirstChild("Dummies")
+
+	for _, dummyRig in pairs(Dummies:GetChildren()) do
+		local dummyObj = Dummy.new(dummyRig, dummyRig:GetAttribute("type"))
+		CollectionService:AddTag(dummyRig, "Dummy")
+		if not dummyObj then
+			warn("something wrong with the dummy obj construction")
+		end
+		activeDummies[dummyRig] = dummyObj
+		dummyObj:Initialize()
+		dummyObj:SetPlayerTable(plrObjs)
+		dummyObj:Activate()
+		table.insert(activeDummies, dummyObj)
+	end
+
+	for _, plrObj in ipairs(plrObjs) do
+		plrObj:SetEnemyTable(activeDummies)
+		ClientEvents:WaitForChild("switchContext")
+			:FireClient(Players:GetPlayerFromCharacter(plrObj.character), "Combat")
+	end
+end
+
+function RoundManager.RunPvp(stage, plrObjs)
 	if stage == 1 then
 		print("stage 1 player damage")
 	elseif stage == 2 then
@@ -80,8 +106,8 @@ function RoundManager.RunPvp(stage, plrs)
 	end
 end
 
-function RoundManager.RunAugment(stage, plrs) end
+function RoundManager.RunAugment(stage, plrObjs) end
 
-function RoundManager.RunCarousel(stage, plrs) end
+function RoundManager.RunCarousel(stage, plrObjs) end
 
 return RoundManager
