@@ -1,4 +1,6 @@
-local DROP_TYPES = require(game:GetService("ReplicatedStorage").Modules.core.DropTypes)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local DROP_TYPES = require(Services.Core.DropTypes)
 
 local LootData = {}
 

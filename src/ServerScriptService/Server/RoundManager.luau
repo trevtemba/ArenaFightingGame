@@ -1,13 +1,14 @@
-local CollectionService = game:GetService("CollectionService")
-local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local CollectionService = Services.CollectionService
+local Players = Services.Players
 
-local EnemyManager = require(script.Parent:WaitForChild("EnemyManager"))
-local RemoteEvents = game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents")
-local ClientEvents = RemoteEvents:WaitForChild("Client")
-local ServerStorage = game:GetService("ServerStorage")
-local Dummy = require(script.Parent.Dummy)
+local EnemyManager = require(Services.Server.EnemyManager)
 
-local arenas = ServerStorage:WaitForChild("arenas")
+local ClientEvents = Services.ClientEvents
+local Dummy = require(Services.Entities.Dummy)
+
+local arenas = Services.ServerStorage:WaitForChild("arenas")
 
 local arenaSpawnPositions = {
 	-- Arena 1

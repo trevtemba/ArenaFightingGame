@@ -1,17 +1,21 @@
-local RagdollHandler = require(script.Parent:WaitForChild("RagdollHandler"))
-local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
-local StunModule = require(script.Parent:WaitForChild("stunHandler"))
-local attackDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.attackDone
-local castDone = game:GetService("ReplicatedStorage").RemoteEvents.Client.castDone
-local inAir = game:GetService("ReplicatedStorage").RemoteEvents.Client.inAir
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
 
-local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
+local RagdollHandler = require(Services.EntityUtils.RagdollHandler)
+local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
+local StunModule = require(Services.EntityUtils.stunHandler)
 
-local CollectionService = game:GetService("CollectionService")
-local ServerStorage = game:GetService("ServerStorage")
-local Players = game:GetService("Players")
+local attackDone = Services.ReplicatedStorage.RemoteEvents.Client.attackDone
+local castDone = Services.ReplicatedStorage.RemoteEvents.Client.castDone
+local inAir = Services.ReplicatedStorage.RemoteEvents.Client.inAir
 
-local STATE = require(script.Parent.State)
+local clientEffects = Services.ClientEvents.clientEffects
+
+local CollectionService = Services.CollectionService
+local ServerStorage = Services.ServerStorage
+local Players = Services.Players
+
+local STATE = require(Services.Core.State)
 
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")

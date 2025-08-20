@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Items = require(ReplicatedStorage.Modules.data.ItemData)
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Items = require(Services.Data:WaitForChild("ItemData"))
 
 local ItemHandler = {}
 ItemHandler.__index = ItemHandler

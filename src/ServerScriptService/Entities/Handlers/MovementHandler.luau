@@ -1,12 +1,14 @@
 -- MovementHandler.lua
-local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
-local Players = game:GetService("Players")
-local sprintEvent = game:GetService("ReplicatedStorage").RemoteEvents.Client.sprint
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
+local clientEffects = Services.ClientEvents.clientEffects
+local sprintEvent = Services.ClientEvents.sprint
 
 local MovementHandler = {}
 MovementHandler.__index = MovementHandler
 
-local STATE = require(script.Parent.State)
+local STATE = require(Services.Core:WaitForChild("State"))
 
 function MovementHandler.new(playerObj)
 	local self = setmetatable({}, MovementHandler)

@@ -1,5 +1,7 @@
--- Modules/PlayerHandler.lua
-local Game = require(script.Parent.Game)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Game = require(Services.Server.Game)
+
 local PlayerHandler = {}
 
 function PlayerHandler.OnAttack(plr: Player, spaceHeld)

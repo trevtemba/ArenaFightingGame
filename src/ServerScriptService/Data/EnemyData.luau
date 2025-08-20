@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local DROP_TYPES = require(ReplicatedStorage.Modules.core.DropTypes)
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local DROP_TYPES = require(Services.Core.DropTypes)
 
 return {
 	[1] = {

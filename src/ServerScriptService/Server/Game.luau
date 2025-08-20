@@ -1,5 +1,6 @@
-local Round = require(script.Parent:WaitForChild("Round"))
-local DummyFolder = game.Workspace:FindFirstChild("Dummy")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Round = require(Services.Server.Round)
 
 local portalMsg = {
 	"Extra augment round",

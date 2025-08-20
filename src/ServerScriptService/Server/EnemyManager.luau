@@ -1,12 +1,11 @@
-local Enemy = require(script.Parent:WaitForChild("Enemy"))
-
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local CollectionService = Services.CollectionService
 
-local ServerStorage = game:GetService("ServerStorage")
-local EnemyData = require(ReplicatedStorage.Modules.data.EnemyData)
-local DROP_TYPES = require(script.Parent.DropTypes)
-local enemies = ServerStorage:WaitForChild("enemies")
+local Enemy = require(Services.Entities.Enemy)
+local EnemyData = require(Services.Data.EnemyData)
+local DROP_TYPES = require(Services.Core.DropTypes)
+local enemies = Services.ServerStorage:WaitForChild("enemies")
 
 local enemyMap = {}
 

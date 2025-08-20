@@ -1,16 +1,15 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Debris = Services.DebrisService
+local Players = Services.Players
+
+local RagdollHandler = require(Services.EntityUtils.RagdollHandler)
+
+local mockRootPart = Services.ReplicatedStorage:WaitForChild("Misc"):FindFirstChild("MockRootPart")
+
 local PhysicsHandler = {}
 PhysicsHandler.__index = PhysicsHandler
-
-local Debris = game:GetService("Debris")
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-
-local RagdollHandler = require(
-	game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("core"):WaitForChild("RagdollHandler")
-)
-
-local mockRootPart = ReplicatedStorage:WaitForChild("Misc"):FindFirstChild("MockRootPart")
 
 function PhysicsHandler.new(rig, entityType, userId)
 	local self = setmetatable({}, PhysicsHandler)

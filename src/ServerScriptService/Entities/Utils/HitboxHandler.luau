@@ -1,7 +1,10 @@
-local ServerStorage = game:GetService("ServerStorage")
-local Debris = game:GetService("Debris")
-local CollectionService = game:GetService("CollectionService")
-local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local ServerStorage = Services.ServerStorage
+
+local Debris = Services.DebrisService
+local CollectionService = Services.CollectionService
+local Workspace = Services.Workspace
 
 local DEBUG = false
 
@@ -59,7 +62,7 @@ function HitboxModule:CreateConeHitbox(params)
 	if DEBUG then
 		local segmentCount = 200 -- how smooth the arc looks
 		local origin = params.cframe.Position
-		local forward = params.cframe.LookVector
+		-- local forward = params.cframe.LookVector
 		local radius = params.range
 		local angle = math.rad(params.angle)
 

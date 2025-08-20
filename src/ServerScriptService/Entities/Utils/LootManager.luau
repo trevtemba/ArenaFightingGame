@@ -1,12 +1,11 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
 
-local LootData = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("data"):WaitForChild("LootData"))
-local clientEffects =
-	ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("clientEffects")
+local LootData = require(Services.Data:WaitForChild("LootData"))
+local clientEffects = Services.ClientEvents:WaitForChild("clientEffects")
 
-local lootOrbsFolder = ServerStorage.assets.lootOrbs
+local lootOrbsFolder = Services.ServerStorage.assets.lootOrbs
 local LootManager = {}
 local lootOrbMap = {} -- [orbId] = { player = Player, tier = "Common" }
 local orbCounter = 0

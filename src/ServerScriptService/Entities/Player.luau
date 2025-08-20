@@ -1,18 +1,19 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local tableToString = require(ReplicatedStorage.Modules.tableToString)
-local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
-local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
-local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
-local MovementHandler = require(script.Parent:WaitForChild("MovementHandler"))
-local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
+local Services = require(ReplicatedStorage.Modules.core.Services)
 
-local Game = require(script.Parent:WaitForChild("Game"))
+local tableToString = require(Services.Modules:WaitForChild("tableToString"))
 
-local CollisionManager = require(script.Parent.CollisionManager)
-local InventoryHandler = require(script.Parent.InventoryHandler)
-local ItemHandler = require(script.Parent.ItemHandler)
-local SoulHandler = require(script.Parent.SoulHandler)
-local StateHandler = require(script.Parent.StateHandler)
+local Game = require(Services.Server:WaitForChild("Game"))
+local CollisionManager = require(Services.EntityUtils.CollisionManager)
+local AnimationHandler = require(Services.EntityHandlers.AnimationHandler)
+local UIHandler = require(Services.EntityHandlers.UIHandler)
+local CombatHandler = require(Services.EntityHandlers.CombatHandler)
+local MovementHandler = require(Services.EntityHandlers.MovementHandler)
+local PhysicsHandler = require(Services.EntityHandlers.PhysicsHandler)
+local InventoryHandler = require(Services.EntityHandlers.InventoryHandler)
+local ItemHandler = require(Services.EntityHandlers.ItemHandler)
+local SoulHandler = require(Services.EntityHandlers.SoulHandler)
+local StateHandler = require(Services.EntityHandlers.StateHandler)
 
 local Player = {}
 Player.__index = Player
@@ -224,6 +225,7 @@ function Player:GetEnemyFromCharacter(character)
 		return self.currentEnemies[character]
 	else
 		print("Could not get enemy from Enemy rig")
+		return
 	end
 end
 
