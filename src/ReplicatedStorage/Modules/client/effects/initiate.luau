@@ -1,10 +1,9 @@
-local Debris = game:GetService("Debris")
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local highlightHelper = require(script.Parent.highlightHelper)
-local soundHelper = require(script.Parent.soundHelper)
-local Effects = ReplicatedStorage:WaitForChild("Effects")
-local Sounds = ReplicatedStorage:WaitForChild("Sounds")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Debris = Services.DebrisService
+
+local highlightHelper = require(Services.ClientEffectsUtils.highlightHelper)
+local soundHelper = require(Services.ClientEffectsUtils.soundHelper)
 
 return function(argumentData)
 	local target = argumentData.target

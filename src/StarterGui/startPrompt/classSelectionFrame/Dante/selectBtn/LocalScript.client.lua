@@ -1,7 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local champSelect = require(ReplicatedStorage.Modules.client.effects.UI.champSelect)
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local champSelect = require(Services.ClientEffectsUI.champSelect)
 
-local remote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Server"):WaitForChild("ChampSelect")
+local remote = Services.ServerEvents:WaitForChild("ChampSelect")
 local hoverScript = script.Parent.Parent.Parent:FindFirstChild("hoverScript")
 local selectBtn = script.Parent
 

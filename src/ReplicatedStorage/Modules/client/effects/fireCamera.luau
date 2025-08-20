@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local cameraModule = require(ReplicatedStorage.Modules.client.cameraModule)
-local tweenHelper = require(script.Parent.tweenHelper)
-local FlashLighting = game:GetService("Lighting"):FindFirstChild("Flash")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local cameraModule = require(Services.Client:FindFirstChild("cameraModule"))
 
 local function isStrong(attackAction)
 	if

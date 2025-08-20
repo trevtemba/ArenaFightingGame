@@ -1,9 +1,11 @@
-local Player = game:GetService("Players").LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local cameraModule = require(ReplicatedStorage.Modules.client.cameraModule)
-local soundHelper = require(ReplicatedStorage.Modules.client.effects.soundHelper)
-local tweenHelper = require(ReplicatedStorage.Modules.client.effects.tweenHelper)
-local blur = game.Lighting:WaitForChild("Blur")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Player = Services.Players.LocalPlayer
+
+local cameraModule = require(Services.Client.cameraModule)
+local soundHelper = require(Services.ClientEffectsUtils.soundHelper)
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
+local blur = Services.Lighting:WaitForChild("Blur")
 
 local champSelect = {}
 

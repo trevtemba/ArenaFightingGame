@@ -1,11 +1,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local toggleCamera = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("toggleCamera")
-local champChosenByServer =
-	ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("champChosenByServer")
-local blur = game.Lighting:WaitForChild("Blur")
+local Services = require(ReplicatedStorage.Modules.core.Services)
 
-local champSelect = require(ReplicatedStorage.Modules.client.effects.UI.champSelect)
-local camModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
+local toggleCamera = Services.ClientEvents:WaitForChild("toggleCamera")
+local champChosenByServer = Services.ClientEvents:WaitForChild("champChosenByServer")
+local blur = Services.Lighting:WaitForChild("Blur")
+
+local champSelect = require(Services.ClientEffectsUI.champSelect)
+local camModule = require(Services.Client:WaitForChild("cameraModule"))
 
 --add blur
 blur.Enabled = true

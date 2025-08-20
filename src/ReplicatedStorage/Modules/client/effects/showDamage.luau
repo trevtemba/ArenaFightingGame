@@ -1,9 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local Debris = game:GetService("Debris")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local TweenService = Services.TweenService
+local Debris = Services.DebrisService
 
-local Sounds = ReplicatedStorage:FindFirstChild("Sounds")
-local DamageCounter = ReplicatedStorage:FindFirstChild("UI"):FindFirstChild("DamageCounter")
+local Sounds = Services.Sounds
+local DamageCounter = Services.UI:FindFirstChild("DamageCounter")
 local MockRootPart = ReplicatedStorage.Misc:FindFirstChild("MockRootPart")
 
 return function(argumentData)

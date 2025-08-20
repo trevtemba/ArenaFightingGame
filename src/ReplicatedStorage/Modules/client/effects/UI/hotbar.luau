@@ -1,8 +1,10 @@
-local Player = game:GetService("Players").LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local tweenHelper = require(ReplicatedStorage.Modules.client.effects.tweenHelper)
-local castSprite1 = ReplicatedStorage:WaitForChild("UI"):WaitForChild("castSprite1")
-local outerglow = ReplicatedStorage:WaitForChild("UI"):WaitForChild("outerglow")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Player = Services.Players.LocalPlayer
+
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
+local castSprite1 = Services.UI:WaitForChild("castSprite1")
+local outerglow = Services.UI:WaitForChild("outerglow")
 
 local hotbar = {}
 

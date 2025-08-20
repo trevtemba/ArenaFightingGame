@@ -1,10 +1,11 @@
-local Debris = game:GetService("Debris")
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local particleHelper = require(script.Parent.particleHelper)
-local soundHelper = require(script.Parent.soundHelper)
-local weldHelper = require(script.Parent.weldHelper)
-local Assets = ReplicatedStorage:WaitForChild("Assets")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Debris = Services.DebrisService
+
+local particleHelper = require(Services.ClientEffectsUtils.particleHelper)
+local soundHelper = require(Services.ClientEffectsUtils.soundHelper)
+local weldHelper = require(Services.ClientEffectsUtils.weldHelper)
+local Assets = Services.Assets
 
 return function(argumentData)
 	local target: Model = argumentData.target

@@ -1,7 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local tweenHelper = require(script.Parent.tweenHelper)
-local Player = game:GetService("Players").LocalPlayer
-local UI = ReplicatedStorage:WaitForChild("UI")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Player = Services.Players.LocalPlayer
+
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
+local UI = Services.UI
 
 local function getUI()
 	local gui = Player:WaitForChild("PlayerGui")
@@ -43,8 +45,8 @@ return function(argumentData)
 
 		-- Step 2: Move to slot
 		local goalPosition = slotFrame.AbsolutePosition
-		local rootGui = InventoryGui
-		local viewportSize = rootGui.AbsoluteSize
+		-- local rootGui = InventoryGui
+		-- local viewportSize = rootGui.AbsoluteSize
 
 		-- You can optionally convert to Scale using viewport if you're tweening in different resolution
 		local finalPos = UDim2.fromOffset(goalPosition.X, goalPosition.Y)

@@ -1,5 +1,7 @@
-local TweenService = game:GetService("TweenService")
-local player = game:GetService("Players").LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local TweenService = Services.TweenService
+local player = Services.Players.LocalPlayer
 
 return function(argumentData)
 	local target = argumentData.target
@@ -21,7 +23,7 @@ return function(argumentData)
 			:FindFirstChild("damage")
 		local hpRatio = currentHP / maxHP
 
-		healthFill.Size = UDim2.new(hpRatio, 0, 1, 0)
+		healthFill.Size = UDim2.fromScale(hpRatio, 1)
 
 		healthBar.Enabled = true
 		local healthBarTween
@@ -38,7 +40,7 @@ return function(argumentData)
 
 		local tween =
 			TweenService:Create(damageFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Size = UDim2.new(hpRatio, 0, 1, 0),
+				Size = UDim2.fromScale(hpRatio, 1),
 			})
 		tween:Play()
 

@@ -1,4 +1,6 @@
-local tweenHelper = require(script.Parent:FindFirstChild("tweenHelper"))
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
 
 local highlightHelper = {}
 

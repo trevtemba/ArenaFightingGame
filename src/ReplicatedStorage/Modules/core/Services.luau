@@ -11,19 +11,35 @@ Services.DebrisService = game:GetService("Debris")
 Services.CollectionService = game:GetService("CollectionService")
 Services.ServerStorage = game:GetService("ServerStorage")
 Services.Workspace = game:GetService("Workspace")
+Services.Lighting = game:GetService("Lighting")
 
 -- Server
-Services.Entities = Services.ServerScriptService:WaitForChild("Entities")
-Services.EntityHandlers = Services.Entities.Handlers
-Services.EntityUtils = Services.Entities.Utils
+if Services.RunService:IsServer() then
+	Services.Entities = Services.ServerScriptService:WaitForChild("Entities")
+	Services.EntityHandlers = Services.Entities.Handlers
+	Services.EntityUtils = Services.Entities.Utils
 
-Services.Server = Services.ServerScriptService:WaitForChild("Server")
-Services.Data = Services.ServerScriptService:WaitForChild("Data")
+	Services.Server = Services.ServerScriptService:WaitForChild("Server")
+	Services.Data = Services.ServerScriptService:WaitForChild("Data")
+end
 
 -- Shared
+Services.UI = Services.ReplicatedStorage:WaitForChild("UI")
+Services.Effects = Services.ReplicatedStorage:WaitForChild("Effects")
+Services.Animations = Services.ReplicatedStorage:WaitForChild("Animations")
+Services.Sounds = Services.ReplicatedStorage:WaitForChild("Sounds")
+Services.Assets = Services.ReplicatedStorage:WaitForChild("Assets")
 Services.Modules = Services.ReplicatedStorage:WaitForChild("Modules")
+Services.BindableFunctions = Services.ReplicatedStorage:WaitForChild("BindableFunctions")
+
 Services.Core = Services.Modules:WaitForChild("core")
 Services.ClientEvents = Services.ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Client")
 Services.ServerEvents = Services.ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Server")
+
+-- Client
+Services.Client = Services.Modules:WaitForChild("client")
+Services.ClientEffects = Services.Client:WaitForChild("effects")
+Services.ClientEffectsUtils = Services.ClientEffects:WaitForChild("Utils")
+Services.ClientEffectsUI = Services.ClientEffects:WaitForChild("UI")
 
 return Services
