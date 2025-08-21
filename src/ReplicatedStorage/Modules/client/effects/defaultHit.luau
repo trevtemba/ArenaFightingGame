@@ -122,7 +122,7 @@ return function(argumentData)
 
 							-- Randomly choose one of the impact animations
 							local chosenTrack = math.random(1, 2) == 1 and track1 or track2
-							animHelper:StopAll(target)
+							-- animHelper:StopAll(target)
 							animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
 						end
 					end

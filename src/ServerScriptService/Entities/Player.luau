@@ -150,9 +150,9 @@ function Player:Cast(abilitySlot)
 	end
 end
 
-function Player:SoulCast()
+function Player:SoulCast(argumentData)
 	if self.combatHandler then
-		self.soulHandler:Cast()
+		self.soulHandler:Cast(argumentData)
 	end
 end
 

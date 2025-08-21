@@ -18,10 +18,10 @@ function PlayerHandler.OnCast(plr: Player, abilitySlot)
 	end
 end
 
-function PlayerHandler.OnSoulCast(plr: Player)
+function PlayerHandler.OnSoulCast(plr: Player, argumentData)
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
-		playerObj:SoulCast()
+		playerObj:SoulCast(argumentData)
 	end
 end
 

@@ -79,8 +79,8 @@ function SoulHandler:AttachToPlayer()
 	return alignP, alignO, att0
 end
 
-function SoulHandler:Cast()
-	self.ability:Cast(self)
+function SoulHandler:Cast(argumentData)
+	self.ability:Cast(self, argumentData)
 end
 function SoulHandler:ToggleVisibility(visible)
 	if visible then

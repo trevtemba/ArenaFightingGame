@@ -30,6 +30,10 @@ local soulCastDone = ClientEvents:WaitForChild("soulCastDone")
 local inAir = ClientEvents:WaitForChild("inAir")
 local isCharLoaded = Services.BindableFunctions:WaitForChild("charLoaded")
 
+local camera = Services.Workspace.CurrentCamera
+local mouse = player:GetMouse()
+local unitRay = camera:ScreenPointToRay(mouse.X, mouse.Y)
+
 local DASH_COOLDOWN = 1
 local DEFAULT_JUMP_POWER = 60
 
@@ -259,7 +263,7 @@ CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 	local remote = ServerEvents:FindFirstChild("OnSoulCast")
 	if remote then
 		print("casting soul")
-		remote:FireServer()
+		remote:FireServer({ Direction = unitRay.Direction })
 	end
 end)
 
