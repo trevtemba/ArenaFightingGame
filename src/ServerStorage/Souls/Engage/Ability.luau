@@ -1,5 +1,4 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 local Services = require(ReplicatedStorage.Modules.core.Services)
 local Players = Services.Players
 local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
@@ -28,9 +27,9 @@ Ability.Config = {
 function Ability:Cast(soulHandler, argumentData)
 	local direction = argumentData.direction
 
-	local target = FindTarget(soulHandler.owner, argumentData.direction, 25, 25)
+	local target = FindTarget(soulHandler.owner, direction, 25, 25)
 	if target then
-		print(target.character.Name)
+		print(target)
 		task.delay(soulHandler.cooldown, function()
 			soulCastDone:FireClient(Players:GetPlayerByUserId(soulHandler.owner.userId))
 		end)
