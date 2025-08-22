@@ -1,4 +1,3 @@
--- TweenModule.lua
 local TweenService = game:GetService("TweenService")
 
 local TweenModule = {}

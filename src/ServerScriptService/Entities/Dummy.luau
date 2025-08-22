@@ -1,19 +1,19 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TouchInputService = game:GetService("TouchInputService")
-local DummyData = require(ReplicatedStorage.Modules.data.DummyData)
-local tableToString = require(ReplicatedStorage.Modules.tableToString)
-local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
-local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
-local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
-local MovementHandler = require(script.Parent:WaitForChild("MovementHandler"))
-local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
+local Services = require(ReplicatedStorage.Modules.core.Services)
 
-local CollisionManager = require(script.Parent.CollisionManager)
-local InventoryHandler = require(script.Parent.InventoryHandler)
-local ItemHandler = require(script.Parent.ItemHandler)
-local SoulHandler = require(script.Parent.SoulHandler)
-local STATE = require(script.Parent.State)
-local StateHandler = require(script.Parent.StateHandler)
+local tableToString = require(Services.Modules:WaitForChild("tableToString"))
+
+local CollisionManager = require(Services.EntityUtils.CollisionManager)
+local AnimationHandler = require(Services.EntityHandlers.AnimationHandler)
+local UIHandler = require(Services.EntityHandlers.UIHandler)
+local CombatHandler = require(Services.EntityHandlers.CombatHandler)
+local MovementHandler = require(Services.EntityHandlers.MovementHandler)
+local PhysicsHandler = require(Services.EntityHandlers.PhysicsHandler)
+local SoulHandler = require(Services.EntityHandlers.SoulHandler)
+local StateHandler = require(Services.EntityHandlers.StateHandler)
+
+local DummyData = require(Services.Data.DummyData)
+local STATE = require(Services.Core.State)
 
 local Dummy = {}
 Dummy.__index = Dummy
@@ -208,6 +208,7 @@ function Dummy:GetPlayerFromCharacter(character)
 		return self.currentPlayers[character]
 	else
 		print("Could not get enemy from Enemy rig")
+		return
 	end
 end
 

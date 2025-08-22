@@ -1,8 +1,9 @@
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ItemHandler = require(script.Parent.ItemHandler)
-local Items = require(ReplicatedStorage.Modules.data.ItemData)
-local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
+local ItemHandler = require(Services.EntityHandlers.ItemHandler)
+local Items = require(Services.Data.ItemData)
+local clientEffects = Services.ClientEvents.clientEffects
 
 local InventoryHandler = {}
 InventoryHandler.__index = InventoryHandler

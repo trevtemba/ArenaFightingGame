@@ -1,22 +1,23 @@
-local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local RunService = Services.RunService
+local ServerStorage = Services.ServerStorage
 
-local LootManager = require(ReplicatedStorage.Modules.core.LootManager)
-local CollisionManager = require(script.Parent.CollisionManager)
-local HitboxHandler = require(script.Parent:WaitForChild("HitboxHandler"))
-local CombatHandler = require(script.Parent:WaitForChild("CombatHandler"))
-local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
-local FXHandler = require(script.Parent:WaitForChild("FXHandler"))
-local UIHandler = require(script.Parent:WaitForChild("UIHandler"))
-local PhysicsHandler = require(script.Parent:WaitForChild("PhysicsHandler"))
-local EnemyData = require(script.Parent.Parent:WaitForChild("data"):WaitForChild("EnemyData"))
+local LootManager = require(Services.EntityUtils.LootManager)
+local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
+local FXHandler = require(Services.EntityHandlers.FXHandler)
+local CollisionManager = require(Services.EntityUtils.CollisionManager)
+local AnimationHandler = require(Services.EntityHandlers.AnimationHandler)
+local UIHandler = require(Services.EntityHandlers.UIHandler)
+local CombatHandler = require(Services.EntityHandlers.CombatHandler)
+local PhysicsHandler = require(Services.EntityHandlers.PhysicsHandler)
+local StateHandler = require(Services.EntityHandlers.StateHandler)
 
-local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
-local StateHandler = require(script.Parent.StateHandler)
+local clientEffects = Services.ClientEvents.clientEffects
 
-local STATE = require(script.Parent:WaitForChild("State"))
-local DROP_TYPES = require(script.Parent.DropTypes)
+local EnemyData = require(Services.Data.EnemyData)
+local STATE = require(Services.Core.State)
+local DROP_TYPES = require(Services.Core.DropTypes)
 local ATTACK_STUN_TIME = 0.5
 
 local Enemy = {}

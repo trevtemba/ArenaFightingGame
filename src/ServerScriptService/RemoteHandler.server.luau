@@ -1,11 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local Core = Modules:WaitForChild("core")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local PlayerHandler = require(Services.Server.PlayerHandler)
 
-local PlayerHandler = require(Core:WaitForChild("PlayerHandler"))
-
-local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local ServerEvents = RemoteEvents:WaitForChild("Server")
+local ServerEvents = Services.ServerEvents
 
 ServerEvents:WaitForChild("OnAttack").OnServerEvent:Connect(function(plr, spaceHeld)
 	PlayerHandler.OnAttack(plr, spaceHeld)
@@ -13,8 +10,8 @@ end)
 ServerEvents:WaitForChild("OnCast").OnServerEvent:Connect(function(plr, abilitySlot)
 	PlayerHandler.OnCast(plr, abilitySlot)
 end)
-ServerEvents:WaitForChild("OnSoulCast").OnServerEvent:Connect(function(plr)
-	PlayerHandler.OnSoulCast(plr)
+ServerEvents:WaitForChild("OnSoulCast").OnServerEvent:Connect(function(plr, argumentData)
+	PlayerHandler.OnSoulCast(plr, argumentData)
 end)
 ServerEvents:WaitForChild("OnSoulVisibleToggle").OnServerEvent:Connect(function(plr, visible)
 	PlayerHandler.OnSoulVisibleToggle(plr, visible)

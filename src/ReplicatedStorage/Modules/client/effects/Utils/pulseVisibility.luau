@@ -1,5 +1,8 @@
-local CollectionService = game:GetService("CollectionService")
-local tweenHelper = require(script.Parent.tweenHelper)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local CollectionService = Services.CollectionService
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
+
 return function(target, duration)
 	local highlight = target.Highlight
 	if highlight then

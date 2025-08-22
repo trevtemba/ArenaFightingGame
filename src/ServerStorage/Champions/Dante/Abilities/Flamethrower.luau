@@ -1,9 +1,12 @@
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HitboxHandler = require(ReplicatedStorage.Modules.core.HitboxHandler)
-local STATE = require(ReplicatedStorage.Modules.core.State)
-local castDone = ReplicatedStorage.RemoteEvents.Client.castDone
-local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
+
+local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
+local STATE = require(Services.Core.State)
+
+local castDone = Services.ClientEvents.castDone
+local clientEffects = Services.ClientEvents.clientEffects
 
 local Flamethrower = {}
 

@@ -1,4 +1,6 @@
-local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local RunService = Services.RunService
 
 local DASH_DURATION = 0.6
 local DASH_SPEED = 80

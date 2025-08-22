@@ -1,8 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
 local player = Players.LocalPlayer
-local coinTemplate = ReplicatedStorage:WaitForChild("UI"):WaitForChild("coinTemplate")
-local coinModel = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Coin")
+local coinTemplate = Services.UI:WaitForChild("coinTemplate")
+local coinModel = Services.Assets:WaitForChild("Coin")
 
 local viewportHandler = {}
 

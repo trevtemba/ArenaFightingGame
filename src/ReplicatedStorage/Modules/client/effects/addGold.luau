@@ -1,11 +1,13 @@
-local tweenHelper = require(script.Parent.tweenHelper)
-local Player = game:GetService("Players").LocalPlayer
-local RunService = game:GetService("RunService")
-local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ParticleEmitter = require(ReplicatedStorage.Modules.client.guiParticle.ParticleEmitter)
-local goldParticles = ReplicatedStorage:WaitForChild("UI"):WaitForChild("goldParticles")
-local soundHelper = require(script.Parent.soundHelper)
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Player = Services.Players.LocalPlayer
+local RunService = Services.RunService
+local Debris = Services.DebrisService
+
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
+local ParticleEmitter = require(Services.Client.guiParticle.ParticleEmitter)
+local soundHelper = require(Services.ClientEffectsUtils.soundHelper)
+local goldParticles = Services.UI:WaitForChild("goldParticles")
 
 local function getUI()
 	local gui = Player:WaitForChild("PlayerGui")

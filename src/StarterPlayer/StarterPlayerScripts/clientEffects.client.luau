@@ -1,8 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ClientModules = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client")
-local ClientRemotes = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Client")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local ClientModules = Services.Client
 
-local clientEffects = ClientRemotes:WaitForChild("clientEffects")
+local clientEffects = Services.ClientEvents:WaitForChild("clientEffects")
 local cachedEffects = {}
 
 for _, module in ClientModules.effects:GetChildren() do

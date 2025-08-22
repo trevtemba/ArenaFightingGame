@@ -1,8 +1,10 @@
-local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local RunService = Services.RunService
 
-local particleHelper = require(script.Parent.particleHelper)
-local tweenHelper = require(script.Parent.tweenHelper)
-local orbsFolder = game:GetService("Workspace"):WaitForChild("Assets"):WaitForChild("orbs")
+local particleHelper = require(Services.ClientEffectsUtils.particleHelper)
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
+local orbsFolder = Services.Workspace:WaitForChild("Assets"):WaitForChild("orbs")
 
 local function GetOrb(orbId)
 	local orb = nil

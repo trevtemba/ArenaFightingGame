@@ -1,11 +1,12 @@
-local AnimationHandler = require(script.Parent:WaitForChild("AnimationHandler"))
-local CollectionService = game:GetService("CollectionService")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
-local Souls = ServerStorage.Souls
-local CollisionManager = require(script.Parent.CollisionManager)
-local clientEffects = ReplicatedStorage.RemoteEvents.Client.clientEffects
+local Services = require(ReplicatedStorage.Modules.core.Services)
+
+local AnimationHandler = require(Services.EntityHandlers:WaitForChild("AnimationHandler"))
+local CollisionManager = require(Services.EntityUtils.CollisionManager)
+local CollectionService = Services.CollectionService
+local RunService = Services.RunService
+local Souls = Services.ServerStorage.Souls
+local clientEffects = Services.ClientEvents.clientEffects
 
 local SoulHandler = {}
 SoulHandler.__index = SoulHandler
@@ -78,8 +79,8 @@ function SoulHandler:AttachToPlayer()
 	return alignP, alignO, att0
 end
 
-function SoulHandler:Cast()
-	self.ability:Cast(self)
+function SoulHandler:Cast(argumentData)
+	self.ability:Cast(self, argumentData)
 end
 function SoulHandler:ToggleVisibility(visible)
 	if visible then

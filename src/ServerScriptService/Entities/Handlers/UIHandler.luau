@@ -1,6 +1,9 @@
-local UIFolder = game:GetService("ServerStorage"):FindFirstChild("ui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local UIFolder = Services.ServerStorage:FindFirstChild("ui")
 local billboardGui_template = UIFolder:FindFirstChild("HealthBar")
-local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
+
+local clientEffects = Services.ClientEvents:WaitForChild("clientEffects")
 
 local UIHandler = {}
 UIHandler.__index = UIHandler
@@ -69,8 +72,8 @@ function UIHandler:CreateDividers()
 		local divider = Instance.new("Frame")
 		divider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		divider.BackgroundTransparency = 0
-		divider.Size = UDim2.new(0.01, 0, 1, 0)
-		divider.Position = UDim2.new(i / (dividerCount + 1), 0, 0, 0)
+		divider.Size = UDim2.fromScale(0.01, 1)
+		divider.Position = UDim2.fromScale(i / (dividerCount + 1), 0)
 		divider.BorderSizePixel = 0
 		divider.ZIndex = 5
 		divider.Parent = self.dividers

@@ -1,9 +1,10 @@
-local Debris = game:GetService("Debris")
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Effects = ReplicatedStorage:WaitForChild("Effects")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Debris = Services.DebrisService
 
-local weldHelper = require(script.Parent:FindFirstChild("weldHelper"))
+local weldHelper = require(Services.ClientEffectsUtils.weldHelper)
+local Effects = Services.Effects
+
 local offsets = {
 	left = CFrame.new(2, 0, 0),
 	right = CFrame.new(-2, 0, 0),

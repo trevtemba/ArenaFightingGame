@@ -1,13 +1,16 @@
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local CameraShaker = require(ReplicatedStorage.Modules.client.cameraShaker.CameraShaker)
-local tweenHelper = require(ReplicatedStorage.Modules.client.effects.tweenHelper)
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
+local TweenService = Services.TweenService
+local RunService = Services.RunService
+
+local CameraShaker = require(Services.Client:FindFirstChild("cameraShaker"):FindFirstChild("CameraShaker"))
+local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)
 local player = Players.LocalPlayer
 
-local cameraInst = workspace:WaitForChild("Camera")
-local cameraPart = workspace:WaitForChild("MenuFolder"):WaitForChild("MenuCamera"):WaitForChild("menuCameraPart").CFrame
+local cameraInst = Services.Workspace:WaitForChild("Camera")
+local cameraPart =
+	Services.Workspace:WaitForChild("MenuFolder"):WaitForChild("MenuCamera"):WaitForChild("menuCameraPart").CFrame
 
 local originalFOV = 70
 
@@ -109,7 +112,6 @@ function module.Blur(data)
 	local camera = workspace.CurrentCamera or data.camera
 	local tim1, tim2 = data.tim1 or 0.5, data.tim2
 	local EasingStyleDirc = data.EasingStyleDirc or Enum.EasingDirection.Out
-	local EasingStyleDirc2 = data.EasingStyleDirc or EasingStyleDirc
 	local EasingStyle = data.EasingStyle or Enum.EasingStyle.Sine
 	local EasingStyle2 = data.EasingStyle2 or EasingStyle
 	local size = data.size or 7

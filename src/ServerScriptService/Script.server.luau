@@ -1,16 +1,15 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CollectionService = game:GetService("CollectionService")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local CollectionService = Services.CollectionService
 
-local core = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("core")
-local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local ServerEvents = RemoteEvents:WaitForChild("Server")
-local ClientEvents = RemoteEvents:WaitForChild("Client")
+local CollisionManager = require(Services.EntityUtils.CollisionManager)
+local Game = require(Services.Server.Game)
+local Player = require(Services.Entities.Player)
+local ChampionFactory = require(Services.EntityUtils.ChampionFactory)
 
-local CollisionManager = require(ReplicatedStorage.Modules.core.CollisionManager)
-local Game = require(core:WaitForChild("Game"))
-local Player = require(core:WaitForChild("Player"))
-local ChampionFactory = require(core:WaitForChild("ChampionFactory"))
+local ServerEvents = Services.ServerEvents
+local ClientEvents = Services.ClientEvents
 local champChosenByServer = ClientEvents:WaitForChild("champChosenByServer")
 local ChampionSelectedEvent = ServerEvents:WaitForChild("ChampSelect")
 

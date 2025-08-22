@@ -1,13 +1,11 @@
--- StarterPlayerScripts/PreloadAssets.lua
-
 local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
 
--- Example: preload loot orb variants
-local Assets = ReplicatedStorage:WaitForChild("Assets")
-local UI = ReplicatedStorage:WaitForChild("UI")
-local Effects = ReplicatedStorage:WaitForChild("Effects")
-local Animations = ReplicatedStorage:WaitForChild("Animations")
+local Assets = Services.Assets
+local UI = Services.UI
+local Effects = Services.Effects
+local Animations = Services.Animations
 
 local assetsToPreload = {}
 

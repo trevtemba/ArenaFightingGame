@@ -1,7 +1,6 @@
-local Debris = game:GetService("Debris")
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Effects = ReplicatedStorage:WaitForChild("Effects")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Debris = Services.DebrisService
 
 return function(argumentData)
 	local target: Model = argumentData.target

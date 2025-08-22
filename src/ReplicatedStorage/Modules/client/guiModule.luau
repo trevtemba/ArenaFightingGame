@@ -1,10 +1,10 @@
 local module = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local tweenService = game:GetService("TweenService")
-local Player = game:GetService("Players").LocalPlayer
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local tweenService = Services.TweenService
+local Player = Services.Players.LocalPlayer
 local playerGui = Player:WaitForChild("PlayerGui")
-
 local splash = playerGui:WaitForChild("splash")
 --tweeninfo
 local tweenInfoBtns1 = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)

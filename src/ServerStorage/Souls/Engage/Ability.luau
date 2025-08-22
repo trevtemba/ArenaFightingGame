@@ -1,9 +1,13 @@
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HitboxHandler = require(ReplicatedStorage.Modules.core.HitboxHandler)
-local STATE = require(ReplicatedStorage.Modules.core.State)
-local soulCastDone = ReplicatedStorage.RemoteEvents.Client.soulCastDone
-local clientEffects = game:GetService("ReplicatedStorage").RemoteEvents.Client.clientEffects
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
+local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
+local FindTarget = require(Services.EntityUtils.FindTarget)
+
+local STATE = require(Services.Core.State)
+
+local soulCastDone = Services.ClientEvents.soulCastDone
+local clientEffects = Services.ClientEvents.clientEffects
 
 local Ability = {}
 
@@ -20,11 +24,16 @@ Ability.Config = {
 	},
 }
 
-function Ability:Cast(soulHandler)
-	print("CASTING SOUL ABILITY")
-	task.delay(soulHandler.cooldown, function()
-		soulCastDone:FireClient(Players:GetPlayerByUserId(soulHandler.owner.userId))
-	end)
+function Ability:Cast(soulHandler, argumentData)
+	local direction = argumentData.direction
+
+	local target = FindTarget(soulHandler.owner, direction, 25, 25)
+	if target then
+		print(target)
+		task.delay(soulHandler.cooldown, function()
+			soulCastDone:FireClient(Players:GetPlayerByUserId(soulHandler.owner.userId))
+		end)
+	end
 end
 
 return Ability

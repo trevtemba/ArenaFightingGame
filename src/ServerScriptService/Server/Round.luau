@@ -1,4 +1,6 @@
-local RoundManager = require(script.Parent:WaitForChild("RoundManager"))
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local RoundManager = require(Services.Server.RoundManager)
 
 local roundTypes = {
 	"PvE",

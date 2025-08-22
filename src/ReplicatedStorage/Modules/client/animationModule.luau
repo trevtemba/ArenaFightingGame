@@ -1,7 +1,9 @@
--- animationModule.lua
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
+
 local animationModule = {}
 
-local Players = game:GetService("Players")
 local animations = {}
 local animationConnections = {}
 local animator = nil

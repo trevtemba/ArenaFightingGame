@@ -1,8 +1,8 @@
--- Modules/ChampionFactory.lua
-local Champion = require(script.Parent.Champion)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
 
-local ServerStorage = game:GetService("ServerStorage")
-local ChampionsFolder = ServerStorage:WaitForChild("Champions")
+local Champion = require(Services.EntityUtils:WaitForChild("Champion"))
+local ChampionsFolder = Services.ServerStorage:WaitForChild("Champions")
 
 local ChampionFactory = {}
 

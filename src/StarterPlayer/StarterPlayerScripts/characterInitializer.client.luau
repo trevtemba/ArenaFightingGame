@@ -1,17 +1,15 @@
--- CharacterInitializer (LocalScript, e.g. in StarterPlayerScripts)
-
-local Players = game:GetService("Players")
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local cameraModule = require(ReplicatedStorage.Modules.client.cameraModule)
-local viewportHandler = require(ReplicatedStorage.Modules.client.viewportHandler)
-local AnimationHandler = require(game:GetService("ReplicatedStorage").Modules.client.animationModule)
-local ShiftlockModule = require(game:GetService("ReplicatedStorage").Modules.client.smoothShiftlock.SmoothShiftLock)
-
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
 local player = Players.LocalPlayer
+local CollectionService = Services.CollectionService
 
-local BindableFunctions = game:GetService("ReplicatedStorage"):WaitForChild("BindableFunctions")
-local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
+local cameraModule = require(Services.Client.cameraModule)
+local viewportHandler = require(Services.Client.viewportHandler)
+local AnimationHandler = require(Services.Client.animationModule)
+local ShiftlockModule = require(Services.Client.smoothShiftlock.SmoothShiftLock)
+
+local isCharLoaded = Services.BindableFunctions:WaitForChild("charLoaded")
 
 local charLoaded = false
 

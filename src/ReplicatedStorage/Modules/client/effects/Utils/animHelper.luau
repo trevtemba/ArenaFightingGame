@@ -1,7 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
 local AnimHelper = {}
 
-AnimHelper.AnimationsFolder = ReplicatedStorage:FindFirstChild("Animations")
+AnimHelper.AnimationsFolder = Services.ReplicatedStorage:FindFirstChild("Animations")
 
 function AnimHelper:PlayAnimation(rig, name, fadeTime, weight, speed, looped, priority)
 	if not self.AnimationsFolder then

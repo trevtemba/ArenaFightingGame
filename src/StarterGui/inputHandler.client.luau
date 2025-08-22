@@ -1,22 +1,19 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local Players = Services.Players
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
-local hotbar = require(ReplicatedStorage.Modules.client.effects.UI.hotbar)
-local InputStateHandler = require(ReplicatedStorage.Modules.client.inputStateHandler)
-local camModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("cameraModule"))
-local animationModule =
-	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("animationModule"))
-local physicsModule =
-	require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("client"):WaitForChild("physicsModule"))
-local STATE = require(ReplicatedStorage.Modules.core.State)
-local tableToString = require(ReplicatedStorage.Modules.tableToString)
+local hotbar = require(Services.ClientEffectsUI.hotbar)
+local InputStateHandler = require(Services.Client.inputStateHandler)
+local camModule = require(Services.Client:WaitForChild("cameraModule"))
+local animationModule = require(Services.Client:WaitForChild("animationModule"))
+local physicsModule = require(Services.Client:WaitForChild("physicsModule"))
+local STATE = require(Services.Core.State)
+local tableToString = require(Services.Modules.tableToString)
 
-local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local BindableFunctions = ReplicatedStorage:WaitForChild("BindableFunctions")
-local ClientEvents = RemoteEvents:WaitForChild("Client")
-local ServerEvents = RemoteEvents:WaitForChild("Server")
+local ClientEvents = Services.ClientEvents
+local ServerEvents = Services.ServerEvents
 
 -- Input Handler
 local inputStateHandler = nil
@@ -31,10 +28,13 @@ local attackDone = ClientEvents:WaitForChild("attackDone")
 local castDone = ClientEvents:WaitForChild("castDone")
 local soulCastDone = ClientEvents:WaitForChild("soulCastDone")
 local inAir = ClientEvents:WaitForChild("inAir")
-local isCharLoaded = BindableFunctions:WaitForChild("charLoaded")
+local isCharLoaded = Services.BindableFunctions:WaitForChild("charLoaded")
+
+local camera = Services.Workspace.CurrentCamera
+local mouse = player:GetMouse()
+local unitRay = camera:ScreenPointToRay(mouse.X, mouse.Y)
 
 local DASH_COOLDOWN = 1
-local JUMP_COOLDOWN = 1
 local DEFAULT_JUMP_POWER = 60
 
 local debounces = {
@@ -263,7 +263,7 @@ CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 	local remote = ServerEvents:FindFirstChild("OnSoulCast")
 	if remote then
 		print("casting soul")
-		remote:FireServer()
+		remote:FireServer({ Direction = unitRay.Direction })
 	end
 end)
 

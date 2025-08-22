@@ -1,5 +1,6 @@
-local STATE = require(script.Parent.Parent:WaitForChild("core"):WaitForChild("State"))
-local animationModule = require(script.Parent.animationModule)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Services = require(ReplicatedStorage.Modules.core.Services)
+local STATE = require(Services.Core.State)
 
 local InputStateHandler = {}
 InputStateHandler.__index = InputStateHandler
