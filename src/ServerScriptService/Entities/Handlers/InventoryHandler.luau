@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Players = Services.Players
 local ItemHandler = require(Services.EntityHandlers.ItemHandler)
 local Items = require(Services.Data.ItemData)

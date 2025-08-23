@@ -1,7 +1,7 @@
 local module = {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local tweenService = Services.TweenService
 local Player = Services.Players.LocalPlayer
 local playerGui = Player:WaitForChild("PlayerGui")

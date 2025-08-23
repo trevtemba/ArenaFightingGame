@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
 local RagdollHandler = require(Services.EntityUtils.RagdollHandler)
 local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
@@ -15,7 +15,7 @@ local CollectionService = Services.CollectionService
 local ServerStorage = Services.ServerStorage
 local Players = Services.Players
 
-local STATE = require(Services.Core.State)
+local STATE = require(Services.Enums.State)
 
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
@@ -630,6 +630,8 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 	elseif attackAction == "aircontinue" then
 		-- Offset: attacker moves slightly forward, target moves back
 		if self.attackerFloat and self.targetFloat then
+			self.attackerFloat.align.Responsiveness = 20
+			self.targetFloat.align.Responsiveness = 20
 			print("continuing")
 			self.lastAirAttackTime = os.clock()
 			local aAlignPart = self.attackerFloat.alignPart

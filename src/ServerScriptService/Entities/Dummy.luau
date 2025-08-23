@@ -1,7 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
-local tableToString = require(Services.Modules:WaitForChild("tableToString"))
+local TableToString = require(Services.SharedUtils:WaitForChild("TableToString"))
 
 local CollisionManager = require(Services.EntityUtils.CollisionManager)
 local AnimationHandler = require(Services.EntityHandlers.AnimationHandler)
@@ -13,7 +13,7 @@ local SoulHandler = require(Services.EntityHandlers.SoulHandler)
 local StateHandler = require(Services.EntityHandlers.StateHandler)
 
 local DummyData = require(Services.Data.DummyData)
-local STATE = require(Services.Core.State)
+local STATE = require(Services.Enums.State)
 
 local Dummy = {}
 Dummy.__index = Dummy
@@ -233,7 +233,7 @@ function Dummy:CharDie() end
 
 function Dummy:ReturnDev(devCode)
 	if devCode == "state" then
-		print("SERVER STATES: " .. tableToString(self.stateHandler:GetAllStates()))
+		print("SERVER STATES: " .. TableToString(self.stateHandler:GetAllStates()))
 	end
 end
 return Dummy

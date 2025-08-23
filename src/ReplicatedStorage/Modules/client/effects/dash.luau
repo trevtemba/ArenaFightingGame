@@ -1,8 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Debris = Services.DebrisService
 
-local weldHelper = require(Services.ClientEffectsUtils.weldHelper)
+local WeldHelper = require(Services.SharedUtils.WeldHelper)
 local Effects = Services.Effects
 
 local offsets = {
@@ -25,7 +25,7 @@ return function(argumentData)
 			local clone = Effects:WaitForChild("DashEffects"):WaitForChild(direction):Clone()
 			if clone then
 				clone.CFrame = rootPart.CFrame * offsets[direction]
-				weldHelper.WeldParts(rootPart, clone)
+				WeldHelper.WeldParts(rootPart, clone)
 				clone.Parent = rootPart
 				for _, v in clone:GetDescendants() do
 					if v:IsA("ParticleEmitter") then
@@ -42,7 +42,7 @@ return function(argumentData)
 				if v.Name == "Left Arm" or v.Name == "Right Arm" or v.Name == "Right Leg" or v.Name == "Left Leg" then
 					local trailLimbClone = trailLimb:Clone()
 					trailLimbClone.CFrame = v.CFrame
-					weldHelper.WeldParts(v, trailLimbClone)
+					WeldHelper.WeldParts(v, trailLimbClone)
 					trailLimbClone.Trail.Enabled = true
 					trailLimbClone.Parent = v
 					task.delay(0.6, function()

@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Players = Services.Players
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
@@ -9,8 +9,8 @@ local InputStateHandler = require(Services.Client.inputStateHandler)
 local camModule = require(Services.Client:WaitForChild("cameraModule"))
 local animationModule = require(Services.Client:WaitForChild("animationModule"))
 local physicsModule = require(Services.Client:WaitForChild("physicsModule"))
-local STATE = require(Services.Core.State)
-local tableToString = require(Services.Modules.tableToString)
+local STATE = require(Services.Enums.State)
+local TableToString = require(Services.SharedUtils.TableToString)
 
 local ClientEvents = Services.ClientEvents
 local ServerEvents = Services.ServerEvents
@@ -301,7 +301,7 @@ CoreContext:WaitForChild("Shift").Released:Connect(function()
 end)
 
 CoreContext:WaitForChild("stateShow").Pressed:Connect(function()
-	print("CLIENT STATES: " .. tableToString(inputStateHandler:GetAllStates()))
+	print("CLIENT STATES: " .. TableToString(inputStateHandler:GetAllStates()))
 	local remote = ServerEvents:FindFirstChild("OnDev")
 	if remote then
 		remote:FireServer("state")

@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local UIFolder = Services.ServerStorage:FindFirstChild("ui")
 local billboardGui_template = UIFolder:FindFirstChild("HealthBar")
 

@@ -1,6 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
-local WeldHelper = require(Services.Core:WaitForChild("WeldHelper"))
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local WeldHelper = require(Services.SharedUtils:WaitForChild("WeldHelper"))
 local Effects = Services.ReplicatedStorage:WaitForChild("Effects")
 local FXHandler = {}
 FXHandler.__index = FXHandler

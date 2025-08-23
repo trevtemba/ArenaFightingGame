@@ -1,7 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
-local tableToString = require(Services.Modules:WaitForChild("tableToString"))
+local TableToString = require(Services.SharedUtils:WaitForChild("TableToString"))
 
 local Game = require(Services.Server:WaitForChild("Game"))
 local CollisionManager = require(Services.EntityUtils.CollisionManager)
@@ -125,7 +125,7 @@ function Player:RecalculateStats()
 		end
 	end
 	for slot, cooldown in ipairs(self.stats.abilityCooldowns) do
-		self.character:SetAttribute("abilityCd" .. tostring(slot), cooldown)
+		self.character:SetAttribute("abilityData" .. tostring(slot), cooldown)
 	end
 end
 
@@ -286,7 +286,7 @@ function Player:CharDie() end
 
 function Player:ReturnDev(devCode)
 	if devCode == "state" then
-		print("SERVER STATES: " .. tableToString(self.stateHandler:GetAllStates()))
+		print("SERVER STATES: " .. TableToString(self.stateHandler:GetAllStates()))
 	end
 end
 return Player

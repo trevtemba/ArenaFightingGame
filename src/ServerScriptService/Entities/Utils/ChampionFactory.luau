@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
 local Champion = require(Services.EntityUtils:WaitForChild("Champion"))
 local ChampionsFolder = Services.ServerStorage:WaitForChild("Champions")

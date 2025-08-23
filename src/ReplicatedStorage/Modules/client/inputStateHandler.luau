@@ -1,6 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
-local STATE = require(Services.Core.State)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local STATE = require(Services.Enums.State)
 
 local InputStateHandler = {}
 InputStateHandler.__index = InputStateHandler

@@ -15,4 +15,3 @@ function WeldHelper.WeldParts(partA: BasePart, partB: BasePart)
 end
 
 return WeldHelper
-

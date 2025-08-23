@@ -1,9 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Players = Services.Players
 
 local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
-local STATE = require(Services.Core.State)
+local STATE = require(Services.Enums.State)
 
 local castDone = Services.ClientEvents.castDone
 local clientEffects = Services.ClientEvents.clientEffects

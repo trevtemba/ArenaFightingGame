@@ -1,16 +1,18 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CameraShaker = require(ReplicatedStorage.Modules.client.cameraShaker.CameraShaker)
+local Workspace = game:GetService("Workspace")
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local CameraShaker = require(Services.Client:WaitForChild("cameraShaker"):WaitForChild("CameraShaker"))
 
-local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local ClientEvents = RemoteEvents:WaitForChild("Client")
+local ClientEvents = Services.ClientEvents
 
 local attackEvent = ClientEvents:WaitForChild("attack")
 local sprintEvent = ClientEvents:WaitForChild("sprint")
 
-local TweenService = game:GetService("TweenService")
-local camera = workspace.CurrentCamera
+local TweenService = Services.TweenService
+local camera = Services.Workspace.CurrentCamera
 
-local player = game:GetService("Players").LocalPlayer
+local player = Services.Players.LocalPlayer
 
 local originalFOV = 70
 local fovChange = 5

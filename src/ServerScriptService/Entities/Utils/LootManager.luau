@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
 local LootData = require(Services.Data:WaitForChild("LootData"))
 local clientEffects = Services.ClientEvents:WaitForChild("clientEffects")

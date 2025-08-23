@@ -1,10 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Debris = Services.DebrisService
 
 local particleHelper = require(Services.ClientEffectsUtils.particleHelper)
 local soundHelper = require(Services.ClientEffectsUtils.soundHelper)
-local weldHelper = require(Services.ClientEffectsUtils.weldHelper)
+local WeldHelper = require(Services.SharedUtils.WeldHelper)
 local Assets = Services.Assets
 
 return function(argumentData)
@@ -16,7 +16,7 @@ return function(argumentData)
 		if rootPart then
 			local flameThrowerClone = Assets:WaitForChild("flameThrower"):Clone()
 			flameThrowerClone.CFrame = rootPart.CFrame * CFrame.new(1.25, 0.75, -3.5)
-			local weld = weldHelper.WeldParts(rootPart, flameThrowerClone)
+			local weld = WeldHelper.WeldParts(rootPart, flameThrowerClone)
 			flameThrowerClone.Parent = game.Workspace:WaitForChild("Assets")
 
 			soundHelper.PlaySound("flamethrower", flameThrowerClone, nil)
