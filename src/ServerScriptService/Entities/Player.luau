@@ -4,6 +4,7 @@ local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local TableToString = require(Services.SharedUtils:WaitForChild("TableToString"))
 
 local Game = require(Services.Server:WaitForChild("Game"))
+local TableAttributes = require(Services.SharedUtils.TableAttributes)
 local CollisionManager = require(Services.EntityUtils.CollisionManager)
 local AnimationHandler = require(Services.EntityHandlers.AnimationHandler)
 local UIHandler = require(Services.EntityHandlers.UIHandler)
@@ -125,7 +126,11 @@ function Player:RecalculateStats()
 		end
 	end
 	for slot, cooldown in ipairs(self.stats.abilityCooldowns) do
-		self.character:SetAttribute("abilityData" .. tostring(slot), cooldown)
+		local abilityInfo = {
+			cooldown = cooldown,
+			targetType = self.abilities[slot].Config.targetType,
+		}
+		TableAttributes.Set(self.character, string.format("ability%dInfo", slot), abilityInfo)
 	end
 end
 

@@ -17,6 +17,7 @@ Flamethrower.Config = {
 	knocksBack = false,
 	duration = 2,
 	damage = 25,
+	targetType = "free",
 	hitboxType = "cone",
 	hitboxParams = {
 		range = 50,

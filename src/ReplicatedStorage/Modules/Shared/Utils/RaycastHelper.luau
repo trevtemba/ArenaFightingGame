@@ -1,4 +1,3 @@
--- ClientHelpers/RaycastHelper.lua
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Players = Services.Players

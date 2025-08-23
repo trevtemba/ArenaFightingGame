@@ -17,6 +17,7 @@ Ability.Config = {
 	blockable = true,
 	knocksBack = false,
 	damage = 5,
+	targetType = "lockOn",
 	hitboxType = "cone",
 	hitboxParams = {
 		range = 50,
@@ -25,15 +26,13 @@ Ability.Config = {
 }
 
 function Ability:Cast(soulHandler, argumentData)
-	local direction = argumentData.direction
-	local origin = argumentData.origin
-	local target = FindTarget(soulHandler.owner, origin, direction, 25, 25)
-	print(target)
+	local target = argumentData.target
 	if target then
-		task.delay(soulHandler.cooldown, function()
-			soulCastDone:FireClient(Players:GetPlayerByUserId(soulHandler.owner.userId))
-		end)
 	end
+	print(target)
+	task.delay(soulHandler.cooldown, function()
+		soulCastDone:FireClient(Players:GetPlayerByUserId(soulHandler.owner.userId))
+	end)
 end
 
 return Ability

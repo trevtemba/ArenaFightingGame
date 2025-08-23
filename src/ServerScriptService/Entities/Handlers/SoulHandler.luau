@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
+local TableAttributes = require(Services.SharedUtils.TableAttributes)
 local AnimationHandler = require(Services.EntityHandlers:WaitForChild("AnimationHandler"))
 local CollisionManager = require(Services.EntityUtils.CollisionManager)
 local CollectionService = Services.CollectionService
@@ -30,12 +31,17 @@ function SoulHandler:Init()
 	self.cooldown = data.cooldown
 	self.character = data.rig:Clone()
 	self.ability = data.ability
+	self.targetType = data.ability.Config.targetType
 
 	self.character.Parent = game.Workspace.Assets
 	self.animationHandler = AnimationHandler.new(self.character)
 
 	self.instanceObjects = self:AttachToPlayer()
-	self.owner.character:SetAttribute("soulAbilityCd", self.cooldown)
+	local soulAbilityInfo = {
+		cooldown = self.cooldown,
+		targetType = self.targetType,
+	}
+	TableAttributes.Set(self.owner.character, "soulAbilityInfo", soulAbilityInfo)
 	CollisionManager:SetCollisionGroupEntities(self.character)
 	CollectionService:AddTag(self.character, "Soul")
 	task.defer(function()

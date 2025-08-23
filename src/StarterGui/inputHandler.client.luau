@@ -1,5 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local RaycastHelper = require(Services.SharedUtils.RaycastHelper)
+local TableAttributes = require(Services.SharedUtils.TableAttributes)
 local Players = Services.Players
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
@@ -234,36 +236,66 @@ CombatContext:WaitForChild("Block").Released:Connect(function()
 end)
 
 CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
-	if
-		processDebounce("cast1", player.Character:GetAttribute("abilityCd1"))
-		or not inputStateHandler:CanDo(STATE.Casting)
-	then
+	local slot = 1 -- placeholder for when i add all hotbar actions
+	local abilityInfo = TableAttributes.Get(player.Character, string.format("ability%dInfo", slot))
+	if processDebounce("cast1", abilityInfo.cooldown) or not inputStateHandler:CanDo(STATE.Casting) then
 		return
 	end
-	inputStateHandler:SetState(STATE.Casting)
-	hotbar.Cast({ abilitySlot = 1 })
-	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("abilityCd1"), abilitySlot = 1 })
-	local remote = ServerEvents:FindFirstChild("OnCast")
-	if remote then
-		print("casting 1")
-		remote:FireServer(1)
+	local targetType = abilityInfo.targetType
+	if targetType == "lockOn" then
+		local character, hit = RaycastHelper:GetMouseTarget(500) -- max distance (gonna sanity check on server)
+		if character then
+			local remote = ServerEvents:FindFirstChild("OnCast")
+			if remote then
+				print("casting 1", character.Name)
+				remote:FireServer({
+					target = character,
+					hitPosition = hit.Position,
+				})
+			end
+		end
+	else
+		inputStateHandler:SetState(STATE.Casting)
+		hotbar.Cast({ abilitySlot = 1 })
+		hotbar.Cooldown({ cooldown = abilityInfo.cooldown, abilitySlot = 1 })
+		local remote = ServerEvents:FindFirstChild("OnCast")
+		if remote then
+			print("casting 1")
+			remote:FireServer(1)
+		end
 	end
 end)
 
 CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
-	if
-		processDebounce("soulAbility", player.Character:GetAttribute("soulAbilityCd"))
-		or not inputStateHandler:CanDo(STATE.SoulCasting)
-	then
+	local soulAbilityInfo = TableAttributes.Get(player.Character, "soulAbilityInfo")
+	if processDebounce("soulAbility", soulAbilityInfo.cooldown) or not inputStateHandler:CanDo(STATE.SoulCasting) then
 		return
 	end
-	inputStateHandler:SetState(STATE.SoulCasting)
-	hotbar.SoulCast()
-	hotbar.SoulCooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd") })
-	local remote = ServerEvents:FindFirstChild("OnSoulCast")
-	if remote then
-		print("casting soul")
-		remote:FireServer({ origin = unitRay.Origin, direction = unitRay.Direction.Unit })
+	local targetType = soulAbilityInfo.targetType
+	if targetType == "lockOn" then
+		local character, hit = RaycastHelper:GetMouseTarget(500) -- max distance (gonna sanity check on server)
+		if character then
+			inputStateHandler:SetState(STATE.SoulCasting)
+			hotbar.SoulCast()
+			hotbar.SoulCooldown({ cooldown = soulAbilityInfo.cooldown })
+			local remote = ServerEvents:FindFirstChild("OnSoulCast")
+			if remote then
+				print("casting soul on", character.Name)
+				remote:FireServer({
+					target = character,
+					hitPosition = hit.Position,
+				})
+			end
+		end
+	else
+		inputStateHandler:SetState(STATE.SoulCasting)
+		hotbar.SoulCast()
+		hotbar.SoulCooldown({ cooldown = soulAbilityInfo.cooldown })
+		local remote = ServerEvents:FindFirstChild("OnSoulCast")
+		if remote then
+			print("casting soul")
+			remote:FireServer({ origin = unitRay.Origin, direction = unitRay.Direction.Unit })
+		end
 	end
 end)
 
@@ -506,6 +538,7 @@ end)
 soulCastDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.SoulCasting)
 	setCanJump(true)
+	print("done soulcasting")
 end)
 
 inAir.OnClientEvent:Connect(function(isActive)
