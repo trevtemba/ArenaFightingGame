@@ -5,7 +5,7 @@ local ClientModules = Services.Client
 local clientEffects = Services.ClientEvents:WaitForChild("clientEffects")
 local cachedEffects = {}
 
-for _, module in ClientModules.effects:GetChildren() do
+for _, module in ClientModules.effects.General:GetChildren() do
 	if module:IsA("ModuleScript") then
 		cachedEffects[module.Name] = require(module)
 	end

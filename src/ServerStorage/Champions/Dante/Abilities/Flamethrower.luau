@@ -7,6 +7,7 @@ local STATE = require(Services.Enums.State)
 
 local castDone = Services.ClientEvents.castDone
 local clientEffects = Services.ClientEvents.clientEffects
+local clientAbilityEffects = Services.ClientEvents.clientAbilityEffects
 
 local Flamethrower = {}
 
@@ -27,6 +28,7 @@ Flamethrower.Config = {
 }
 
 function Flamethrower:Cast(combatHandler, animName)
+	clientEffects:FireAllClients("initiate", { target = combatHandler.owner.character, initiateType = "cast" })
 	local attacker = combatHandler.owner
 
 	combatHandler.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
@@ -40,8 +42,9 @@ function Flamethrower:Cast(combatHandler, animName)
 			return
 		end
 
-		clientEffects:FireAllClients(
+		clientAbilityEffects:FireAllClients(
 			"flameThrower",
+			"champ",
 			{ target = combatHandler.owner.character, duration = self.Config.duration }
 		)
 		for tick = 1, 4 do

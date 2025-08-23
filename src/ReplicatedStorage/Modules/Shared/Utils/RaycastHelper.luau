@@ -37,7 +37,7 @@ function RaycastHelper:GetMouseTarget(maxDistance)
 
 	-- do the raycast
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { localPlayer.Character }
+	raycastParams.FilterDescendantsInstances = { localPlayer.Character, Workspace.Assets.Souls:GetDescendants() }
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local result = Workspace:Raycast(unitRay.Origin, unitRay.Direction * maxDistance, raycastParams)
