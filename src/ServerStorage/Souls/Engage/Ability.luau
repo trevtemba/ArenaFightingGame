@@ -26,10 +26,10 @@ Ability.Config = {
 
 function Ability:Cast(soulHandler, argumentData)
 	local direction = argumentData.direction
-
-	local target = FindTarget(soulHandler.owner, direction, 25, 25)
+	local origin = argumentData.origin
+	local target = FindTarget(soulHandler.owner, origin, direction, 25, 25)
+	print(target)
 	if target then
-		print(target)
 		task.delay(soulHandler.cooldown, function()
 			soulCastDone:FireClient(Players:GetPlayerByUserId(soulHandler.owner.userId))
 		end)

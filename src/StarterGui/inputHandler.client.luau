@@ -263,7 +263,7 @@ CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 	local remote = ServerEvents:FindFirstChild("OnSoulCast")
 	if remote then
 		print("casting soul")
-		remote:FireServer({ Direction = unitRay.Direction })
+		remote:FireServer({ origin = unitRay.Origin, direction = unitRay.Direction.Unit })
 	end
 end)
 
