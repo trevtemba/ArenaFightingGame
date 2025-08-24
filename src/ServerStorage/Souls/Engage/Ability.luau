@@ -40,7 +40,9 @@ function Ability:Cast(soulHandler, isVisible, argumentData)
 			targetEntity = soulHandler.owner:GetPlayerFromCharacter(target)
 		end
 
-		soulHandler:ToggleVisibility(false)
+		if isVisible then
+			soulHandler:ToggleVisibility(false)
+		end
 		clientAbilityEffects:FireAllClients("loveTap", "soul", { target = target, soulType = soulHandler.type })
 
 		if targetEntity then
@@ -61,7 +63,9 @@ function Ability:Cast(soulHandler, isVisible, argumentData)
 		end
 
 		task.delay(self.Config.duration, function()
-			soulHandler:ToggleVisibility(isVisible)
+			if isVisible then
+				soulHandler:ToggleVisibility(isVisible)
+			end
 		end)
 	end
 	print(target)

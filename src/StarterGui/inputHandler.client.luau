@@ -238,7 +238,7 @@ end)
 CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
 	local slot = 1 -- placeholder for when i add all hotbar actions
 	local abilityInfo = TableAttributes.Get(player.Character, string.format("ability%dInfo", slot))
-	if processDebounce("cast1", abilityInfo.cooldown) or not inputStateHandler:CanDo(STATE.Casting) then
+	if processDebounce("cast1", 0.1) or not inputStateHandler:CanDo(STATE.Casting) then
 		return
 	end
 	local targetType = abilityInfo.targetType
@@ -268,7 +268,7 @@ end)
 
 CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 	local soulAbilityInfo = TableAttributes.Get(player.Character, "soulAbilityInfo")
-	if processDebounce("soulAbility", soulAbilityInfo.cooldown) or not inputStateHandler:CanDo(STATE.SoulCasting) then
+	if processDebounce("soulAbility", 0.1) or not inputStateHandler:CanDo(STATE.SoulCasting) then
 		return
 	end
 	local targetType = soulAbilityInfo.targetType

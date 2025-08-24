@@ -36,6 +36,7 @@ function SoulHandler:Init()
 	self.ability = data.ability
 	self.targetType = data.ability.Config.targetType
 
+	self.character.Name = ""
 	self.character.Parent = game.Workspace.Assets.Souls
 	self.animationHandler = AnimationHandler.new(self.character)
 

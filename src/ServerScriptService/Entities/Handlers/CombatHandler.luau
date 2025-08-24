@@ -187,7 +187,7 @@ function CombatHandler:Attack(spaceHeld)
 
 	-- DETERMINE ATTACK ACTION
 	local attackAction = self.combo == self.maxCombo and "knockback" or "default"
-	local stunTime = attackAction == "default" and 1 or 3.25
+	local stunTime = attackAction == "default" and 0.75 or 3.25
 
 	if spaceHeld then
 		if not self.owner.stateHandler:HasState(STATE.InAirCombo) then

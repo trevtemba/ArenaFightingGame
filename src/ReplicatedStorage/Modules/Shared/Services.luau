@@ -13,6 +13,7 @@ Services.CollectionService = game:GetService("CollectionService")
 Services.ServerStorage = game:GetService("ServerStorage")
 Services.Workspace = game:GetService("Workspace")
 Services.Lighting = game:GetService("Lighting")
+Services.ChatService = game:GetService("Chat")
 
 Services.Modules = Services.ReplicatedStorage:WaitForChild("Modules")
 Services.UI = Services.ReplicatedStorage:WaitForChild("UI")
