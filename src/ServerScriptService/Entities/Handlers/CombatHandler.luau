@@ -154,6 +154,18 @@ function CombatHandler:Cast(abilitySlot)
 	ability:Cast(self, animName)
 end
 
+function CombatHandler:CanBlock180(attackerPosition)
+	if not self.owner.stateHandler:HasState("blocking") then
+		return false
+	end
+	local defenderLook = self.character.HumanoidRootPart.CFrame.LookVector
+	local dirToAttacker = (attackerPosition - self.character.HumanoidRootPart.Position).Unit
+
+	local dot = defenderLook:Dot(dirToAttacker)
+
+	return dot > 0
+end
+
 function CombatHandler:Attack(spaceHeld)
 	if not self.humanoid or not self:CanAttack() then
 		if self.entityType == "Player" then
