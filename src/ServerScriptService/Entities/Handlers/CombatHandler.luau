@@ -158,8 +158,8 @@ function CombatHandler:CanBlock180(attackerPosition)
 	if not self.owner.stateHandler:HasState("blocking") then
 		return false
 	end
-	local defenderLook = self.character.HumanoidRootPart.CFrame.LookVector
-	local dirToAttacker = (attackerPosition - self.character.HumanoidRootPart.Position).Unit
+	local defenderLook = self.owner.character.HumanoidRootPart.CFrame.LookVector
+	local dirToAttacker = (attackerPosition - self.owner.character.HumanoidRootPart.Position).Unit
 
 	local dot = defenderLook:Dot(dirToAttacker)
 
@@ -261,6 +261,7 @@ function CombatHandler:Attack(spaceHeld)
 				self:ApplyDamage({
 					entity = entity,
 					blockable = blockable,
+					blockable360 = false,
 					type = "attack",
 					knocksBack = knocksBack,
 					isAirCombo = isAirCombo,
@@ -276,8 +277,8 @@ function CombatHandler:Attack(spaceHeld)
 				end
 			end,
 			hitboxTemplate = "meleeHitbox",
-			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -3),
-			size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.owner.stats.range),
+			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -4),
+			size = Vector3.new(hitboxSize.X + 2, hitboxSize.Y + 2, self.owner.stats.range + 2),
 			duration = 0.2,
 		}
 
@@ -378,6 +379,7 @@ end
 function CombatHandler:ApplyDamage(attackData)
 	local entity = attackData.entity
 	local blockable = attackData.blockable
+	local blockable360 = attackData.blockable360
 	local type = attackData.type
 	local knocksBack = attackData.knocksBack
 	local isAirCombo = attackData.isAirCombo
@@ -404,6 +406,7 @@ function CombatHandler:ApplyDamage(attackData)
 	local dmg = base * (crit and self.owner.stats.critMultiplier or 1)
 	local dmgType = self.owner.damageTypes[type]
 	local lookVector = self.owner.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector
+	local position = self.owner.character:FindFirstChild("HumanoidRootPart").Position
 
 	local newAttackData = {
 		damage = dmg,
@@ -413,10 +416,12 @@ function CombatHandler:ApplyDamage(attackData)
 		type = type,
 		crit = crit,
 		blockable = blockable,
+		blockable360 = blockable360,
 		knocksBack = knocksBack,
 		isAirCombo = isAirCombo,
 		hitType = "blunt",
 		attackerLookVector = lookVector,
+		attackerPosition = position,
 		attackerPhysicsHandler = self.owner.physicsHandler,
 		attackAction = attackAction,
 	}
@@ -435,6 +440,16 @@ function CombatHandler:TakeDamage(attackData)
 	elseif self.entityType == "Enemy" then
 		self.owner.animationHandler:StopAll()
 		self.owner:SetState(STATE.Stunned, attackData.stunTime)
+	end
+
+	if self.entityType == "Player" or self.entityType == "Dummy" then
+		if self.owner.stateHandler:HasState(STATE.Blocking) then
+			self.owner.stateHandler:RemoveState(STATE.Blocking)
+			clientEffects:FireAllClients(
+				"handleEffect",
+				{ target = self.owner.character, effectType = "block", activate = false }
+			)
+		end
 	end
 
 	self.owner.stateHandler:RemoveState(STATE.Attacking)

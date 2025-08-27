@@ -423,9 +423,11 @@ function Enemy:MeleeAttack()
 				type = "attack",
 				crit = false,
 				blockable = true,
+				blockable360 = false,
 				hitType = "slash",
 				knocksBack = false,
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+				attackerPosition = self.character:FindFirstChild("HumanoidRootPart").Position,
 				attackerPhysicsHandler = self.physicsHandler,
 				attackAction = "default",
 			}
@@ -473,9 +475,11 @@ function Enemy:RangedAttack()
 				type = "attack",
 				crit = false,
 				blockable = true,
+				blockable360 = false,
 				knocksBack = false,
 				hitType = "blunt",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+				attackerPosition = self.character:FindFirstChild("HumanoidRootPart").Position,
 				attackerPhysicsHandler = self.physicsHandler,
 				attackAction = "default",
 			}

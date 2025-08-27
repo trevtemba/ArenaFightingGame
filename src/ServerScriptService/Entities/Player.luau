@@ -197,7 +197,15 @@ function Player:TakeDamage(attackData) --todo, enemyposition so we can make bloc
 	if self.combatHandler then
 		if self.stateHandler:HasState("blocking") then
 			if attackData.blockable then
-				self.combatHandler:BlockDamage()
+				if attackData.blockable360 then
+					self.combatHandler:BlockDamage()
+				else
+					if self.combatHandler:CanBlock180(attackData.attackerPosition) then
+						self.combatHandler:BlockDamage()
+					else
+						self.combatHandler:TakeDamage(attackData)
+					end
+				end
 			else
 				self.combatHandler:BreakBlock(attackData.attackAction, attackData.attackerLookVector)
 			end

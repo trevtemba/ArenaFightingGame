@@ -19,6 +19,7 @@ Ability.Config = {
 	name = "Love tap",
 	type = "Damage",
 	blockable = true,
+	blockable360 = true,
 	knocksBack = false,
 	damage = 5,
 	targetType = "lockOn",
@@ -50,6 +51,7 @@ function Ability:Cast(soulHandler, isVisible, argumentData)
 				combatHandler:ApplyDamage({
 					entity = targetEntity,
 					blockable = self.Config.blockable,
+					blockable360 = self.Config.blockable360,
 					type = "ability",
 					knocksBack = self.Config.knocksBack,
 					isAirCombo = nil,

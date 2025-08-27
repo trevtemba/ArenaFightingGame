@@ -15,6 +15,7 @@ Flamethrower.Config = {
 	name = "Seismic Slam",
 	type = "Damage",
 	blockable = true,
+	blockable360 = true,
 	knocksBack = false,
 	duration = 2,
 	damage = 25,
@@ -57,6 +58,7 @@ function Flamethrower:Cast(combatHandler, animName)
 					combatHandler:ApplyDamage({
 						entity = entity,
 						blockable = self.Config.blockable,
+						blockable360 = self.Config.blockable360,
 						type = "ability",
 						knocksBack = self.Config.knocksBack,
 						isAirCombo = nil,
