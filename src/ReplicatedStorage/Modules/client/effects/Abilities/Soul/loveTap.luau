@@ -22,7 +22,9 @@ return function(argumentData)
 				mockSoul.Name = ""
 				mockSoulHRP.Anchored = true
 				mockSoul.Parent = Services.Workspace
-				local offset = rootPart.CFrame.RightVector * 3
+				local rightOffset = rootPart.CFrame.RightVector * 3
+				local leftOffset = rootPart.CFrame.RightVector * -3
+				local offset = math.random(0, 1) == 1 and rightOffset or leftOffset
 				local position = rootPart.Position + offset
 				mockSoulHRP.CFrame = CFrame.new(position, rootPart.Position)
 

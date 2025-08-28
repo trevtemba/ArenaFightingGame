@@ -73,9 +73,7 @@ function CombatHandler:HandleAttackInput(spaceHeld)
 	end
 end
 function CombatHandler:HandleAttackHeavyInput(jumping)
-	if self:CanAttackHeavy() then
-		self:AttackHeavy(jumping)
-	end
+	self:AttackHeavy(jumping)
 end
 
 function CombatHandler:HandleCastInput(abilitySlot)
@@ -113,6 +111,7 @@ function CombatHandler:CanAttackHeavy()
 	local stateHandler = self.owner.stateHandler
 	local blockedStates = {
 		STATE.Attacking,
+		STATE.AttackingHeavy,
 		STATE.Stunned,
 		STATE.Ragdolled,
 	}
@@ -144,6 +143,7 @@ function CombatHandler:CanBlock()
 
 	local blockedStates = {
 		STATE.Attacking,
+		STATE.AttackingHeavy,
 		STATE.Casting,
 		STATE.Stunned,
 		STATE.Ragdolled,
@@ -337,7 +337,7 @@ function CombatHandler:Attack(spaceHeld)
 end
 
 function CombatHandler:AttackHeavy(jumping)
-	if not self.humanoid or not self:CanAttack() then
+	if not self.humanoid or not self:CanAttackHeavy() then
 		if self.entityType == "Player" then
 			attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 		end
@@ -350,7 +350,7 @@ function CombatHandler:AttackHeavy(jumping)
 	local now = os.clock()
 	local blockable = false
 	local isAirCombo = false
-	local knocksBack = false
+	local knocksBack = true
 	local cooldown
 	local animName
 
@@ -359,15 +359,16 @@ function CombatHandler:AttackHeavy(jumping)
 	self.lastAttackHeavyTime = now
 
 	cooldown = self.attackHeavyCooldown
-	knocksBack = true
-	animName = jumping and "downHeavyAttack" or "heavyAttack"
+	animName = jumping and "attackHeavyAir" or "attackHeavyGround"
 
 	-- DETERMINE ATTACK ACTION
-	local attackAction = self.combo == self.maxCombo and "knockback" or "default"
-	local stunTime = 0.75
+	local attackAction = "attackHeavyGround"
+	local stunTime = 3.25
 
 	if jumping then
-		--physics handler call
+		attackAction = "attackHeavyAir"
+		knocksBack = false
+		stunTime = 1.5
 	end
 
 	-- Play animation
@@ -377,7 +378,7 @@ function CombatHandler:AttackHeavy(jumping)
 		"attackFx",
 		{ target = self.owner.character, weapon = "gun", fxType = "attackHeavy", combo = nil }
 	)
-	self:M2Slow(5)
+	self:M2Slow(self.owner.stats.speed)
 	-- When starting the attack (before connecting or right at anim start)
 	self._attackHeavySessionId = (self._attackHeavySessionId or 0) + 1
 	local sessionId = self._attackHeavySessionId

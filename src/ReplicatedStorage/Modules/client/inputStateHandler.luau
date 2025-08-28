@@ -69,6 +69,7 @@ function InputStateHandler:CanDo(state)
 		blockedStates = {
 			STATE.Casting,
 			STATE.Attacking,
+			STATE.AttackingHeavy,
 		}
 	elseif state == STATE.Casting then
 		blockedStates = {

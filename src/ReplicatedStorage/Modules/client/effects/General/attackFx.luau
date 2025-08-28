@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Debris = Services.DebrisService
 
@@ -34,16 +35,23 @@ return function(argumentData)
 				local bbOverHeadClone = Effects.CoreEffects.bbOverheadFlash:Clone()
 				if weapon == "gun" then
 					bbFlashClone.Parent = target:FindFirstChild("Left Arm")
+					local gunChargeSound = soundHelper.PlaySound("gunCharge", target.PrimaryPart, 0.05)
+					Debris:AddItem(gunChargeSound, 1)
+					task.delay(0.5, function()
+						local gunBlastSound = soundHelper.PlaySound("gunBlast", target.PrimaryPart, 0.05)
+						local gunVFX = Effects:FindFirstChild("MuzzleFlash"):Clone()
+						gunVFX.CFrame = rootpart.CFrame * CFrame.new(-0.25, 1.25, -4)
+						gunVFX.Parent = Services.Workspace:FindFirstChild("Assets")
+						particleHelper.EmitPart(gunVFX)
+						Debris:AddItem(gunBlastSound, 1)
+						Debris:AddItem(gunVFX, 1)
+					end)
 				end
 				bbOverHeadClone.Parent = rootpart
 				bbOverHeadClone.CFrame = bbOverHeadClone.CFrame * CFrame.new(0, 3, 0)
 				particleHelper.EmitPart(bbFlashClone)
 				particleHelper.EmitPart(bbOverHeadClone)
-				task.delay(0.35, function()
-					-- local swingSound = soundHelper.PlaySound((weapon .. "Swing"), target.PrimaryPart, 0.05)
-					local swingSound = soundHelper.PlaySound("fistSwing", target.PrimaryPart, 0.05)
-					Debris:AddItem(swingSound, 1)
-				end)
+
 				Debris:AddItem(bbFlashClone, 1)
 				Debris:AddItem(bbOverHeadClone, 1)
 				Debris:AddItem(highlight, 1)

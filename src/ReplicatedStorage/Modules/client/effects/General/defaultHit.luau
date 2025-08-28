@@ -87,7 +87,14 @@ return function(argumentData)
 						local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 						animHelper:StopAll(target)
 						animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
-					elseif knockBack and (attackAction == "knockback" or attackAction == "cast") then
+					elseif
+						knockBack
+						and (
+							attackAction == "knockback"
+							or attackAction == "cast"
+							or attackAction == "attackHeavyGround"
+						)
+					then
 						local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
 						local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
 						windClone.Parent = rootPart

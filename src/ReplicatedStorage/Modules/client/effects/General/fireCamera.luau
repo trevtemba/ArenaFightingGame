@@ -8,6 +8,7 @@ local function isStrong(attackAction)
 		or attackAction == "downslam"
 		or attackAction == "knockup"
 		or attackAction == "airknockback"
+		or attackAction == "attackHeavyGround"
 	then
 		return true
 	else
