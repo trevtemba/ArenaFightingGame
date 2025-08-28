@@ -212,6 +212,21 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	end
 end)
 
+CombatContext:WaitForChild("AttackHeavy").Pressed:Connect(function()
+	if processDebounce("attackHeavy", 0.2) or not inputStateHandler:CanDo(STATE.AttackingHeavy) then
+		return
+	end
+	inputStateHandler:SetState(STATE.AttackingHeavy)
+	updateSprinting()
+
+	setCanJump(false)
+
+	local remote = ServerEvents:WaitForChild("OnAttackHeavy")
+	if remote then
+		remote:FireServer(inputStateHandler:GetState(STATE.Jumping))
+	end
+end)
+
 CombatContext.Block.Pressed:Connect(function()
 	print("pressed f")
 	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then

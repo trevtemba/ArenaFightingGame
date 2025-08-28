@@ -31,6 +31,7 @@ function InputStateHandler:CanDo(state)
 			STATE.Sprinting,
 			STATE.InAirCombo,
 			STATE.Attacking,
+			STATE.AttackingHeavy,
 			STATE.Casting,
 			STATE.Blocking,
 			STATE.Dashing,
@@ -62,6 +63,12 @@ function InputStateHandler:CanDo(state)
 	elseif state == STATE.Attacking then
 		blockedStates = {
 			STATE.Casting,
+			STATE.AttackingHeavy,
+		}
+	elseif state == STATE.AttackingHeavy then
+		blockedStates = {
+			STATE.Casting,
+			STATE.Attacking,
 		}
 	elseif state == STATE.Casting then
 		blockedStates = {
@@ -88,6 +95,11 @@ end
 -- Enables an input state
 function InputStateHandler:SetState(state)
 	self.states[state] = true
+end
+
+-- Enables an input state
+function InputStateHandler:GetState(state)
+	return self.states[state]
 end
 
 -- Disables an input state

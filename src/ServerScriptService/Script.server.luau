@@ -18,8 +18,7 @@ local gameInstance = Game:GetInstance()
 
 local MAX_PLAYERS = 1
 local CHAMPION_PICK_TIME = 5
-local TRAINING_MODE = true
-
+local TRAINING_MODE = false
 local availableChampions = { "Dante" }
 
 local selectedChampions = {}

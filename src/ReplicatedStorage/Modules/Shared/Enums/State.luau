@@ -2,6 +2,7 @@ local State = {
 	-- Universal
 	Idle = "idle",
 	Attacking = "attacking",
+	AttackingHeavy = "attackingHeavy",
 	Casting = "casting",
 	SoulCasting = "soulcasting",
 	Sprinting = "sprinting",
