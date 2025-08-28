@@ -11,6 +11,13 @@ function PlayerHandler.OnAttack(plr: Player, spaceHeld)
 	end
 end
 
+function PlayerHandler.OnAttackHeavy(plr: Player, jumping)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:AttackHeavy(jumping)
+	end
+end
+
 function PlayerHandler.OnCast(plr: Player, abilitySlot)
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then

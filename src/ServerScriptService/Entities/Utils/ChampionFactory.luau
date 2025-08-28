@@ -41,6 +41,7 @@ function ChampionFactory.newChampion(name)
 		magicDmg = data.magicDmg,
 		attackSpeed = data.attackSpeed,
 		attackCooldown = data.attackCooldown,
+		attackHeavyCooldown = data.attackHeavyCooldown,
 		pierce = data.pierce,
 		critChance = data.critChance,
 		critMultiplier = data.critMultiplier,

@@ -52,6 +52,7 @@ function Player.new(plr, champion, rig, soulType)
 		magicDmg = champion.magicDmg,
 		attackSpeed = champion.attackSpeed,
 		attackCooldown = champion.attackCooldown,
+		attackHeavyCooldown = champion.attackHeavyCooldown,
 		pierce = champion.pierce,
 		critChance = champion.critChance,
 		critMultiplier = champion.critMultiplier,
@@ -146,6 +147,12 @@ end
 function Player:Attack(spaceHeld)
 	if self.combatHandler then
 		self.combatHandler:HandleAttackInput(spaceHeld)
+	end
+end
+
+function Player:AttackHeavy(jumping)
+	if self.combatHandler then
+		self.combatHandler:HandleAttackHeavyInput(jumping)
 	end
 end
 

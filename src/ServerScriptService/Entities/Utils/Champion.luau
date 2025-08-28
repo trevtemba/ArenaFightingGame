@@ -13,6 +13,7 @@ function Champion.new(data)
 	self.magicDmg = data.magicDmg
 	self.attackSpeed = data.attackSpeed
 	self.attackCooldown = data.attackCooldown
+	self.attackHeavyCooldown = data.attackHeavyCooldown
 	self.pierce = data.pierce
 	self.critChance = data.critChance
 	self.critMultiplier = data.critMultiplier

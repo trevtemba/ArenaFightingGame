@@ -6,6 +6,7 @@ local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
 local StunModule = require(Services.EntityUtils.stunHandler)
 
 local attackDone = Services.ReplicatedStorage.RemoteEvents.Client.attackDone
+local attackHeavyDone = Services.ReplicatedStorage.RemoteEvents.Client.attackHeavyDone
 local castDone = Services.ReplicatedStorage.RemoteEvents.Client.castDone
 local inAir = Services.ReplicatedStorage.RemoteEvents.Client.inAir
 
@@ -29,27 +30,33 @@ function CombatHandler.new(owner, entityType)
 	local self = setmetatable({}, CombatHandler)
 	self.owner = owner -- Reference to the player or npc that owns this handler
 	self.humanoid = owner.character:FindFirstChildOfClass("Humanoid")
+
 	self.attackCooldown = owner.stats.attackCooldown
+	self.attackHeavyCooldown = owner.stats.attackHeavyCooldown
 	self.combo = 1
 	self.maxCombo = 5
 	self.blockAnimSeq = 1
 	self.comboResetTime = 1 -- Seconds to reset combo
 	self.lastAttackTime = 0
 	self.lastCastTime = {}
-	self.airResetTime = 1.5
 	self.lastAirAttackTime = 0
+	self.lastAirAttackHeavyTime = 0
+	self.airResetTime = 1.5
 	self.bufferedAttack = false
 	self.bufferedAttackSpaceHeld = false
 	self.bufferDuration = owner.stats.attackCooldown
+	self.entityType = entityType
+
 	self.attackerFloat = nil
 	self.targetFloat = nil
+
 	self._attackSessionId = nil
 	self._castSessionId = nil
 	self._blockBreakSessionId = nil
 	self._airFloatCoroutine = nil
 	self._m1SlowId = nil
+	self._m2SlowId = nil
 	self._stunSessionId = nil
-	self.entityType = entityType
 	return self
 end
 
@@ -65,6 +72,11 @@ function CombatHandler:HandleAttackInput(spaceHeld)
 		end)
 	end
 end
+function CombatHandler:HandleAttackHeavyInput(jumping)
+	if self:CanAttackHeavy() then
+		self:AttackHeavy(jumping)
+	end
+end
 
 function CombatHandler:HandleCastInput(abilitySlot)
 	self:Cast(abilitySlot)
@@ -75,6 +87,25 @@ function CombatHandler:CanAttack()
 	if self.lastAttackTime then
 		local timeSinceLastAttack = now - self.lastAttackTime
 		if timeSinceLastAttack < self.owner.stats.attackCooldown then
+			return false
+		end
+	end
+
+	local stateHandler = self.owner.stateHandler
+	local blockedStates = {
+		STATE.Attacking,
+		STATE.Stunned,
+		STATE.Ragdolled,
+	}
+
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+end
+
+function CombatHandler:CanAttackHeavy()
+	local now = os.clock()
+	if self.lastAttackHeavyTime then
+		local timeSinceLastAttackHeavy = now - self.lastAttackHeavyTime
+		if timeSinceLastAttackHeavy < self.owner.stats.attackHeavyCooldown then
 			return false
 		end
 	end
@@ -239,7 +270,10 @@ function CombatHandler:Attack(spaceHeld)
 	-- Play animation
 	self.owner.animationHandler:StopAll()
 	self.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
-	clientEffects:FireAllClients("attackFx", { target = self.owner.character, weapon = "fist", combo = self.combo })
+	clientEffects:FireAllClients(
+		"attackFx",
+		{ target = self.owner.character, weapon = "fist", fxType = "attackLight", combo = self.combo }
+	)
 	if self.combo == self.maxCombo then
 		self:M1Slow(5)
 	else
@@ -299,6 +333,93 @@ function CombatHandler:Attack(spaceHeld)
 			self.bufferedAttack = false
 			self:Attack(self.bufferedAttackSpaceHeld)
 		end
+	end)
+end
+
+function CombatHandler:AttackHeavy(jumping)
+	if not self.humanoid or not self:CanAttack() then
+		if self.entityType == "Player" then
+			attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		end
+		return
+	end
+	if self.owner.stateHandler:HasState(STATE.Blocking) then
+		self:DisableBlock()
+	end
+
+	local now = os.clock()
+	local blockable = false
+	local isAirCombo = false
+	local knocksBack = false
+	local cooldown
+	local animName
+
+	self.owner.stateHandler:SetState(STATE.AttackingHeavy)
+
+	self.lastAttackHeavyTime = now
+
+	cooldown = self.attackHeavyCooldown
+	knocksBack = true
+	animName = jumping and "downHeavyAttack" or "heavyAttack"
+
+	-- DETERMINE ATTACK ACTION
+	local attackAction = self.combo == self.maxCombo and "knockback" or "default"
+	local stunTime = 0.75
+
+	if jumping then
+		--physics handler call
+	end
+
+	-- Play animation
+	self.owner.animationHandler:StopAll()
+	self.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
+	clientEffects:FireAllClients(
+		"attackFx",
+		{ target = self.owner.character, weapon = "gun", fxType = "attackHeavy", combo = nil }
+	)
+	self:M2Slow(5)
+	-- When starting the attack (before connecting or right at anim start)
+	self._attackHeavySessionId = (self._attackHeavySessionId or 0) + 1
+	local sessionId = self._attackHeavySessionId
+
+	-- Deal damage on hit marker
+	self.owner.animationHandler:ConnectMarker(animName, "fire", function()
+		local hitboxSize = ServerStorage:WaitForChild("meleeHitbox").Size
+		if self._attackHeavySessionId ~= sessionId then
+			return
+		end
+		local params = {
+			attacker = self.owner,
+			onHit = function(entity)
+				self:ApplyDamage({
+					entity = entity,
+					blockable = blockable,
+					blockable360 = false,
+					type = "attack",
+					knocksBack = knocksBack,
+					isAirCombo = isAirCombo,
+					abilityDamage = nil,
+					attackAction = attackAction,
+					stunTime = stunTime,
+				})
+				if isAirCombo then
+					self:handleAirCombo(entity, attackAction)
+				end
+				if self.entityType == "Player" then
+					attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
+				end
+			end,
+			hitboxTemplate = "meleeHitbox",
+			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -4),
+			size = Vector3.new(hitboxSize.X + 2, hitboxSize.Y + 2, self.owner.stats.range + 2),
+			duration = 0.2,
+		}
+
+		HitboxHandler:CreatePlrHitbox(params)
+	end)
+
+	task.delay(cooldown, function()
+		self.owner.stateHandler:RemoveState(STATE.AttackingHeavy)
 	end)
 end
 
@@ -586,6 +707,33 @@ function CombatHandler:M1Slow(speed)
 			self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
 			if self.entityType == "Player" then
 				attackDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+			end
+		end
+	end)
+end
+
+function CombatHandler:M2Slow(speed)
+	self.owner.physicsHandler:SetWalkspeed(speed)
+	local m2SlowDelay = 1
+
+	-- Increment a unique ID to track this specific slowdown
+	self._m2SlowId = (self._m2SlowId or 0) + 1
+	local currentId = self._m2SlowId
+
+	task.defer(function()
+		while os.clock() - self.lastAttackHeavyTime < m2SlowDelay do
+			task.wait(0.05)
+			-- If a new M1Slow was triggered, abort this one
+			if self._m2SlowId ~= currentId then
+				return
+			end
+		end
+
+		-- Only resume walkspeed and fire if still valid
+		if self._m2SlowId == currentId then
+			self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
+			if self.entityType == "Player" then
+				attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
 			end
 		end
 	end)
