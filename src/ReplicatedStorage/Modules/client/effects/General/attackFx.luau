@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local animHelper = require(ReplicatedStorage.Modules.Client.effects.Utils.animHelper)
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Debris = Services.DebrisService
 
@@ -16,7 +17,7 @@ return function(argumentData)
 
 	if target and fxType and weapon then
 		local rootpart = target:FindFirstChild("HumanoidRootPart")
-		if fxType == "attackHeavy" then
+		if fxType == "attackHeavyGround" then
 			if rootpart then
 				local highlightColor = Color3.fromRGB(255, 255, 255)
 				local innerTransparency = 0.8
@@ -35,6 +36,54 @@ return function(argumentData)
 				local bbOverHeadClone = Effects.CoreEffects.bbOverheadFlash:Clone()
 				if weapon == "gun" then
 					bbFlashClone.Parent = target:FindFirstChild("Left Arm")
+					local gunChargeSound = soundHelper.PlaySound("gunCharge", target.PrimaryPart, 0.05)
+					Debris:AddItem(gunChargeSound, 1)
+					task.delay(0.5, function()
+						local gunBlastSound = soundHelper.PlaySound("gunBlast", target.PrimaryPart, 0.05)
+						local gunVFX = Effects:FindFirstChild("MuzzleFlash"):Clone()
+						gunVFX.CFrame = rootpart.CFrame * CFrame.new(-0.25, 1.25, -4)
+						gunVFX.Parent = Services.Workspace:FindFirstChild("Assets")
+						particleHelper.EmitPart(gunVFX)
+						Debris:AddItem(gunBlastSound, 1)
+						Debris:AddItem(gunVFX, 1)
+					end)
+				end
+				bbOverHeadClone.Parent = rootpart
+				bbOverHeadClone.CFrame = bbOverHeadClone.CFrame * CFrame.new(0, 3, 0)
+				particleHelper.EmitPart(bbFlashClone)
+				particleHelper.EmitPart(bbOverHeadClone)
+
+				Debris:AddItem(bbFlashClone, 1)
+				Debris:AddItem(bbOverHeadClone, 1)
+				Debris:AddItem(highlight, 1)
+				Debris:AddItem(chargeSound, 1)
+			end
+		elseif fxType == "attackHeavyAir" then
+			if rootpart then
+				-- local initAnimTrack =
+				-- 	animHelper:PlayAnimation(target, "attackHeavyAirInit", 0.25, 3, 1, false, "Action3")
+				-- animHelper:ConnectStopped(initAnimTrack, function()
+				-- 	animHelper:PlayAnimation(target, "attackHeavyAirDive", 0.25, 3, 1, false, "Action3")
+				-- end)
+				local initAnimTrack =
+					animHelper:PlayAnimation(target, "attackHeavyAirDive", 0.25, 3, 1, true, "Action3")
+				local highlightColor = Color3.fromRGB(255, 255, 255)
+				local innerTransparency = 0.8
+				local outerTransparency = 0.1
+				local highlight = highlightHelper:highlightCharacter(
+					target,
+					highlightColor,
+					innerTransparency,
+					outerTransparency,
+					false,
+					"pulse",
+					0.25
+				)
+				local chargeSound = soundHelper.PlaySound("bbCharge", target.PrimaryPart, 0.05)
+				local bbFlashClone = Effects.CoreEffects.bbFlash:Clone()
+				local bbOverHeadClone = Effects.CoreEffects.bbOverheadFlash:Clone()
+				if weapon == "gun" then
+					bbFlashClone.Parent = target:FindFirstChild("Right Leg")
 					local gunChargeSound = soundHelper.PlaySound("gunCharge", target.PrimaryPart, 0.05)
 					Debris:AddItem(gunChargeSound, 1)
 					task.delay(0.5, function()

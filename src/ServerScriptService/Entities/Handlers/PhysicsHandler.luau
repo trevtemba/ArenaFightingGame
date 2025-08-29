@@ -53,7 +53,7 @@ function PhysicsHandler:applyImpulse(lookVector, direction)
 end
 
 -- Setup helper
-function PhysicsHandler:createAirFloat(character, name, knockBack)
+function PhysicsHandler:createAlignPart(character, name, knockBack)
 	local oldAP = self.physicsAssets:FindFirstChildOfClass("AlignPosition")
 	if oldAP then
 		oldAP:Destroy()
@@ -84,17 +84,13 @@ function PhysicsHandler:createAirFloat(character, name, knockBack)
 	return align, alignPart, att0, att1
 end
 
-function PhysicsHandler:ClearAirFloat(attackerFloat, targetFloat)
-	if attackerFloat then
-		attackerFloat.align:Destroy()
-		attackerFloat.alignPart:Destroy()
-		attackerFloat.att0:Destroy()
-	end
-
-	if targetFloat then
-		targetFloat.align:Destroy()
-		targetFloat.alignPart:Destroy()
-		targetFloat.att0:Destroy()
+function PhysicsHandler:ClearAirAligns(aligns)
+	for _, alignTable in pairs(aligns) do
+		if alignTable then
+			alignTable.align:Destroy()
+			alignTable.alignPart:Destroy()
+			alignTable.att0:Destroy()
+		end
 	end
 end
 
@@ -118,7 +114,7 @@ function PhysicsHandler:MoveForward(lookVector, distance)
 	if not self.hrp then
 		return
 	end
-	local aAlign, aAlignPart, aAtt0, _ = self:createAirFloat(self.character, "moveForward")
+	local aAlign, aAlignPart, aAtt0, _ = self:createAlignPart(self.character, "moveForward")
 
 	aAlignPart.CFrame = CFrame.new(aAlignPart.Position + (lookVector and lookVector or 0) * distance)
 	task.delay(0.3, function()
@@ -135,7 +131,7 @@ function PhysicsHandler:MoveBackward(attackerLookVector, distance, knockBack)
 	if not self.hrp then
 		return
 	end
-	local aAlign, aAlignPart, aAtt0, _ = self:createAirFloat(self.character, "moveBackward", knockBack)
+	local aAlign, aAlignPart, aAtt0, _ = self:createAlignPart(self.character, "moveBackward", knockBack)
 
 	aAlignPart.CFrame = CFrame.new(aAlignPart.Position + (attackerLookVector and attackerLookVector or 0) * distance)
 	task.delay(knockBack and knockBack or 0.3, function()

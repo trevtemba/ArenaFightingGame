@@ -38,7 +38,7 @@ local mouse = player:GetMouse()
 local unitRay = camera:ScreenPointToRay(mouse.X, mouse.Y)
 
 local DASH_COOLDOWN = 1
-local DEFAULT_JUMP_POWER = 60
+local DEFAULT_JUMP_POWER = 80
 
 local debounces = {
 	attack = false,
@@ -155,7 +155,7 @@ CoreContext:WaitForChild("Jump").Pressed:Connect(function()
 	if processDebounce("dash", 0.2) or not inputStateHandler:CanDo(STATE.Jumping) then
 		return
 	end
-
+	inputStateHandler:SetState(STATE.Jumping)
 	--setCanJump(false)
 	inputStateHandler:HeldOn("space")
 end)
