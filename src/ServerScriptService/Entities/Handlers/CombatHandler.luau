@@ -386,75 +386,81 @@ function CombatHandler:AttackHeavy(jumping)
 
 		local hrp = self.owner.character.PrimaryPart
 		local forward = hrp.CFrame.LookVector
-
 		-- Create float constraint for attacker
 		local aAlign, aAlignPart, aAtt0, aAtt1 =
 			self.owner.physicsHandler:createAlignPart(self.owner.character, "diveAlign", 100)
 		self.selfAlign = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
+		aAlign.Responsiveness = 2000
+		aAlignPart.Position = hrp.Position
+		task.delay(0.275, function()
+			-- Raycast to find ground
+			local rayOrigin = hrp.Position
+			local diveAngle = 90
+			local diveDirection = (forward * math.cos(math.rad(diveAngle)) + Vector3.new(0, -1, 0) * math.sin(
+				math.rad(diveAngle)
+			)).Unit * 300
+			local groundPos =
+				self.owner.physicsHandler:ReturnRaycastVector(rayOrigin, diveDirection, { self.owner.character })
 
-		-- Raycast to find ground
-		local rayOrigin = hrp.Position
-		local diveDirection = (forward * math.cos(math.rad(60)) + Vector3.new(0, -1, 0) * math.sin(math.rad(60))).Unit
-			* 300
-		local groundPos =
-			self.owner.physicsHandler:ReturnRaycastVector(rayOrigin, diveDirection, { self.owner.character })
+			if groundPos then
+				-- Set the target position for AlignPosition
+				aAlign.Responsiveness = 250
+				aAlignPart.Position = Vector3.new(groundPos.X, groundPos.Y + 2, groundPos.Z)
+				-- Listen for landing
+				local landedConn
+				landedConn = game:GetService("RunService").Heartbeat:Connect(function()
+					if hrp.Position.Y <= groundPos.Y + 4 then
+						PhysicsHandler:ClearAirAligns({ self.selfAlign })
+						landedConn:Disconnect()
+						self.owner.animationHandler:StopAll()
+						-- Slam VFX
+						clientEffects:FireAllClients("slamVFX", {
+							target = self.owner.character,
+							position = groundPos,
+							slamType = "dive",
+						})
 
-		if groundPos then
-			-- Set the target position for AlignPosition
-			aAlign.Responsiveness = 80
-			aAlignPart.Position = Vector3.new(groundPos.X, groundPos.Y + 2, groundPos.Z)
-			-- Listen for landing
-			local landedConn
-			landedConn = game:GetService("RunService").Heartbeat:Connect(function()
-				if hrp.Position.Y <= groundPos.Y + 3 then
-					landedConn:Disconnect()
-					local hitboxSize = ServerStorage:WaitForChild("meleeHitbox").Size
-					if self._attackHeavySessionId ~= sessionId then
-						return
+						self.owner.stateHandler:RemoveState(STATE.AttackingHeavy)
+
+						self.selfAlign = nil
+						local hitboxSize = ServerStorage:WaitForChild("meleeHitbox").Size
+						if self._attackHeavySessionId ~= sessionId then
+							return
+						end
+						local params = {
+							attacker = self.owner,
+							onHit = function(entity)
+								self:ApplyDamage({
+									entity = entity,
+									blockable = blockable,
+									blockable360 = false,
+									type = "attack",
+									knocksBack = knocksBack,
+									isAirCombo = isAirCombo,
+									abilityDamage = nil,
+									attackAction = attackAction,
+									stunTime = stunTime,
+								})
+								if self.entityType == "Player" then
+									attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
+								end
+							end,
+							hitboxTemplate = "meleeHitbox",
+							cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -1),
+							size = Vector3.new(hitboxSize.X + 6, hitboxSize.Y + 2, self.owner.stats.range + 6),
+							duration = 0.2,
+						}
+						HitboxHandler:CreatePlrHitbox(params)
+						task.delay(0.5, function()
+							attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+						end)
 					end
-					local params = {
-						attacker = self.owner,
-						onHit = function(entity)
-							self:ApplyDamage({
-								entity = entity,
-								blockable = blockable,
-								blockable360 = false,
-								type = "attack",
-								knocksBack = knocksBack,
-								isAirCombo = isAirCombo,
-								abilityDamage = nil,
-								attackAction = attackAction,
-								stunTime = stunTime,
-							})
-							if self.entityType == "Player" then
-								attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
-							end
-						end,
-						hitboxTemplate = "meleeHitbox",
-						cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -1),
-						size = Vector3.new(hitboxSize.X + 6, hitboxSize.Y + 2, self.owner.stats.range + 6),
-						duration = 0.2,
-					}
-
-					HitboxHandler:CreatePlrHitbox(params)
-					self.owner.animationHandler:StopAll()
-					-- Slam VFX
-					clientEffects:FireAllClients("slamVFX", {
-						target = self.owner.character,
-						position = groundPos,
-						slamType = "dive",
-					})
-
-					PhysicsHandler:ClearAirAligns({ self.selfAlign })
-					self.owner.stateHandler:RemoveState(STATE.AttackingHeavy)
-					attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
-					self.selfAlign = nil
-				end
-			end)
-		else
-			-- fallback if no ground
-			aAlignPart.Position = hrp.Position + forward * 10
-		end
+				end)
+			else
+				-- fallback if no ground
+				aAlignPart.Position = hrp.Position + forward * 10
+			end
+		end)
 	else
 		-- Play animation
 		self.owner.animationHandler:StopAll()

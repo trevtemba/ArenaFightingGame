@@ -60,13 +60,10 @@ return function(argumentData)
 			end
 		elseif fxType == "attackHeavyAir" then
 			if rootpart then
-				-- local initAnimTrack =
-				-- 	animHelper:PlayAnimation(target, "attackHeavyAirInit", 0.25, 3, 1, false, "Action3")
-				-- animHelper:ConnectStopped(initAnimTrack, function()
-				-- 	animHelper:PlayAnimation(target, "attackHeavyAirDive", 0.25, 3, 1, false, "Action3")
-				-- end)
-				local initAnimTrack =
-					animHelper:PlayAnimation(target, "attackHeavyAirDive", 0.25, 3, 1, true, "Action3")
+				local initAnimTrack = animHelper:PlayAnimation(target, "attackHeavyAirInit", 0, 3, 1, false, "Action3")
+				animHelper:ConnectStopped(initAnimTrack, function()
+					animHelper:PlayAnimation(target, "attackHeavyAirDive", 0.2, 3, 1, false, "Action3")
+				end)
 				local highlightColor = Color3.fromRGB(255, 255, 255)
 				local innerTransparency = 0.8
 				local outerTransparency = 0.1

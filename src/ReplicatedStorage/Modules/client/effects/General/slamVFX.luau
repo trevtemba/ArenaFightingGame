@@ -14,7 +14,10 @@ return function(argumentData)
 	if target and position and slamType then
 		if slamType == "dive" then
 			animHelper:StopAll(target)
-			animHelper:PlayAnimation(target, "attackHeavyAirLand", 0, nil, nil, false, "Action4")
+			local landAnim = animHelper:PlayAnimation(target, "attackHeavyAirLand", 0, nil, nil, false, "Action2")
+			animHelper:ConnectStopped(landAnim, function()
+				-- animHelper:PlayAnimation(target, "idle", 0, nil, nil, true, "Idle")
+			end)
 			local groundClone = Effects:FindFirstChild("Ground"):Clone()
 			groundClone.Position = position
 			groundClone.Parent = game.Workspace:FindFirstChild("Assets")
