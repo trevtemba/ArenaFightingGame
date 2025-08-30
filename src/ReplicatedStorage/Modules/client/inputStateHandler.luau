@@ -84,6 +84,8 @@ function InputStateHandler:CanDo(state)
 	elseif state == STATE.Jumping then
 		blockedStates = {
 			STATE.Jumping,
+			STATE.Attacking,
+			STATE.AttackingHeavy,
 			STATE.Casting,
 			STATE.Stunned,
 			STATE.Ragdolled,

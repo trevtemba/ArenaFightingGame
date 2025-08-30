@@ -152,12 +152,12 @@ local function updateSprinting()
 end
 
 CoreContext:WaitForChild("Jump").Pressed:Connect(function()
+	inputStateHandler:HeldOn("space")
 	if processDebounce("dash", 0.2) or not inputStateHandler:CanDo(STATE.Jumping) then
 		return
 	end
 	inputStateHandler:SetState(STATE.Jumping)
 	--setCanJump(false)
-	inputStateHandler:HeldOn("space")
 end)
 
 CoreContext:WaitForChild("Jump").Released:Connect(function()
@@ -393,6 +393,10 @@ local function setupMovementActionShiftLocked(direction, data)
 			end
 			lastForwardTapTime = currentTime
 
+			if not inputStateHandler:HasState(STATE.Walking) then
+				inputStateHandler:SetState(STATE.Walking)
+			end
+
 			inputStateHandler:HeldOn("forward")
 			updateSprinting()
 
@@ -414,6 +418,7 @@ local function setupMovementActionShiftLocked(direction, data)
 
 			if inputStateHandler.walking == "forward" then
 				inputStateHandler.walking = nil
+				inputStateHandler:RemoveState(STATE.Walking)
 			end
 
 			animationModule.Stop(data.anim)
@@ -423,6 +428,10 @@ local function setupMovementActionShiftLocked(direction, data)
 		inputAction.Pressed:Connect(function()
 			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
+			end
+
+			if not inputStateHandler:HasState(STATE.Walking) then
+				inputStateHandler:SetState(STATE.Walking)
 			end
 
 			inputStateHandler:HeldOn(direction)
@@ -437,6 +446,7 @@ local function setupMovementActionShiftLocked(direction, data)
 
 		inputAction.Released:Connect(function()
 			if inputStateHandler.walking == direction then
+				inputStateHandler:RemoveState(STATE.Walking)
 				inputStateHandler.walking = nil
 			end
 
@@ -469,7 +479,10 @@ local function setupMovementActionFreecammed(direction, data)
 
 			if not inputStateHandler:HasState(STATE.Sprinting) then
 				inputStateHandler.walking = "forward"
-				animationModule.Play(data.anim, 0.1, true, "Movement")
+				if not inputStateHandler:HasState(STATE.Walking) then
+					inputStateHandler:SetState(STATE.Walking)
+					animationModule.Play(data.anim, 0.1, true, "Movement")
+				end
 
 				local remote = ServerEvents:FindFirstChild("OnWalk")
 				if remote then
@@ -491,6 +504,7 @@ local function setupMovementActionFreecammed(direction, data)
 
 			if activeKeyCount == 0 then
 				updateSprinting()
+				inputStateHandler:RemoveState(STATE.Walking)
 				animationModule.Stop(data.anim)
 			end
 			sprintingFromDoubleTap = false
@@ -503,6 +517,10 @@ local function setupMovementActionFreecammed(direction, data)
 				return
 			end
 
+			if not inputStateHandler:HasState(STATE.Walking) then
+				inputStateHandler:SetState(STATE.Walking)
+				animationModule.Play("walkForward", 0.1, true, "Movement")
+			end
 			activeKeyCount += 1
 
 			--print(activeKeyCount)
@@ -515,6 +533,7 @@ local function setupMovementActionFreecammed(direction, data)
 
 			if activeKeyCount == 0 then
 				updateSprinting()
+				inputStateHandler:RemoveState(STATE.Walking)
 				animationModule.Stop("walkForward")
 			end
 		end)

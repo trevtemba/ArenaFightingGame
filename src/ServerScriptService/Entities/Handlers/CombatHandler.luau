@@ -1,5 +1,4 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StartPageService = game:GetService("StartPageService")
 local PhysicsHandler = require(script.Parent.PhysicsHandler)
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
@@ -405,7 +404,7 @@ function CombatHandler:AttackHeavy(jumping)
 			if groundPos then
 				-- Set the target position for AlignPosition
 				aAlign.Responsiveness = 250
-				aAlignPart.Position = Vector3.new(groundPos.X, groundPos.Y + 2, groundPos.Z)
+				aAlignPart.Position = Vector3.new(groundPos.X, groundPos.Y + 1.5, groundPos.Z)
 				-- Listen for landing
 				local landedConn
 				landedConn = game:GetService("RunService").Heartbeat:Connect(function()
