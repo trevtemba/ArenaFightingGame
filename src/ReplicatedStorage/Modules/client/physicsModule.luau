@@ -4,13 +4,15 @@ local RunService = Services.RunService
 
 local DASH_DURATION = 0.6
 local DASH_SPEED = 80
-local SLOWDOWN_DURATION = 0.3 -- how long they stay slowed after dashing
+local SLOWDOWN_DURATION = 0.25 -- how long they stay slowed after dashing
 
 local player = game.Players.LocalPlayer
 
 local isDashing = false
 
 local physicModule = {}
+
+local dashConnection = nil
 
 function physicModule.Dash(direction, defaultSpeed)
 	if isDashing then
@@ -32,15 +34,11 @@ function physicModule.Dash(direction, defaultSpeed)
 	isDashing = true
 
 	local startTime = tick()
-	local conn
-	conn = RunService.RenderStepped:Connect(function()
+
+	dashConnection = RunService.RenderStepped:Connect(function()
 		local elapsed = tick() - startTime
 		if elapsed >= DASH_DURATION then
-			conn:Disconnect()
-			task.delay(SLOWDOWN_DURATION, function()
-				isDashing = false
-			end)
-			return
+			physicModule.StopDash()
 		end
 
 		local t = elapsed / DASH_DURATION
@@ -62,6 +60,25 @@ function physicModule.Dash(direction, defaultSpeed)
 
 		hrp.AssemblyLinearVelocity = vec.Unit * DASH_SPEED * ease
 	end)
+end
+
+function physicModule.StopDash()
+	function physicModule.StopDash()
+		if dashConnection then
+			dashConnection:Disconnect()
+			dashConnection = nil
+
+			-- kill leftover velocity
+			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				hrp.AssemblyLinearVelocity = Vector3.zero
+			end
+
+			task.delay(SLOWDOWN_DURATION, function()
+				isDashing = false
+			end)
+		end
+	end
 end
 
 return physicModule

@@ -219,9 +219,11 @@ CombatContext:WaitForChild("AttackHeavy").Pressed:Connect(function()
 	end
 	inputStateHandler:SetState(STATE.AttackingHeavy)
 	updateSprinting()
-
 	setCanJump(false)
 
+	if inputStateHandler:GetState(STATE.Jumping) and inputStateHandler:GetState(STATE.Dashing) then
+		physicsModule.StopDash()
+	end
 	local remote = ServerEvents:WaitForChild("OnAttackHeavy")
 	if remote then
 		remote:FireServer(inputStateHandler:GetState(STATE.Jumping))
