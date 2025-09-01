@@ -128,7 +128,7 @@ function Dummy:Activate()
 		task.defer(function()
 			while self.character:FindFirstChildOfClass("Humanoid") do
 				self:Attack(false)
-				task.wait(0.1)
+				task.wait(0.05)
 			end
 		end)
 	elseif self.type == "blocking" then
@@ -148,11 +148,11 @@ function Dummy:Activate()
 					if self.stateHandler:HasState(STATE.InAirCombo) then
 						task.wait(0.1)
 					else
-						task.wait(1)
+						task.wait(1.1)
 					end
 				elseif self.combatHandler.combo >= self.combatHandler.maxCombo then
 					self:Attack(false)
-					task.wait(1)
+					task.wait(1.1)
 				end
 			end
 		end)

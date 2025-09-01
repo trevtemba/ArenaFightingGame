@@ -199,7 +199,7 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
-	if processDebounce("attack", 0.2) or not inputStateHandler:CanDo(STATE.Attacking) then
+	if processDebounce("attack", 0.05) or not inputStateHandler:CanDo(STATE.Attacking) then
 		return
 	end
 	inputStateHandler:SetState(STATE.Attacking)
@@ -228,23 +228,27 @@ CombatContext:WaitForChild("AttackHeavy").Pressed:Connect(function()
 	end
 end)
 
-CombatContext.Block.Pressed:Connect(function()
-	print("pressed f")
-	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
-		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))
-		return
-	end
-	inputStateHandler:SetState(STATE.Blocking)
-
+local function tryBlock()
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		print("pressing block")
 		remote:FireServer(true)
 	end
+end
+CombatContext.Block.Pressed:Connect(function()
+	print("pressed f")
+	inputStateHandler:HeldOn("f")
+	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
+		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))
+		return
+	end
+	inputStateHandler:SetState(STATE.Blocking)
+	tryBlock()
 end)
 
 CombatContext:WaitForChild("Block").Released:Connect(function()
 	inputStateHandler:RemoveState(STATE.Blocking)
+	inputStateHandler:HeldOff("f")
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		remote:FireServer(false)
@@ -561,18 +565,27 @@ end)
 
 attackDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Attacking)
+	if inputStateHandler:IsHeld("f") then
+		tryBlock()
+	end
 	setCanJump(true)
 	print("client can do movement")
 end)
 
 attackHeavyDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.AttackingHeavy)
+	if inputStateHandler:IsHeld("f") then
+		tryBlock()
+	end
 	setCanJump(true)
 	print("client can do movement")
 end)
 
 castDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Casting)
+	if inputStateHandler:IsHeld("f") then
+		tryBlock()
+	end
 	setCanJump(true)
 end)
 
@@ -618,6 +631,9 @@ if isCharLoaded:Invoke() then
 			setCanJump(false)
 		else
 			inputStateHandler:RemoveState(STATE.Stunned)
+			if inputStateHandler:IsHeld("f") then
+				tryBlock()
+			end
 			setCanJump(true)
 		end
 	end)

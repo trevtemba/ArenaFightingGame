@@ -11,7 +11,8 @@ function highlightHelper:highlightCharacter(
 	intensityOutline: number,
 	alwaysOnTop: boolean,
 	type: string,
-	duration: number
+	duration: number,
+	outerColor: Color3
 )
 	local highlight = Instance.new("Highlight")
 	highlight.FillColor = color
@@ -19,6 +20,9 @@ function highlightHelper:highlightCharacter(
 	highlight.OutlineTransparency = 1
 	highlight.DepthMode = alwaysOnTop and "AlwaysOnTop" or "Occluded"
 	highlight.Parent = target
+	if outerColor then
+		highlight.OutlineColor = outerColor
+	end
 
 	if type == "pulse" then
 		tweenHelper:Tween(highlight, {
