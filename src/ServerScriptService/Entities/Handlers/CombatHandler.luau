@@ -314,6 +314,7 @@ function CombatHandler:Attack(spaceHeld)
 					abilityDamage = nil,
 					attackAction = attackAction,
 					stunTime = stunTime,
+					combo = self.combo,
 				})
 				if isAirCombo then
 					self:handleAirCombo(entity, attackAction)
@@ -610,6 +611,7 @@ function CombatHandler:ApplyDamage(attackData)
 	local abilityDamage = attackData.abilityDamage
 	local attackAction = attackData.attackAction
 	local stunTime = attackData.stunTime
+	local combo = attackData.combo
 
 	if not entity or not entity.combatHandler then
 		return
@@ -648,6 +650,7 @@ function CombatHandler:ApplyDamage(attackData)
 		attackerPosition = position,
 		attackerPhysicsHandler = self.owner.physicsHandler,
 		attackAction = attackAction,
+		combo = combo,
 	}
 
 	entity:TakeDamage(newAttackData)
@@ -702,6 +705,7 @@ function CombatHandler:TakeDamage(attackData)
 		attackAction = attackData.attackAction,
 		knockBack = attackData.knocksBack,
 		attackerLookVector = attackData.attackerLookVector,
+		combo = attackData.combo,
 	})
 	if CollectionService:HasTag(attackerChar, "Player") then
 		clientEffects:FireClient(
@@ -740,7 +744,7 @@ function CombatHandler:TakeDamage(attackData)
 		if self.entityType == "Enemy" then
 			self.owner:Die()
 		end
-		self:Knock()
+		-- self:Knock()
 	end
 end
 
@@ -888,7 +892,7 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 		self.selfAlign = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
 		self.targetAlign = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
 
-		task.delay(0.1, function()
+		task.delay(0, function()
 			self.selfAlign.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 15, 0)
 		end)
 		self.targetAlign.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 15, 0)

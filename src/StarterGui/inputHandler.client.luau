@@ -143,10 +143,10 @@ local function updateSprinting()
 		end
 		if inputStateHandler:IsHeld("forward") then
 			animationModule.Play(directions.forward.anim, 0.1, true, "Movement")
-			local walkRemote = ServerEvents:FindFirstChild("OnWalk")
-			if walkRemote then
-				walkRemote:FireServer("forward")
-			end
+			-- local walkRemote = ServerEvents:FindFirstChild("OnWalk")
+			-- if walkRemote then
+			-- 	walkRemote:FireServer("forward")
+			-- end
 		end
 	end
 end
@@ -408,10 +408,10 @@ local function setupMovementActionShiftLocked(direction, data)
 				inputStateHandler.walking = "forward"
 				animationModule.Play(data.anim, 0.1, true, "Movement")
 
-				local remote = ServerEvents:FindFirstChild("OnWalk")
-				if remote then
-					remote:FireServer("forward")
-				end
+				-- local remote = ServerEvents:FindFirstChild("OnWalk")
+				-- if remote then
+				-- 	remote:FireServer("forward")
+				-- end
 			end
 		end)
 
@@ -442,10 +442,10 @@ local function setupMovementActionShiftLocked(direction, data)
 			inputStateHandler.walking = direction
 			animationModule.Play(data.anim, 0.1, true, "Movement")
 
-			local remote = ServerEvents:FindFirstChild("OnWalk")
-			if remote then
-				remote:FireServer(direction)
-			end
+			-- local remote = ServerEvents:FindFirstChild("OnWalk")
+			-- if remote then
+			-- 	remote:FireServer(direction)
+			-- end
 		end)
 
 		inputAction.Released:Connect(function()
@@ -488,10 +488,10 @@ local function setupMovementActionFreecammed(direction, data)
 					animationModule.Play(data.anim, 0.1, true, "Movement")
 				end
 
-				local remote = ServerEvents:FindFirstChild("OnWalk")
-				if remote then
-					remote:FireServer("forward")
-				end
+				-- local remote = ServerEvents:FindFirstChild("OnWalk")
+				-- if remote then
+				-- 	remote:FireServer("forward")
+				-- end
 			end
 			--print(activeKeyCount)
 		end)
