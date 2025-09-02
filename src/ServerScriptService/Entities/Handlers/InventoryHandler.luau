@@ -109,4 +109,22 @@ end
 
 function InventoryHandler:updateClient() end
 
+function InventoryHandler:Destroy()
+	for i = 1, MAX_SLOTS do
+		self.inventory[i] = nil
+	end
+	self.inventory = nil
+
+	for k in pairs(self.activeItems) do
+		self.activeItems[k] = nil
+	end
+	self.activeItems = nil
+
+	self.gold = 0
+	self.owner = nil
+
+	-- Remove metatable so it can't be used again
+	setmetatable(self, nil)
+end
+
 return InventoryHandler

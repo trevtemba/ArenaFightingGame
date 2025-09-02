@@ -94,4 +94,26 @@ function MovementHandler:Jump()
 	end
 end
 
+function MovementHandler:Destroy()
+	if self.humanoid and self.humanoid.Parent then
+		self.humanoid.WalkSpeed = self.walkspeed
+	end
+
+	if self.owner and self.owner.stateHandler then
+		self.owner.stateHandler:RemoveState(STATE.Sprinting)
+		self.owner.stateHandler:RemoveState(STATE.Dashing)
+	end
+
+	self.owner = nil
+	self.character = nil
+	self.humanoid = nil
+	self.hrp = nil
+
+	self.lastDash = 0
+	self.isSprinting = false
+	self.walkspeed = nil
+
+	setmetatable(self, nil)
+end
+
 return MovementHandler

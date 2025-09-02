@@ -24,6 +24,8 @@ function SoulHandler.new(playerObj)
 	self.animationHandler = nil
 	self.instanceObjects = {}
 
+	self._alignConn = nil
+
 	self:Init()
 	return self
 end
@@ -88,7 +90,7 @@ function SoulHandler:AttachToPlayer()
 	alignO.Parent = self.character:FindFirstChild("physicsAssets")
 
 	task.defer(function()
-		RunService.Stepped:Connect(function()
+		self._alignConn = RunService.Stepped:Connect(function()
 			alignP.Position = playerCharacter.PrimaryPart.Position
 				+ (playerCharacter.PrimaryPart.CFrame.lookVector * -3)
 				+ (playerCharacter.PrimaryPart.CFrame.rightVector * 3)
@@ -116,6 +118,47 @@ function SoulHandler:ToggleVisibility(visible)
 		)
 		self.visible = false
 	end
+end
+
+function SoulHandler:Destroy()
+	if self.animationHandler then
+		self.animationHandler:Destroy()
+		self.animationHandler = nil
+	end
+
+	if self._alignConn then
+		self._alignConn:Disconnect()
+		self._alignConn = nil
+	end
+
+	if self.instanceObjects then
+		for _, obj in pairs(self.instanceObjects) do
+			obj:Destroy()
+		end
+		self.instanceObjects = nil
+	end
+
+	-- Destroy soul rig
+	if self.character and self.character.Parent then
+		self.character:Destroy()
+	end
+	self.character = nil
+
+	-- Clear soulAbilityInfo attribute from player’s character
+	if self.owner and self.owner.character then
+		TableAttributes.Set(self.owner.character, "soulAbilityInfo", nil)
+	end
+
+	-- Reset fields
+	self.owner = nil
+	self.type = nil
+	self.cooldown = nil
+	self.ability = nil
+	self.visible = nil
+	self.targetType = nil
+
+	-- Drop metatable
+	setmetatable(self, nil)
 end
 
 return SoulHandler

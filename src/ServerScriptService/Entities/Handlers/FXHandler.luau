@@ -99,4 +99,38 @@ function FXHandler:Cleanup()
 	end
 end
 
+function FXHandler:Destroy()
+	self:Cleanup()
+
+	for _, sound in pairs(self.fx.sounds) do
+		if sound and sound:IsA("Sound") then
+			sound:Stop()
+			-- Don't destroy if it's part of the rig template
+			if sound.Parent == self.rig then
+				sound:Destroy()
+			end
+		end
+	end
+	self.fx.sounds = {}
+
+	for _, particle in pairs(self.fx.particles) do
+		if particle and particle:IsDescendantOf(workspace) then
+			particle:Destroy()
+		end
+	end
+	self.fx.particles = {}
+
+	for _, proj in pairs(self.fx.projectiles) do
+		if proj and proj:IsDescendantOf(workspace) then
+			proj:Destroy()
+		end
+	end
+	self.fx.projectiles = {}
+
+	self.rig = nil
+
+	-- Remove metatable so object can't be used again
+	setmetatable(self, nil)
+end
+
 return FXHandler

@@ -65,4 +65,16 @@ function ItemHandler:MergeComponents(componentId1, componentId2)
 	return fusedItemId
 end
 
+function ItemHandler:Destroy()
+	for k in pairs(self.lootPool) do
+		self.lootPool[k] = nil
+	end
+	self.lootPool = nil
+
+	self.owner = nil
+
+	-- Remove metatable so the handler can't be used again
+	setmetatable(self, nil)
+end
+
 return ItemHandler

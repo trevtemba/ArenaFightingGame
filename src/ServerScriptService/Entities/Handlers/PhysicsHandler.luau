@@ -197,4 +197,24 @@ function PhysicsHandler:SetWalkspeed(speed)
 	end
 end
 
+function PhysicsHandler:Destroy()
+	if self.physicsAssets and self.physicsAssets.Parent then
+		self.physicsAssets:Destroy()
+	end
+
+	-- Reset humanoid state if still around
+	if self.humanoid and self.humanoid.Parent then
+		self.humanoid.PlatformStand = false
+		self.humanoid.WalkSpeed = 16 -- reset to Roblox default, or self.owner.stats.speed if you store it
+	end
+
+	self.character = nil
+	self.hrp = nil
+	self.humanoid = nil
+	self.physicsAssets = nil
+
+	-- Drop metatable to prevent reuse
+	setmetatable(self, nil)
+end
+
 return PhysicsHandler

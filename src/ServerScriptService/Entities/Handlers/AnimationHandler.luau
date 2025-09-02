@@ -124,4 +124,23 @@ function AnimationHandler:Cleanup()
 	end
 end
 
+function AnimationHandler:Destroy()
+	self:Cleanup()
+
+	self:StopAll()
+
+	for _, animData in pairs(self.animations) do
+		if animData.track then
+			animData.track:Stop()
+		end
+		animData.stoppedConn = nil
+		animData.markerConns = nil
+	end
+	self.animations = {}
+
+	self.animator = nil
+
+	setmetatable(self, nil)
+end
+
 return AnimationHandler
