@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local cameraModule = require(Services.Client:FindFirstChild("cameraModule"))
 
 local function isStrong(attackAction)
@@ -8,6 +8,7 @@ local function isStrong(attackAction)
 		or attackAction == "downslam"
 		or attackAction == "knockup"
 		or attackAction == "airknockback"
+		or attackAction == "attackHeavyGround"
 	then
 		return true
 	else

@@ -1,10 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local CollectionService = Services.CollectionService
 
 local Enemy = require(Services.Entities.Enemy)
 local EnemyData = require(Services.Data.EnemyData)
-local DROP_TYPES = require(Services.Core.DropTypes)
+local DROP_TYPES = require(Services.Enums.DropTypes)
 local enemies = Services.ServerStorage:WaitForChild("enemies")
 
 local enemyMap = {}

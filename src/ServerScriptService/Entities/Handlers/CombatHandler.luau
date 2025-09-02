@@ -1,11 +1,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local PhysicsHandler = require(script.Parent.PhysicsHandler)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
 local RagdollHandler = require(Services.EntityUtils.RagdollHandler)
 local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
 local StunModule = require(Services.EntityUtils.stunHandler)
 
 local attackDone = Services.ReplicatedStorage.RemoteEvents.Client.attackDone
+local attackHeavyDone = Services.ReplicatedStorage.RemoteEvents.Client.attackHeavyDone
 local castDone = Services.ReplicatedStorage.RemoteEvents.Client.castDone
 local inAir = Services.ReplicatedStorage.RemoteEvents.Client.inAir
 
@@ -15,7 +17,7 @@ local CollectionService = Services.CollectionService
 local ServerStorage = Services.ServerStorage
 local Players = Services.Players
 
-local STATE = require(Services.Core.State)
+local STATE = require(Services.Enums.State)
 
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
@@ -29,27 +31,34 @@ function CombatHandler.new(owner, entityType)
 	local self = setmetatable({}, CombatHandler)
 	self.owner = owner -- Reference to the player or npc that owns this handler
 	self.humanoid = owner.character:FindFirstChildOfClass("Humanoid")
+	self.champName = entityType == "Player" and owner.champion.name or "N/A"
+
 	self.attackCooldown = owner.stats.attackCooldown
+	self.attackHeavyCooldown = owner.stats.attackHeavyCooldown
 	self.combo = 1
 	self.maxCombo = 5
 	self.blockAnimSeq = 1
-	self.comboResetTime = 1 -- Seconds to reset combo
+	self.comboResetTime = 1.1 -- Seconds to reset combo
 	self.lastAttackTime = 0
 	self.lastCastTime = {}
-	self.airResetTime = 1.5
 	self.lastAirAttackTime = 0
+	self.lastAirAttackHeavyTime = 0
+	self.airResetTime = 1.5
 	self.bufferedAttack = false
 	self.bufferedAttackSpaceHeld = false
 	self.bufferDuration = owner.stats.attackCooldown
-	self.attackerFloat = nil
-	self.targetFloat = nil
+	self.entityType = entityType
+
+	self.selfAlign = nil
+	self.targetAlign = nil
+
 	self._attackSessionId = nil
 	self._castSessionId = nil
 	self._blockBreakSessionId = nil
 	self._airFloatCoroutine = nil
 	self._m1SlowId = nil
+	self._m2SlowId = nil
 	self._stunSessionId = nil
-	self.entityType = entityType
 	return self
 end
 
@@ -64,6 +73,9 @@ function CombatHandler:HandleAttackInput(spaceHeld)
 			self.bufferedAttackSpaceHeld = false
 		end)
 	end
+end
+function CombatHandler:HandleAttackHeavyInput(jumping)
+	self:AttackHeavy(jumping)
 end
 
 function CombatHandler:HandleCastInput(abilitySlot)
@@ -82,6 +94,26 @@ function CombatHandler:CanAttack()
 	local stateHandler = self.owner.stateHandler
 	local blockedStates = {
 		STATE.Attacking,
+		STATE.Stunned,
+		STATE.Ragdolled,
+	}
+
+	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+end
+
+function CombatHandler:CanAttackHeavy()
+	local now = os.clock()
+	if self.lastAttackHeavyTime then
+		local timeSinceLastAttackHeavy = now - self.lastAttackHeavyTime
+		if timeSinceLastAttackHeavy < self.owner.stats.attackHeavyCooldown then
+			return false
+		end
+	end
+
+	local stateHandler = self.owner.stateHandler
+	local blockedStates = {
+		STATE.Attacking,
+		STATE.AttackingHeavy,
 		STATE.Stunned,
 		STATE.Ragdolled,
 	}
@@ -113,6 +145,7 @@ function CombatHandler:CanBlock()
 
 	local blockedStates = {
 		STATE.Attacking,
+		STATE.AttackingHeavy,
 		STATE.Casting,
 		STATE.Stunned,
 		STATE.Ragdolled,
@@ -151,8 +184,19 @@ function CombatHandler:Cast(abilitySlot)
 
 	local ability = self.owner.abilities[abilitySlot]
 
-	clientEffects:FireAllClients("initiate", { target = self.owner.character, initiateType = "cast" })
 	ability:Cast(self, animName)
+end
+
+function CombatHandler:CanBlock180(attackerPosition)
+	if not self.owner.stateHandler:HasState("blocking") then
+		return false
+	end
+	local defenderLook = self.owner.character.HumanoidRootPart.CFrame.LookVector
+	local dirToAttacker = (attackerPosition - self.owner.character.HumanoidRootPart.Position).Unit
+
+	local dot = defenderLook:Dot(dirToAttacker)
+
+	return dot > 0
 end
 
 function CombatHandler:Attack(spaceHeld)
@@ -179,16 +223,23 @@ function CombatHandler:Attack(spaceHeld)
 	if now - self.lastAttackTime > self.comboResetTime then
 		self.combo = 1
 	end
-	blockable = self.combo < self.maxCombo
 	self.lastAttackTime = now
-
-	cooldown = self.combo < self.maxCombo and self.attackCooldown or (self.attackCooldown * 2)
+	blockable = self.combo < self.maxCombo
 	knocksBack = self.combo == self.maxCombo
 	animName = "m" .. tostring(self.combo)
 
+	-- Ramping attack speed and endlag on combo ender
+	if self.combo <= 2 then
+		cooldown = self.attackCooldown + 0.075
+	elseif self.combo <= 4 then
+		cooldown = self.attackCooldown
+	else
+		cooldown = self.attackCooldown + 1
+	end
+
 	-- DETERMINE ATTACK ACTION
 	local attackAction = self.combo == self.maxCombo and "knockback" or "default"
-	local stunTime = attackAction == "default" and 1 or 3.25
+	local stunTime = attackAction == "default" and 0.6 or 3.25
 
 	if spaceHeld then
 		if not self.owner.stateHandler:HasState(STATE.InAirCombo) then
@@ -196,7 +247,7 @@ function CombatHandler:Attack(spaceHeld)
 				animName = "knockUp"
 				isAirCombo = true
 				attackAction = "knockup"
-				stunTime = 1.25
+				stunTime = 0.85
 			else
 				print("combo ender, normal knockback")
 			end
@@ -228,7 +279,13 @@ function CombatHandler:Attack(spaceHeld)
 	-- Play animation
 	self.owner.animationHandler:StopAll()
 	self.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
-	clientEffects:FireAllClients("attackFx", { target = self.owner.character, weapon = "fist", combo = self.combo })
+	clientEffects:FireAllClients("attackFx", {
+		target = self.owner.character,
+		weapon = "fist",
+		fxType = "attackLight",
+		combo = self.combo,
+		champName = self.champName,
+	})
 	if self.combo == self.maxCombo then
 		self:M1Slow(5)
 	else
@@ -250,12 +307,14 @@ function CombatHandler:Attack(spaceHeld)
 				self:ApplyDamage({
 					entity = entity,
 					blockable = blockable,
+					blockable360 = false,
 					type = "attack",
 					knocksBack = knocksBack,
 					isAirCombo = isAirCombo,
 					abilityDamage = nil,
 					attackAction = attackAction,
 					stunTime = stunTime,
+					combo = self.combo,
 				})
 				if isAirCombo then
 					self:handleAirCombo(entity, attackAction)
@@ -265,8 +324,8 @@ function CombatHandler:Attack(spaceHeld)
 				end
 			end,
 			hitboxTemplate = "meleeHitbox",
-			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -3),
-			size = Vector3.new(hitboxSize.X, hitboxSize.Y, self.owner.stats.range),
+			cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -4),
+			size = Vector3.new(hitboxSize.X + 2, hitboxSize.Y + 2, self.owner.stats.range + 2),
 			duration = 0.2,
 		}
 
@@ -288,6 +347,184 @@ function CombatHandler:Attack(spaceHeld)
 			self:Attack(self.bufferedAttackSpaceHeld)
 		end
 	end)
+end
+
+function CombatHandler:AttackHeavy(jumping)
+	if not self.humanoid or not self:CanAttackHeavy() then
+		if self.entityType == "Player" then
+			attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+		end
+		return
+	end
+	if self.owner.stateHandler:HasState(STATE.Blocking) then
+		self:DisableBlock()
+	end
+
+	local now = os.clock()
+	local blockable = false
+	local isAirCombo = false
+	local knocksBack = true
+	local cooldown
+	local animName
+
+	self.owner.stateHandler:SetState(STATE.AttackingHeavy)
+
+	self.lastAttackHeavyTime = now
+
+	cooldown = self.attackHeavyCooldown
+	animName = jumping and "attackHeavyAir" or "attackHeavyGround"
+
+	-- DETERMINE ATTACK ACTION
+	local attackAction = "attackHeavyGround"
+	local stunTime = 3.25
+
+	-- When starting the attack (before connecting or right at anim start)
+	self._attackHeavySessionId = (self._attackHeavySessionId or 0) + 1
+	local sessionId = self._attackHeavySessionId
+
+	if jumping then
+		attackAction = "attackHeavyAir"
+		cooldown += 0.5
+		knocksBack = false
+		stunTime = 1.5
+
+		self.owner.animationHandler:StopAll()
+
+		clientEffects:FireAllClients("attackFx", {
+			target = self.owner.character,
+			weapon = "fist",
+			fxType = "attackHeavyAir",
+			combo = nil,
+			champName = self.champName,
+		})
+
+		local hrp = self.owner.character.PrimaryPart
+		local forward = hrp.CFrame.LookVector
+		-- Create float constraint for attacker
+		local aAlign, aAlignPart, aAtt0, aAtt1 =
+			self.owner.physicsHandler:createAlignPart(self.owner.character, "diveAlign", 100)
+		self.selfAlign = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
+		aAlign.Responsiveness = 2000
+		aAlignPart.Position = hrp.Position
+		task.delay(0.275, function()
+			-- Raycast to find ground
+			local rayOrigin = hrp.Position
+			local diveAngle = 90
+			local diveDirection = (forward * math.cos(math.rad(diveAngle)) + Vector3.new(0, -1, 0) * math.sin(
+				math.rad(diveAngle)
+			)).Unit * 300
+			local groundPos =
+				self.owner.physicsHandler:ReturnRaycastVector(rayOrigin, diveDirection, { self.owner.character })
+
+			if groundPos then
+				-- Set the target position for AlignPosition
+				aAlign.Responsiveness = 250
+				aAlignPart.Position = Vector3.new(groundPos.X, groundPos.Y + 1.5, groundPos.Z)
+				-- Listen for landing
+				local landedConn
+				landedConn = game:GetService("RunService").Heartbeat:Connect(function()
+					if hrp.Position.Y <= groundPos.Y + 4 then
+						PhysicsHandler:ClearAirAligns({ self.selfAlign })
+						landedConn:Disconnect()
+						self.owner.animationHandler:StopAll()
+						-- Slam VFX
+						clientEffects:FireAllClients("slamVFX", {
+							target = self.owner.character,
+							position = groundPos,
+							slamType = "dive",
+						})
+
+						self.owner.stateHandler:RemoveState(STATE.AttackingHeavy)
+
+						self.selfAlign = nil
+						local hitboxSize = ServerStorage:WaitForChild("meleeHitbox").Size
+						if self._attackHeavySessionId ~= sessionId then
+							return
+						end
+						local params = {
+							attacker = self.owner,
+							onHit = function(entity)
+								self:ApplyDamage({
+									entity = entity,
+									blockable = blockable,
+									blockable360 = false,
+									type = "attack",
+									knocksBack = knocksBack,
+									isAirCombo = isAirCombo,
+									abilityDamage = nil,
+									attackAction = attackAction,
+									stunTime = stunTime,
+								})
+								if self.entityType == "Player" then
+									attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
+								end
+							end,
+							hitboxTemplate = "meleeHitbox",
+							cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -1),
+							size = Vector3.new(hitboxSize.X + 6, hitboxSize.Y + 2, self.owner.stats.range + 6),
+							duration = 0.2,
+						}
+						HitboxHandler:CreatePlrHitbox(params)
+						task.delay(0.5, function()
+							attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+						end)
+					end
+				end)
+			else
+				-- fallback if no ground
+				aAlignPart.Position = hrp.Position + forward * 10
+			end
+		end)
+	else
+		-- Play animation
+		self.owner.animationHandler:StopAll()
+		self.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
+		clientEffects:FireAllClients("attackFx", {
+			target = self.owner.character,
+			weapon = "gun",
+			fxType = "attackHeavyGround",
+			combo = nil,
+			champName = self.champName,
+		})
+		self:M2Slow(self.owner.stats.speed)
+
+		-- Deal damage on hit marker
+		self.owner.animationHandler:ConnectMarker(animName, "fire", function()
+			local hitboxSize = ServerStorage:WaitForChild("meleeHitbox").Size
+			if self._attackHeavySessionId ~= sessionId then
+				return
+			end
+			local params = {
+				attacker = self.owner,
+				onHit = function(entity)
+					self:ApplyDamage({
+						entity = entity,
+						blockable = blockable,
+						blockable360 = false,
+						type = "attack",
+						knocksBack = knocksBack,
+						isAirCombo = isAirCombo,
+						abilityDamage = nil,
+						attackAction = attackAction,
+						stunTime = stunTime,
+					})
+					if self.entityType == "Player" then
+						attackEvent:FireClient(Players:GetPlayerByUserId(self.owner.userId), "attackHit")
+					end
+				end,
+				hitboxTemplate = "meleeHitbox",
+				cframe = self.owner.character.PrimaryPart.CFrame * CFrame.new(0, 0, -4),
+				size = Vector3.new(hitboxSize.X + 2, hitboxSize.Y + 2, self.owner.stats.range + 2),
+				duration = 0.2,
+			}
+
+			HitboxHandler:CreatePlrHitbox(params)
+		end)
+
+		task.delay(cooldown, function()
+			self.owner.stateHandler:RemoveState(STATE.AttackingHeavy)
+		end)
+	end
 end
 
 function CombatHandler:EnableBlock()
@@ -367,12 +604,14 @@ end
 function CombatHandler:ApplyDamage(attackData)
 	local entity = attackData.entity
 	local blockable = attackData.blockable
+	local blockable360 = attackData.blockable360
 	local type = attackData.type
 	local knocksBack = attackData.knocksBack
 	local isAirCombo = attackData.isAirCombo
 	local abilityDamage = attackData.abilityDamage
 	local attackAction = attackData.attackAction
 	local stunTime = attackData.stunTime
+	local combo = attackData.combo
 
 	if not entity or not entity.combatHandler then
 		return
@@ -393,6 +632,7 @@ function CombatHandler:ApplyDamage(attackData)
 	local dmg = base * (crit and self.owner.stats.critMultiplier or 1)
 	local dmgType = self.owner.damageTypes[type]
 	local lookVector = self.owner.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector
+	local position = self.owner.character:FindFirstChild("HumanoidRootPart").Position
 
 	local newAttackData = {
 		damage = dmg,
@@ -402,12 +642,15 @@ function CombatHandler:ApplyDamage(attackData)
 		type = type,
 		crit = crit,
 		blockable = blockable,
+		blockable360 = blockable360,
 		knocksBack = knocksBack,
 		isAirCombo = isAirCombo,
 		hitType = "blunt",
 		attackerLookVector = lookVector,
+		attackerPosition = position,
 		attackerPhysicsHandler = self.owner.physicsHandler,
 		attackAction = attackAction,
+		combo = combo,
 	}
 
 	entity:TakeDamage(newAttackData)
@@ -424,6 +667,16 @@ function CombatHandler:TakeDamage(attackData)
 	elseif self.entityType == "Enemy" then
 		self.owner.animationHandler:StopAll()
 		self.owner:SetState(STATE.Stunned, attackData.stunTime)
+	end
+
+	if self.entityType == "Player" or self.entityType == "Dummy" then
+		if self.owner.stateHandler:HasState(STATE.Blocking) then
+			self.owner.stateHandler:RemoveState(STATE.Blocking)
+			clientEffects:FireAllClients(
+				"handleEffect",
+				{ target = self.owner.character, effectType = "block", activate = false }
+			)
+		end
 	end
 
 	self.owner.stateHandler:RemoveState(STATE.Attacking)
@@ -452,6 +705,7 @@ function CombatHandler:TakeDamage(attackData)
 		attackAction = attackData.attackAction,
 		knockBack = attackData.knocksBack,
 		attackerLookVector = attackData.attackerLookVector,
+		combo = attackData.combo,
 	})
 	if CollectionService:HasTag(attackerChar, "Player") then
 		clientEffects:FireClient(
@@ -490,7 +744,7 @@ function CombatHandler:TakeDamage(attackData)
 		if self.entityType == "Enemy" then
 			self.owner:Die()
 		end
-		self:Knock()
+		-- self:Knock()
 	end
 end
 
@@ -565,6 +819,33 @@ function CombatHandler:M1Slow(speed)
 	end)
 end
 
+function CombatHandler:M2Slow(speed)
+	self.owner.physicsHandler:SetWalkspeed(speed)
+	local m2SlowDelay = 1
+
+	-- Increment a unique ID to track this specific slowdown
+	self._m2SlowId = (self._m2SlowId or 0) + 1
+	local currentId = self._m2SlowId
+
+	task.defer(function()
+		while os.clock() - self.lastAttackHeavyTime < m2SlowDelay do
+			task.wait(0.05)
+			-- If a new M1Slow was triggered, abort this one
+			if self._m2SlowId ~= currentId then
+				return
+			end
+		end
+
+		-- Only resume walkspeed and fire if still valid
+		if self._m2SlowId == currentId then
+			self.owner.physicsHandler:SetWalkspeed(self.owner.stats.speed)
+			if self.entityType == "Player" then
+				attackHeavyDone:FireClient(Players:GetPlayerByUserId(self.owner.userId))
+			end
+		end
+	end)
+end
+
 function CombatHandler:handleAirCombo(targetEntity, attackAction)
 	local attackerRoot = self.owner.character:FindFirstChild("HumanoidRootPart")
 	local targetRoot = targetEntity.character:FindFirstChild("HumanoidRootPart")
@@ -572,9 +853,9 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 	local targetState = targetEntity.stateHandler
 
 	local function disableInAir()
-		self.owner.physicsHandler:ClearAirFloat(self.attackerFloat, self.targetFloat)
-		self.attackerFloat = nil
-		self.targetFloat = nil
+		self.owner.physicsHandler:ClearAirAligns({ self.selfAlign, self.targetAlign })
+		self.selfAlign = nil
+		self.targetAlign = nil
 
 		attackerState:RemoveState(STATE.InAirCombo)
 		targetState:RemoveState(STATE.InAirCombo)
@@ -593,7 +874,7 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 		self.lastAirAttackTime = os.clock()
 		attackerState:SetState(STATE.InAirCombo)
 		targetState:SetState(STATE.InAirCombo)
-		clientEffects:FireAllClients("flashStep", { target = self.owner.character, duration = 0.6 })
+		clientEffects:FireAllClients("flashStep", { target = self.owner.character, duration = 0.25 })
 		if self.entityType == "Player" then
 			inAir:FireClient(Players:GetPlayerByUserId(self.owner.userId), true)
 		end
@@ -603,18 +884,18 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 
 		-- Create floating constraints
 		local aAlign, aAlignPart, aAtt0, aAtt1 =
-			self.owner.physicsHandler:createAirFloat(self.owner.character, "airFloat", 100)
+			self.owner.physicsHandler:createAlignPart(self.owner.character, "airFloat", 100)
 		local tAlign, tAlignPart, tAtt0, tAtt1 =
-			targetEntity.physicsHandler:createAirFloat(targetEntity.character, "airFloat", 20)
+			targetEntity.physicsHandler:createAlignPart(targetEntity.character, "airFloat", 20)
 
 		-- Store for reuse
-		self.attackerFloat = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
-		self.targetFloat = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
+		self.selfAlign = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
+		self.targetAlign = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
 
-		task.delay(0.5, function()
-			self.attackerFloat.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 20, 0)
+		task.delay(0, function()
+			self.selfAlign.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 15, 0)
 		end)
-		self.targetFloat.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 20, 0)
+		self.targetAlign.alignPart.CFrame = targetRoot.CFrame * CFrame.new(0, 15, 0)
 
 		-- Cleanup timer
 		if self._airFloatCoroutine then
@@ -629,11 +910,13 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 		end)
 	elseif attackAction == "aircontinue" then
 		-- Offset: attacker moves slightly forward, target moves back
-		if self.attackerFloat and self.targetFloat then
+		if self.selfAlign and self.targetAlign then
+			self.selfAlign.align.Responsiveness = 20
+			self.targetAlign.align.Responsiveness = 20
 			print("continuing")
 			self.lastAirAttackTime = os.clock()
-			local aAlignPart = self.attackerFloat.alignPart
-			local tAlignPart = self.targetFloat.alignPart
+			local aAlignPart = self.selfAlign.alignPart
+			local tAlignPart = self.targetAlign.alignPart
 			local attackerLookVector = attackerRoot.CFrame.LookVector
 			local distance = 4
 
@@ -645,11 +928,11 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 			task.cancel(self._airFloatCoroutine)
 		end
 
-		if self.attackerFloat and self.targetFloat then
+		if self.selfAlign and self.targetAlign then
 			self.lastAirAttackTime = os.clock()
 
-			local tAlign = self.targetFloat.align
-			local tAlignPart = self.targetFloat.alignPart
+			local tAlign = self.targetAlign.align
+			local tAlignPart = self.targetAlign.alignPart
 			local attackerLookVector = attackerRoot.CFrame.LookVector
 			tAlign.Responsiveness = 100
 
@@ -668,7 +951,6 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 				{ targetEntity.character, self.owner.character }
 			)
 
-			-- Step 3: Use result
 			if groundPos then
 				tAlignPart.Position = Vector3.new(newXZPos.X, groundPos.Y + 3, newXZPos.Z)
 
@@ -681,11 +963,12 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 						clientEffects:FireAllClients("slamVFX", {
 							target = targetEntity.character,
 							position = Vector3.new(newXZPos.X, groundPos.Y, newXZPos.Z),
+							slamType = "downslam",
 						})
 					end
 				end)
 			else
-				tAlignPart.Position = newXZPos -- fallback if no ground detected
+				tAlignPart.Position = newXZPos
 			end
 
 			task.delay(0.5, function()
@@ -694,7 +977,7 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 		end
 	elseif attackAction == "airknockback" or attackAction == "knockback" then
 		self.lastAirAttackTime = os.clock()
-		local tAlignPart = self.targetFloat.alignPart
+		local tAlignPart = self.targetAlign.alignPart
 		local attackerLookVector = attackerRoot.CFrame.LookVector
 		local distance = 20
 

@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Player = Services.Players.LocalPlayer
 
 local tweenHelper = require(Services.ClientEffectsUtils.tweenHelper)

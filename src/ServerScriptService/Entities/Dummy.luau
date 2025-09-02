@@ -1,7 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
-local tableToString = require(Services.Modules:WaitForChild("tableToString"))
+local TableToString = require(Services.SharedUtils:WaitForChild("TableToString"))
 
 local CollisionManager = require(Services.EntityUtils.CollisionManager)
 local AnimationHandler = require(Services.EntityHandlers.AnimationHandler)
@@ -13,7 +13,7 @@ local SoulHandler = require(Services.EntityHandlers.SoulHandler)
 local StateHandler = require(Services.EntityHandlers.StateHandler)
 
 local DummyData = require(Services.Data.DummyData)
-local STATE = require(Services.Core.State)
+local STATE = require(Services.Enums.State)
 
 local Dummy = {}
 Dummy.__index = Dummy
@@ -128,7 +128,7 @@ function Dummy:Activate()
 		task.defer(function()
 			while self.character:FindFirstChildOfClass("Humanoid") do
 				self:Attack(false)
-				task.wait(0.1)
+				task.wait(0.05)
 			end
 		end)
 	elseif self.type == "blocking" then
@@ -148,11 +148,11 @@ function Dummy:Activate()
 					if self.stateHandler:HasState(STATE.InAirCombo) then
 						task.wait(0.1)
 					else
-						task.wait(1)
+						task.wait(1.1)
 					end
 				elseif self.combatHandler.combo >= self.combatHandler.maxCombo then
 					self:Attack(false)
-					task.wait(1)
+					task.wait(1.1)
 				end
 			end
 		end)
@@ -185,7 +185,15 @@ function Dummy:TakeDamage(attackData) --todo, enemyposition so we can make block
 	if self.combatHandler then
 		if self.stateHandler:HasState("blocking") then
 			if attackData.blockable then
-				self.combatHandler:BlockDamage()
+				if attackData.blockable360 then
+					self.combatHandler:BlockDamage()
+				else
+					if self.combatHandler:CanBlock180(attackData.attackerPosition) then
+						self.combatHandler:BlockDamage()
+					else
+						self.combatHandler:TakeDamage(attackData)
+					end
+				end
 			else
 				self.combatHandler:BreakBlock(attackData.attackAction, attackData.attackerLookVector)
 			end
@@ -233,7 +241,7 @@ function Dummy:CharDie() end
 
 function Dummy:ReturnDev(devCode)
 	if devCode == "state" then
-		print("SERVER STATES: " .. tableToString(self.stateHandler:GetAllStates()))
+		print("SERVER STATES: " .. TableToString(self.stateHandler:GetAllStates()))
 	end
 end
 return Dummy

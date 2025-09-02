@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local RunService = Services.RunService
 local ServerStorage = Services.ServerStorage
 
@@ -16,8 +16,8 @@ local StateHandler = require(Services.EntityHandlers.StateHandler)
 local clientEffects = Services.ClientEvents.clientEffects
 
 local EnemyData = require(Services.Data.EnemyData)
-local STATE = require(Services.Core.State)
-local DROP_TYPES = require(Services.Core.DropTypes)
+local STATE = require(Services.Enums.State)
+local DROP_TYPES = require(Services.Enums.DropTypes)
 local ATTACK_STUN_TIME = 0.5
 
 local Enemy = {}
@@ -423,9 +423,11 @@ function Enemy:MeleeAttack()
 				type = "attack",
 				crit = false,
 				blockable = true,
+				blockable360 = false,
 				hitType = "slash",
 				knocksBack = false,
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+				attackerPosition = self.character:FindFirstChild("HumanoidRootPart").Position,
 				attackerPhysicsHandler = self.physicsHandler,
 				attackAction = "default",
 			}
@@ -473,9 +475,11 @@ function Enemy:RangedAttack()
 				type = "attack",
 				crit = false,
 				blockable = true,
+				blockable360 = false,
 				knocksBack = false,
 				hitType = "blunt",
 				attackerLookVector = self.character:FindFirstChild("HumanoidRootPart").CFrame.LookVector,
+				attackerPosition = self.character:FindFirstChild("HumanoidRootPart").Position,
 				attackerPhysicsHandler = self.physicsHandler,
 				attackAction = "default",
 			}

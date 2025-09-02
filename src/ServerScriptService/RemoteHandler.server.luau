@@ -1,11 +1,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local PlayerHandler = require(Services.Server.PlayerHandler)
 
 local ServerEvents = Services.ServerEvents
 
 ServerEvents:WaitForChild("OnAttack").OnServerEvent:Connect(function(plr, spaceHeld)
 	PlayerHandler.OnAttack(plr, spaceHeld)
+end)
+ServerEvents:WaitForChild("OnAttackHeavy").OnServerEvent:Connect(function(plr, jumping)
+	PlayerHandler.OnAttackHeavy(plr, jumping)
 end)
 ServerEvents:WaitForChild("OnCast").OnServerEvent:Connect(function(plr, abilitySlot)
 	PlayerHandler.OnCast(plr, abilitySlot)

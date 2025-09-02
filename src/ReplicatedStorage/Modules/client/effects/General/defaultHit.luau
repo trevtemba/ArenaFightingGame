@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Debris = Services.DebrisService
 
 local animHelper = require(Services.ClientEffectsUtils.animHelper)
@@ -16,7 +16,7 @@ return function(argumentData)
 	local attackAction: string = argumentData.attackAction
 	local knockBack: boolean = argumentData.knockBack
 	local attackerLookVector: Vector3 = argumentData.attackerLookVector
-
+	local combo: number = argumentData.combo
 	if target and hitType then
 		local rootPart = target:FindFirstChild("HumanoidRootPart")
 		if rootPart then
@@ -87,7 +87,14 @@ return function(argumentData)
 						local chosenTrack = math.random(1, 2) == 1 and track1 or track2
 						animHelper:StopAll(target)
 						animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
-					elseif knockBack and (attackAction == "knockback" or attackAction == "cast") then
+					elseif
+						knockBack
+						and (
+							attackAction == "knockback"
+							or attackAction == "cast"
+							or attackAction == "attackHeavyGround"
+						)
+					then
 						local dustParticleAtt = Effects:FindFirstChild("DustTrail"):FindFirstChild("Attachment"):Clone()
 						local knockBackSound = soundHelper.PlaySound("knockback1", rootPart, nil)
 						windClone.Parent = rootPart
@@ -136,7 +143,15 @@ return function(argumentData)
 				animHelper:PlayAnimation(target, chosenTrack, 0.1, nil, nil, false, "Action3")
 			end
 			if hitType == "blunt" then
-				clone = Effects.CoreEffects.bluntHitEffect:Clone()
+				if combo then
+					if combo <= 2 then
+						clone = Effects.CoreEffects.bluntHitEffect:Clone()
+					elseif combo <= 5 then
+						clone = Effects.CoreEffects.bluntHitEffect2:Clone()
+					end
+				else
+					clone = Effects.CoreEffects.bluntHitEffect:Clone()
+				end
 				sound = Sounds:FindFirstChild("impact"):Clone()
 				outerTransparency = 0.1
 			elseif hitType == "slash" then

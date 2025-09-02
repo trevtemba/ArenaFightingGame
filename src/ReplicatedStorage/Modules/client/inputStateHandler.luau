@@ -1,6 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
-local STATE = require(Services.Core.State)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local STATE = require(Services.Enums.State)
 
 local InputStateHandler = {}
 InputStateHandler.__index = InputStateHandler
@@ -31,6 +31,7 @@ function InputStateHandler:CanDo(state)
 			STATE.Sprinting,
 			STATE.InAirCombo,
 			STATE.Attacking,
+			STATE.AttackingHeavy,
 			STATE.Casting,
 			STATE.Blocking,
 			STATE.Dashing,
@@ -61,7 +62,15 @@ function InputStateHandler:CanDo(state)
 		}
 	elseif state == STATE.Attacking then
 		blockedStates = {
+			STATE.Blocking,
 			STATE.Casting,
+			STATE.AttackingHeavy,
+		}
+	elseif state == STATE.AttackingHeavy then
+		blockedStates = {
+			STATE.Casting,
+			STATE.Attacking,
+			STATE.AttackingHeavy,
 		}
 	elseif state == STATE.Casting then
 		blockedStates = {
@@ -76,6 +85,8 @@ function InputStateHandler:CanDo(state)
 	elseif state == STATE.Jumping then
 		blockedStates = {
 			STATE.Jumping,
+			STATE.Attacking,
+			STATE.AttackingHeavy,
 			STATE.Casting,
 			STATE.Stunned,
 			STATE.Ragdolled,
@@ -88,6 +99,11 @@ end
 -- Enables an input state
 function InputStateHandler:SetState(state)
 	self.states[state] = true
+end
+
+-- Enables an input state
+function InputStateHandler:GetState(state)
+	return self.states[state]
 end
 
 -- Disables an input state

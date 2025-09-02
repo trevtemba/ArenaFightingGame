@@ -1,5 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local RaycastHelper = require(Services.SharedUtils.RaycastHelper)
+local TableAttributes = require(Services.SharedUtils.TableAttributes)
 local Players = Services.Players
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
@@ -9,8 +11,8 @@ local InputStateHandler = require(Services.Client.inputStateHandler)
 local camModule = require(Services.Client:WaitForChild("cameraModule"))
 local animationModule = require(Services.Client:WaitForChild("animationModule"))
 local physicsModule = require(Services.Client:WaitForChild("physicsModule"))
-local STATE = require(Services.Core.State)
-local tableToString = require(Services.Modules.tableToString)
+local STATE = require(Services.Enums.State)
+local TableToString = require(Services.SharedUtils.TableToString)
 
 local ClientEvents = Services.ClientEvents
 local ServerEvents = Services.ServerEvents
@@ -25,6 +27,7 @@ local FreecamContext = PlayerGui:WaitForChild("Freecammed")
 
 local switchContext = ClientEvents:WaitForChild("switchContext")
 local attackDone = ClientEvents:WaitForChild("attackDone")
+local attackHeavyDone = ClientEvents:WaitForChild("attackHeavyDone")
 local castDone = ClientEvents:WaitForChild("castDone")
 local soulCastDone = ClientEvents:WaitForChild("soulCastDone")
 local inAir = ClientEvents:WaitForChild("inAir")
@@ -35,7 +38,7 @@ local mouse = player:GetMouse()
 local unitRay = camera:ScreenPointToRay(mouse.X, mouse.Y)
 
 local DASH_COOLDOWN = 1
-local DEFAULT_JUMP_POWER = 60
+local DEFAULT_JUMP_POWER = 80
 
 local debounces = {
 	attack = false,
@@ -140,21 +143,21 @@ local function updateSprinting()
 		end
 		if inputStateHandler:IsHeld("forward") then
 			animationModule.Play(directions.forward.anim, 0.1, true, "Movement")
-			local walkRemote = ServerEvents:FindFirstChild("OnWalk")
-			if walkRemote then
-				walkRemote:FireServer("forward")
-			end
+			-- local walkRemote = ServerEvents:FindFirstChild("OnWalk")
+			-- if walkRemote then
+			-- 	walkRemote:FireServer("forward")
+			-- end
 		end
 	end
 end
 
 CoreContext:WaitForChild("Jump").Pressed:Connect(function()
+	inputStateHandler:HeldOn("space")
 	if processDebounce("dash", 0.2) or not inputStateHandler:CanDo(STATE.Jumping) then
 		return
 	end
-
+	inputStateHandler:SetState(STATE.Jumping)
 	--setCanJump(false)
-	inputStateHandler:HeldOn("space")
 end)
 
 CoreContext:WaitForChild("Jump").Released:Connect(function()
@@ -196,7 +199,7 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
-	if processDebounce("attack", 0.2) or not inputStateHandler:CanDo(STATE.Attacking) then
+	if processDebounce("attack", 0.05) or not inputStateHandler:CanDo(STATE.Attacking) then
 		return
 	end
 	inputStateHandler:SetState(STATE.Attacking)
@@ -210,23 +213,44 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 	end
 end)
 
-CombatContext.Block.Pressed:Connect(function()
-	print("pressed f")
-	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
-		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))
+CombatContext:WaitForChild("AttackHeavy").Pressed:Connect(function()
+	if processDebounce("attackHeavy", 0.2) or not inputStateHandler:CanDo(STATE.AttackingHeavy) then
 		return
 	end
-	inputStateHandler:SetState(STATE.Blocking)
+	inputStateHandler:SetState(STATE.AttackingHeavy)
+	updateSprinting()
+	setCanJump(false)
 
+	if inputStateHandler:GetState(STATE.Jumping) and inputStateHandler:GetState(STATE.Dashing) then
+		physicsModule.StopDash()
+	end
+	local remote = ServerEvents:WaitForChild("OnAttackHeavy")
+	if remote then
+		remote:FireServer(inputStateHandler:GetState(STATE.Jumping))
+	end
+end)
+
+local function tryBlock()
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		print("pressing block")
 		remote:FireServer(true)
 	end
+end
+CombatContext.Block.Pressed:Connect(function()
+	print("pressed f")
+	inputStateHandler:HeldOn("f")
+	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
+		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))
+		return
+	end
+	inputStateHandler:SetState(STATE.Blocking)
+	tryBlock()
 end)
 
 CombatContext:WaitForChild("Block").Released:Connect(function()
 	inputStateHandler:RemoveState(STATE.Blocking)
+	inputStateHandler:HeldOff("f")
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
 		remote:FireServer(false)
@@ -234,36 +258,66 @@ CombatContext:WaitForChild("Block").Released:Connect(function()
 end)
 
 CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
-	if
-		processDebounce("cast1", player.Character:GetAttribute("abilityCd1"))
-		or not inputStateHandler:CanDo(STATE.Casting)
-	then
+	local slot = 1 -- placeholder for when i add all hotbar actions
+	local abilityInfo = TableAttributes.Get(player.Character, string.format("ability%dInfo", slot))
+	if processDebounce("cast1", 0.1) or not inputStateHandler:CanDo(STATE.Casting) then
 		return
 	end
-	inputStateHandler:SetState(STATE.Casting)
-	hotbar.Cast({ abilitySlot = 1 })
-	hotbar.Cooldown({ cooldown = player.Character:GetAttribute("abilityCd1"), abilitySlot = 1 })
-	local remote = ServerEvents:FindFirstChild("OnCast")
-	if remote then
-		print("casting 1")
-		remote:FireServer(1)
+	local targetType = abilityInfo.targetType
+	if targetType == "lockOn" then
+		local character, hit = RaycastHelper:GetMouseTarget(500) -- max distance (gonna sanity check on server)
+		if character then
+			local remote = ServerEvents:FindFirstChild("OnCast")
+			if remote then
+				print("casting 1", character.Name)
+				remote:FireServer({
+					target = character,
+					hitPosition = hit.Position,
+				})
+			end
+		end
+	else
+		inputStateHandler:SetState(STATE.Casting)
+		hotbar.Cast({ abilitySlot = 1 })
+		hotbar.Cooldown({ cooldown = abilityInfo.cooldown, abilitySlot = 1 })
+		local remote = ServerEvents:FindFirstChild("OnCast")
+		if remote then
+			print("casting 1")
+			remote:FireServer(1)
+		end
 	end
 end)
 
 CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
-	if
-		processDebounce("soulAbility", player.Character:GetAttribute("soulAbilityCd"))
-		or not inputStateHandler:CanDo(STATE.SoulCasting)
-	then
+	local soulAbilityInfo = TableAttributes.Get(player.Character, "soulAbilityInfo")
+	if processDebounce("soulAbility", 0.1) or not inputStateHandler:CanDo(STATE.SoulCasting) then
 		return
 	end
-	inputStateHandler:SetState(STATE.SoulCasting)
-	hotbar.SoulCast()
-	hotbar.SoulCooldown({ cooldown = player.Character:GetAttribute("soulAbilityCd") })
-	local remote = ServerEvents:FindFirstChild("OnSoulCast")
-	if remote then
-		print("casting soul")
-		remote:FireServer({ Direction = unitRay.Direction })
+	local targetType = soulAbilityInfo.targetType
+	if targetType == "lockOn" then
+		local character, hit = RaycastHelper:GetMouseTarget(500) -- max distance (gonna sanity check on server)
+		if character then
+			inputStateHandler:SetState(STATE.SoulCasting)
+			hotbar.SoulCast()
+			hotbar.SoulCooldown({ cooldown = soulAbilityInfo.cooldown })
+			local remote = ServerEvents:FindFirstChild("OnSoulCast")
+			if remote then
+				print("casting soul on", character.Name)
+				remote:FireServer({
+					target = character,
+					hitPosition = hit.Position,
+				})
+			end
+		end
+	else
+		inputStateHandler:SetState(STATE.SoulCasting)
+		hotbar.SoulCast()
+		hotbar.SoulCooldown({ cooldown = soulAbilityInfo.cooldown })
+		local remote = ServerEvents:FindFirstChild("OnSoulCast")
+		if remote then
+			print("casting soul")
+			remote:FireServer({ origin = unitRay.Origin, direction = unitRay.Direction.Unit })
+		end
 	end
 end)
 
@@ -301,7 +355,7 @@ CoreContext:WaitForChild("Shift").Released:Connect(function()
 end)
 
 CoreContext:WaitForChild("stateShow").Pressed:Connect(function()
-	print("CLIENT STATES: " .. tableToString(inputStateHandler:GetAllStates()))
+	print("CLIENT STATES: " .. TableToString(inputStateHandler:GetAllStates()))
 	local remote = ServerEvents:FindFirstChild("OnDev")
 	if remote then
 		remote:FireServer("state")
@@ -345,6 +399,10 @@ local function setupMovementActionShiftLocked(direction, data)
 			end
 			lastForwardTapTime = currentTime
 
+			if not inputStateHandler:HasState(STATE.Walking) then
+				inputStateHandler:SetState(STATE.Walking)
+			end
+
 			inputStateHandler:HeldOn("forward")
 			updateSprinting()
 
@@ -352,10 +410,10 @@ local function setupMovementActionShiftLocked(direction, data)
 				inputStateHandler.walking = "forward"
 				animationModule.Play(data.anim, 0.1, true, "Movement")
 
-				local remote = ServerEvents:FindFirstChild("OnWalk")
-				if remote then
-					remote:FireServer("forward")
-				end
+				-- local remote = ServerEvents:FindFirstChild("OnWalk")
+				-- if remote then
+				-- 	remote:FireServer("forward")
+				-- end
 			end
 		end)
 
@@ -366,6 +424,7 @@ local function setupMovementActionShiftLocked(direction, data)
 
 			if inputStateHandler.walking == "forward" then
 				inputStateHandler.walking = nil
+				inputStateHandler:RemoveState(STATE.Walking)
 			end
 
 			animationModule.Stop(data.anim)
@@ -377,18 +436,23 @@ local function setupMovementActionShiftLocked(direction, data)
 				return
 			end
 
+			if not inputStateHandler:HasState(STATE.Walking) then
+				inputStateHandler:SetState(STATE.Walking)
+			end
+
 			inputStateHandler:HeldOn(direction)
 			inputStateHandler.walking = direction
 			animationModule.Play(data.anim, 0.1, true, "Movement")
 
-			local remote = ServerEvents:FindFirstChild("OnWalk")
-			if remote then
-				remote:FireServer(direction)
-			end
+			-- local remote = ServerEvents:FindFirstChild("OnWalk")
+			-- if remote then
+			-- 	remote:FireServer(direction)
+			-- end
 		end)
 
 		inputAction.Released:Connect(function()
 			if inputStateHandler.walking == direction then
+				inputStateHandler:RemoveState(STATE.Walking)
 				inputStateHandler.walking = nil
 			end
 
@@ -421,12 +485,15 @@ local function setupMovementActionFreecammed(direction, data)
 
 			if not inputStateHandler:HasState(STATE.Sprinting) then
 				inputStateHandler.walking = "forward"
-				animationModule.Play(data.anim, 0.1, true, "Movement")
-
-				local remote = ServerEvents:FindFirstChild("OnWalk")
-				if remote then
-					remote:FireServer("forward")
+				if not inputStateHandler:HasState(STATE.Walking) then
+					inputStateHandler:SetState(STATE.Walking)
+					animationModule.Play(data.anim, 0.1, true, "Movement")
 				end
+
+				-- local remote = ServerEvents:FindFirstChild("OnWalk")
+				-- if remote then
+				-- 	remote:FireServer("forward")
+				-- end
 			end
 			--print(activeKeyCount)
 		end)
@@ -443,6 +510,7 @@ local function setupMovementActionFreecammed(direction, data)
 
 			if activeKeyCount == 0 then
 				updateSprinting()
+				inputStateHandler:RemoveState(STATE.Walking)
 				animationModule.Stop(data.anim)
 			end
 			sprintingFromDoubleTap = false
@@ -455,6 +523,10 @@ local function setupMovementActionFreecammed(direction, data)
 				return
 			end
 
+			if not inputStateHandler:HasState(STATE.Walking) then
+				inputStateHandler:SetState(STATE.Walking)
+				animationModule.Play("walkForward", 0.1, true, "Movement")
+			end
 			activeKeyCount += 1
 
 			--print(activeKeyCount)
@@ -467,6 +539,7 @@ local function setupMovementActionFreecammed(direction, data)
 
 			if activeKeyCount == 0 then
 				updateSprinting()
+				inputStateHandler:RemoveState(STATE.Walking)
 				animationModule.Stop("walkForward")
 			end
 		end)
@@ -494,18 +567,34 @@ end)
 
 attackDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Attacking)
+	if inputStateHandler:IsHeld("f") then
+		tryBlock()
+	end
+	setCanJump(true)
+	print("client can do movement")
+end)
+
+attackHeavyDone.OnClientEvent:Connect(function()
+	inputStateHandler:RemoveState(STATE.AttackingHeavy)
+	if inputStateHandler:IsHeld("f") then
+		tryBlock()
+	end
 	setCanJump(true)
 	print("client can do movement")
 end)
 
 castDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.Casting)
+	if inputStateHandler:IsHeld("f") then
+		tryBlock()
+	end
 	setCanJump(true)
 end)
 
 soulCastDone.OnClientEvent:Connect(function()
 	inputStateHandler:RemoveState(STATE.SoulCasting)
 	setCanJump(true)
+	print("done soulcasting")
 end)
 
 inAir.OnClientEvent:Connect(function(isActive)
@@ -544,6 +633,9 @@ if isCharLoaded:Invoke() then
 			setCanJump(false)
 		else
 			inputStateHandler:RemoveState(STATE.Stunned)
+			if inputStateHandler:IsHeld("f") then
+				tryBlock()
+			end
 			setCanJump(true)
 		end
 	end)

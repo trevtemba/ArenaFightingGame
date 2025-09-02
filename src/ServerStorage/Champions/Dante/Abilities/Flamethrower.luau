@@ -1,12 +1,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Players = Services.Players
 
 local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
-local STATE = require(Services.Core.State)
+local STATE = require(Services.Enums.State)
 
 local castDone = Services.ClientEvents.castDone
 local clientEffects = Services.ClientEvents.clientEffects
+local clientAbilityEffects = Services.ClientEvents.clientAbilityEffects
 
 local Flamethrower = {}
 
@@ -14,9 +15,11 @@ Flamethrower.Config = {
 	name = "Seismic Slam",
 	type = "Damage",
 	blockable = true,
+	blockable360 = true,
 	knocksBack = false,
 	duration = 2,
 	damage = 25,
+	targetType = "free",
 	hitboxType = "cone",
 	hitboxParams = {
 		range = 50,
@@ -26,6 +29,7 @@ Flamethrower.Config = {
 }
 
 function Flamethrower:Cast(combatHandler, animName)
+	clientEffects:FireAllClients("initiate", { target = combatHandler.owner.character, initiateType = "cast" })
 	local attacker = combatHandler.owner
 
 	combatHandler.owner.animationHandler:Play(animName, 0.25, 3, 1, false, "Action3")
@@ -39,8 +43,9 @@ function Flamethrower:Cast(combatHandler, animName)
 			return
 		end
 
-		clientEffects:FireAllClients(
+		clientAbilityEffects:FireAllClients(
 			"flameThrower",
+			"champ",
 			{ target = combatHandler.owner.character, duration = self.Config.duration }
 		)
 		for tick = 1, 4 do
@@ -53,6 +58,7 @@ function Flamethrower:Cast(combatHandler, animName)
 					combatHandler:ApplyDamage({
 						entity = entity,
 						blockable = self.Config.blockable,
+						blockable360 = self.Config.blockable360,
 						type = "ability",
 						knocksBack = self.Config.knocksBack,
 						isAirCombo = nil,

@@ -1,22 +1,24 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CameraShaker = require(ReplicatedStorage.Modules.client.cameraShaker.CameraShaker)
+local Workspace = game:GetService("Workspace")
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local CameraShaker = require(Services.Client:WaitForChild("cameraShaker"):WaitForChild("CameraShaker"))
 
-local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local ClientEvents = RemoteEvents:WaitForChild("Client")
+local ClientEvents = Services.ClientEvents
 
 local attackEvent = ClientEvents:WaitForChild("attack")
 local sprintEvent = ClientEvents:WaitForChild("sprint")
 
-local TweenService = game:GetService("TweenService")
-local camera = workspace.CurrentCamera
+local TweenService = Services.TweenService
+local camera = Services.Workspace.CurrentCamera
 
-local player = game:GetService("Players").LocalPlayer
+local player = Services.Players.LocalPlayer
 
 local originalFOV = 70
-local fovChange = 5
+local fovChange = 10
 local resetDelay = 1
-local returnTweenTime = 0.4
-local zoomTweenTime = 0.25
+local returnTweenTime = 0.5
+local zoomTweenTime = 0.5
 
 local lastAttackTime = 0
 local resetScheduled = false
@@ -29,7 +31,7 @@ local function resetFOV()
 		end
 		fovTween = TweenService:Create(
 			camera,
-			TweenInfo.new(returnTweenTime, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+			TweenInfo.new(returnTweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 			{ FieldOfView = originalFOV }
 		)
 		fovTween:Play()
@@ -83,19 +85,19 @@ attackEvent.OnClientEvent:Connect(function(effectType)
 	end
 end)
 
--- sprintEvent.OnClientEvent:Connect(function(sprintState)
--- 	if sprintState == "start" then
--- 		fovTween = TweenService:Create(
--- 			camera,
--- 			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
--- 			{ FieldOfView = originalFOV + fovChange }
--- 		)
--- 		fovTween:Play()
+sprintEvent.OnClientEvent:Connect(function(sprintState)
+	if sprintState == "start" then
+		fovTween = TweenService:Create(
+			camera,
+			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ FieldOfView = originalFOV + fovChange }
+		)
+		fovTween:Play()
 
--- 		-- camShake:Start()
--- 		-- camShake:ShakeSustain(CameraShaker.Presets.Impact)
--- 	elseif sprintState == "stop" then
--- 		resetFOV()
--- 		camShake:StopSustained(0.1)
--- 	end
--- end)
+		-- camShake:Start()
+		-- camShake:ShakeSustain(CameraShaker.Presets.Impact)
+	elseif sprintState == "stop" then
+		resetFOV()
+		-- camShake:StopSustained(0.1)
+	end
+end)

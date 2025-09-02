@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local CollectionService = Services.CollectionService
 
 local CollisionManager = require(Services.EntityUtils.CollisionManager)
@@ -19,7 +19,6 @@ local gameInstance = Game:GetInstance()
 local MAX_PLAYERS = 1
 local CHAMPION_PICK_TIME = 5
 local TRAINING_MODE = true
-
 local availableChampions = { "Dante" }
 
 local selectedChampions = {}

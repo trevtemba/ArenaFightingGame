@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Game = require(Services.Server.Game)
 
 local PlayerHandler = {}
@@ -8,6 +8,13 @@ function PlayerHandler.OnAttack(plr: Player, spaceHeld)
 	local playerObj = Game:GetInstance():GetPlayer(plr)
 	if playerObj then
 		playerObj:Attack(spaceHeld)
+	end
+end
+
+function PlayerHandler.OnAttackHeavy(plr: Player, jumping)
+	local playerObj = Game:GetInstance():GetPlayer(plr)
+	if playerObj then
+		playerObj:AttackHeavy(jumping)
 	end
 end
 

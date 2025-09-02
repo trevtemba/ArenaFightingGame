@@ -1,9 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Services = require(ReplicatedStorage.Modules.core.Services)
+local Services = require(ReplicatedStorage.Modules.Shared.Services)
 
-local tableToString = require(Services.Modules:WaitForChild("tableToString"))
+local TableToString = require(Services.SharedUtils:WaitForChild("TableToString"))
 
 local Game = require(Services.Server:WaitForChild("Game"))
+local TableAttributes = require(Services.SharedUtils.TableAttributes)
 local CollisionManager = require(Services.EntityUtils.CollisionManager)
 local AnimationHandler = require(Services.EntityHandlers.AnimationHandler)
 local UIHandler = require(Services.EntityHandlers.UIHandler)
@@ -51,6 +52,7 @@ function Player.new(plr, champion, rig, soulType)
 		magicDmg = champion.magicDmg,
 		attackSpeed = champion.attackSpeed,
 		attackCooldown = champion.attackCooldown,
+		attackHeavyCooldown = champion.attackHeavyCooldown,
 		pierce = champion.pierce,
 		critChance = champion.critChance,
 		critMultiplier = champion.critMultiplier,
@@ -125,7 +127,11 @@ function Player:RecalculateStats()
 		end
 	end
 	for slot, cooldown in ipairs(self.stats.abilityCooldowns) do
-		self.character:SetAttribute("abilityCd" .. tostring(slot), cooldown)
+		local abilityInfo = {
+			cooldown = cooldown,
+			targetType = self.abilities[slot].Config.targetType,
+		}
+		TableAttributes.Set(self.character, string.format("ability%dInfo", slot), abilityInfo)
 	end
 end
 
@@ -141,6 +147,12 @@ end
 function Player:Attack(spaceHeld)
 	if self.combatHandler then
 		self.combatHandler:HandleAttackInput(spaceHeld)
+	end
+end
+
+function Player:AttackHeavy(jumping)
+	if self.combatHandler then
+		self.combatHandler:HandleAttackHeavyInput(jumping)
 	end
 end
 
@@ -192,7 +204,15 @@ function Player:TakeDamage(attackData) --todo, enemyposition so we can make bloc
 	if self.combatHandler then
 		if self.stateHandler:HasState("blocking") then
 			if attackData.blockable then
-				self.combatHandler:BlockDamage()
+				if attackData.blockable360 then
+					self.combatHandler:BlockDamage()
+				else
+					if self.combatHandler:CanBlock180(attackData.attackerPosition) then
+						self.combatHandler:BlockDamage()
+					else
+						self.combatHandler:TakeDamage(attackData)
+					end
+				end
 			else
 				self.combatHandler:BreakBlock(attackData.attackAction, attackData.attackerLookVector)
 			end
@@ -286,7 +306,7 @@ function Player:CharDie() end
 
 function Player:ReturnDev(devCode)
 	if devCode == "state" then
-		print("SERVER STATES: " .. tableToString(self.stateHandler:GetAllStates()))
+		print("SERVER STATES: " .. TableToString(self.stateHandler:GetAllStates()))
 	end
 end
 return Player

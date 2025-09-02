@@ -6,7 +6,7 @@ return {
 		attackDmg = 20,
 		magicDmg = 20,
 		attackSpeed = 1,
-		attackCooldown = 0.45,
+		attackCooldown = 0.35,
 		critChance = 0.25,
 		critMultiplier = 1.75,
 		pierce = 0,
