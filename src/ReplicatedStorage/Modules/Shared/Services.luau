@@ -37,6 +37,10 @@ end
 Services.Shared = Services.Modules:WaitForChild("Shared")
 Services.SharedUtils = Services.Shared:WaitForChild("Utils")
 Services.Enums = Services.Shared.Enums
+Services.Packages = Services.ReplicatedStorage:WaitForChild("Packages")
+
+-- Packages
+Services.Trove = Services.Packages:WaitForChild("Trove")
 
 Services.ClientEvents = Services.ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Client")
 Services.ServerEvents = Services.ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("Server")

@@ -244,4 +244,42 @@ function Dummy:ReturnDev(devCode)
 		print("SERVER STATES: " .. TableToString(self.stateHandler:GetAllStates()))
 	end
 end
+
+function Dummy:Destroy()
+	if self.animationHandler and self.animationHandler.Destroy then
+		self.animationHandler:Destroy()
+		self.animationHandler = nil
+	end
+
+	if self.uiHandler and self.uiHandler.Destroy then
+		self.uiHandler:Destroy()
+		self.uiHandler = nil
+	end
+
+	if self.combatHandler and self.combatHandler.Destroy then
+		self.combatHandler:Destroy()
+		self.combatHandler = nil
+	end
+
+	if self.movementHandler and self.movementHandler.Destroy then
+		self.movementHandler:Destroy()
+		self.movementHandler = nil
+	end
+
+	if self.physicsHandler and self.physicsHandler.Destroy then
+		self.physicsHandler:Destroy()
+		self.physicsHandler = nil
+	end
+
+	if self.stateHandler and self.stateHandler.Destroy then
+		self.stateHandler:Destroy()
+		self.stateHandler = nil
+	end
+
+	if self.soulHandler and self.soulHandler.Destroy then
+		self.soulHandler:Destroy()
+		self.soulHandler = nil
+	end
+end
+
 return Dummy

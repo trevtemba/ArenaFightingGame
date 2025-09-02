@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsHandler = require(script.Parent.PhysicsHandler)
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
+local Trove = require(Services.Trove)
 
 local RagdollHandler = require(Services.EntityUtils.RagdollHandler)
 local HitboxHandler = require(Services.EntityUtils.HitboxHandler)
@@ -55,10 +56,13 @@ function CombatHandler.new(owner, entityType)
 	self._attackSessionId = nil
 	self._castSessionId = nil
 	self._blockBreakSessionId = nil
-	self._airFloatCoroutine = nil
 	self._m1SlowId = nil
 	self._m2SlowId = nil
 	self._stunSessionId = nil
+
+	self._trove = Trove.new()
+	self._airFloatTrove = nil
+	self._airFloatCoroutine = nil
 	return self
 end
 
@@ -423,6 +427,9 @@ function CombatHandler:AttackHeavy(jumping)
 				-- Listen for landing
 				local landedConn
 				landedConn = game:GetService("RunService").Heartbeat:Connect(function()
+					if not self.owner.alive then
+						landedConn:Disconnect()
+					end
 					if hrp.Position.Y <= groundPos.Y + 4 then
 						PhysicsHandler:ClearAirAligns({ self.selfAlign })
 						landedConn:Disconnect()
@@ -852,8 +859,14 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 	local attackerState = self.owner.stateHandler
 	local targetState = targetEntity.stateHandler
 
+	-- mini trove for cleanup
+	if not self._airFloatTrove then
+		self._airFloatTrove = Trove.new()
+	end
+
 	local function disableInAir()
-		self.owner.physicsHandler:ClearAirAligns({ self.selfAlign, self.targetAlign })
+		-- self.owner.physicsHandler:ClearAirAligns({ self.selfAlign, self.targetAlign })
+		self._airFloatTrove:Clean()
 		self.selfAlign = nil
 		self.targetAlign = nil
 
@@ -888,9 +901,19 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 		local tAlign, tAlignPart, tAtt0, tAtt1 =
 			targetEntity.physicsHandler:createAlignPart(targetEntity.character, "airFloat", 20)
 
-		-- Store for reuse
-		self.selfAlign = { align = aAlign, alignPart = aAlignPart, att0 = aAtt0, att1 = aAtt1 }
-		self.targetAlign = { align = tAlign, alignPart = tAlignPart, att0 = tAtt0, att = tAtt1 }
+		-- Store for reuse (tracked in Trove)
+		self.selfAlign = {
+			align = self._airFloatTrove:Add(aAlign),
+			alignPart = self._airFloatTrove:Add(aAlignPart),
+			att0 = self._airFloatTrove:Add(aAtt0),
+			att1 = self._airFloatTrove:Add(aAtt1),
+		}
+		self.targetAlign = {
+			align = self._airFloatTrove:Add(tAlign),
+			alignPart = self._airFloatTrove:Add(tAlignPart),
+			att0 = self._airFloatTrove:Add(tAtt0),
+			att1 = self._airFloatTrove:Add(tAtt1),
+		}
 
 		task.delay(0, function()
 			self.selfAlign.alignPart.CFrame = attackerRoot.CFrame * CFrame.new(0, 15, 0)
@@ -956,6 +979,9 @@ function CombatHandler:handleAirCombo(targetEntity, attackAction)
 
 				local connection
 				connection = game:GetService("RunService").Heartbeat:Connect(function()
+					if not targetEntity.alive then
+						connection:Disconnect()
+					end
 					local root = targetEntity.character:FindFirstChild("HumanoidRootPart")
 					if root and root.Position.Y <= tAlignPart.Position.Y + 1 then -- adjust tolerance
 						connection:Disconnect()
@@ -1001,6 +1027,40 @@ function CombatHandler:Knock()
 	else
 		self.owner:SetState(STATE.Knocked)
 	end
+end
+
+function CombatHandler:Destroy()
+	if self._trove then
+		self._trove:Destroy()
+		self._trove = nil
+	end
+
+	if self.selfAlign then
+		self.owner.physicsHandler:ClearAirAligns({ self.selfAlign })
+		self.selfAlign = nil
+	end
+	if self.targetAlign then
+		self.owner.physicsHandler:ClearAirAligns({ self.targetAlign })
+		self.targetAlign = nil
+	end
+
+	if self._airFloatCoroutine then
+		task.cancel(self._airFloatCoroutine)
+		self._airFloatCoroutine = nil
+	end
+
+	self._attackSessionId = nil
+	self._castSessionId = nil
+	self._blockBreakSessionId = nil
+	self._m1SlowId = nil
+	self._m2SlowId = nil
+	self._stunSessionId = nil
+
+	self.owner = nil
+	self.humanoid = nil
+
+	-- Break metatable so Lua GC can clean up
+	setmetatable(self, nil)
 end
 
 return CombatHandler
