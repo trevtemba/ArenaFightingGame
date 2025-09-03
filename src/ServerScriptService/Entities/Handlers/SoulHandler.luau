@@ -138,18 +138,15 @@ function SoulHandler:Destroy()
 		self.instanceObjects = nil
 	end
 
-	-- Destroy soul rig
 	if self.character and self.character.Parent then
 		self.character:Destroy()
 	end
 	self.character = nil
 
-	-- Clear soulAbilityInfo attribute from player’s character
 	if self.owner and self.owner.character then
 		TableAttributes.Set(self.owner.character, "soulAbilityInfo", nil)
 	end
 
-	-- Reset fields
 	self.owner = nil
 	self.type = nil
 	self.cooldown = nil

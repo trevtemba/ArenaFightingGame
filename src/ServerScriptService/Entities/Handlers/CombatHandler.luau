@@ -748,6 +748,11 @@ function CombatHandler:TakeDamage(attackData)
 	print(string.format("%s took %d damage", self.owner.name, totalDamage))
 
 	if self.owner.currentHP <= 0 then
+		clientEffects:FireClient(
+			Players:GetPlayerFromCharacter(attackerChar),
+			"charDeath",
+			{ target = targetChar, deathFX = "default" }
+		)
 		if self.entityType == "Enemy" then
 			self.owner:Die()
 		end

@@ -46,4 +46,12 @@ function StateHandler:GetAllStates()
 	return list
 end
 
+function StateHandler:Destroy()
+	self:ClearStates()
+
+	self.states = nil
+
+	setmetatable(self, nil)
+end
+
 return StateHandler

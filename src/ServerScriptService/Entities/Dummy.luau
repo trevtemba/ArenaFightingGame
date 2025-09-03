@@ -280,6 +280,7 @@ function Dummy:Destroy()
 		self.soulHandler:Destroy()
 		self.soulHandler = nil
 	end
+	self.character:Destroy()
 end
 
 return Dummy

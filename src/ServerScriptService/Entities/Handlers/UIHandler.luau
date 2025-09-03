@@ -80,4 +80,21 @@ function UIHandler:CreateDividers()
 	end
 end
 
+function UIHandler:Destroy()
+	if self.healthBarTween then
+		self.healthBarTween:Cancel()
+		self.healthBarTween = nil
+	end
+
+	if self.billBoardGui and self.billBoardGui.Parent then
+		self.billBoardGui:Destroy()
+	end
+	self.billBoardGui = nil
+	self.dividers = nil
+
+	self.owner = nil
+
+	setmetatable(self, nil)
+end
+
 return UIHandler
