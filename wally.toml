@@ -6,3 +6,8 @@ realm = "shared"
 
 [dependencies]
 Trove = "sleitnick/trove@1.5.1"
+# Not used yet. Signal is for state-change notification (so consumers can react
+# instead of being told imperatively at every call site); Promise is for one-shot
+# async that can fail or be cancelled, like remote round-trips and ability chains.
+Signal = "sleitnick/signal@2.0.3"
+Promise = "evaera/promise@4.0.0"

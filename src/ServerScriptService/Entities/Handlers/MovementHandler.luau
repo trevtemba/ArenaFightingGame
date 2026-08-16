@@ -9,6 +9,7 @@ local MovementHandler = {}
 MovementHandler.__index = MovementHandler
 
 local STATE = require(Services.Enums:WaitForChild("State"))
+local ActionRules = require(Services.Shared:WaitForChild("ActionRules"))
 
 function MovementHandler.new(playerObj)
 	local self = setmetatable({}, MovementHandler)
@@ -25,31 +26,15 @@ function MovementHandler.new(playerObj)
 end
 
 function MovementHandler:CanSprint()
-	local stateHandler = self.owner.stateHandler
+	local blockedStates = ActionRules.For(ActionRules.server, STATE.Sprinting)
 
-	local blockedStates = {
-		STATE.Attacking,
-		STATE.Casting,
-		STATE.Blocking,
-		STATE.Dashing,
-		STATE.Stunned,
-		STATE.Ragdolled,
-	}
-
-	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+	return not self.owner.stateHandler:HasAny(blockedStates) and self.owner.alive
 end
 
 function MovementHandler:CanDash()
-	local stateHandler = self.owner.stateHandler
+	local blockedStates = ActionRules.For(ActionRules.server, STATE.Dashing)
 
-	local blockedStates = {
-		STATE.Attacking,
-		STATE.Casting,
-		STATE.Stunned,
-		STATE.Ragdolled,
-	}
-
-	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+	return not self.owner.stateHandler:HasAny(blockedStates) and self.owner.alive
 end
 
 function MovementHandler:StartSprint()
@@ -76,11 +61,8 @@ function MovementHandler:HandleDash(direction)
 	if not self.humanoid and not self:CanDash() then
 		return
 	end
-	self.owner.stateHandler:SetState(STATE.Dashing)
+	self.owner.stateHandler:SetFor(STATE.Dashing, 0.5)
 	clientEffects:FireAllClients("dash", { target = self.character, direction = direction })
-	task.delay(0.5, function()
-		self.owner.stateHandler:RemoveState(STATE.Dashing)
-	end)
 end
 
 -- === Jump === --

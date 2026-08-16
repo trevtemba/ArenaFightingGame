@@ -8,3 +8,6 @@
 rojo = "rojo-rbx/rojo@7.7.0"
 stylua = "JohnnyMorganz/StyLua@2.0.2"
 selene = "Kampfkarren/selene@0.28.0"
+# Packages/ and wally.lock were already committed, but the CLI that produces them
+# was not pinned here -- so a fresh clone could not resolve dependencies.
+wally = "UpliftGames/wally@0.3.2"

@@ -89,11 +89,7 @@ local function processCooldown(state, cooldown)
 		return true
 	end
 
-	inputStateHandler:SetState(state)
-
-	task.delay(cooldown, function()
-		inputStateHandler:RemoveState(state)
-	end)
+	inputStateHandler:SetFor(state, cooldown)
 
 	return
 end

@@ -51,5 +51,6 @@ Services.ClientEffectsUI = Services.ClientEffects:WaitForChild("UI")
 
 -- Packages
 Services.Trove = Services.Packages:WaitForChild("Trove")
+Services.Signal = Services.Packages:WaitForChild("Signal")
 
 return Services

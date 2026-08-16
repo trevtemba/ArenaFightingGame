@@ -1,6 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
-local STATE = require(Services.Enums.State)
+-- STATE is no longer needed here: the blocking lists moved to ActionRules, and
+-- CanDo now looks the action up rather than comparing against each enum member.
+local ActionRules = require(Services.Shared.ActionRules)
+local Signal = require(Services.Signal)
 
 local InputStateHandler = {}
 InputStateHandler.__index = InputStateHandler
@@ -10,6 +13,21 @@ function InputStateHandler.new(humanoid)
 
 	-- Active states like "sprinting", "dashing", etc.
 	self.states = {}
+	-- Bumped on every mutation of a state. A pending SetFor expiry compares
+	-- against this to tell whether it still owns the state it is about to remove.
+	self._generations = {}
+
+	--[[
+		Fired as (state, isActive) when a state actually turns on or off. Mirrors
+		the server's StateHandler.Changed.
+
+		Only real transitions fire, so subscribers can treat every event as a
+		change. This is what lets animation become a function of state instead of
+		the scattered Play/Stop calls in inputHandler that kept drifting out of
+		sync with the state they were meant to mirror.
+	]]
+	self.Changed = Signal.new()
+
 	self.humanoid = humanoid
 	-- Track current input holds
 	self.heldInputs = {}
@@ -25,80 +43,60 @@ function InputStateHandler:CanDo(state)
 		return false
 	end
 
-	local blockedStates = {}
-	if state == STATE.Sprinting then
-		blockedStates = {
-			STATE.Sprinting,
-			STATE.InAirCombo,
-			STATE.Attacking,
-			STATE.AttackingHeavy,
-			STATE.Casting,
-			STATE.Blocking,
-			STATE.Dashing,
-			STATE.Stunned,
-			STATE.Ragdolled,
-		}
-	elseif state == STATE.Walking then
-		blockedStates = {
-			STATE.Stunned,
-			STATE.Ragdolled,
-		}
-	elseif state == STATE.Dashing then
-		blockedStates = {
-			STATE.Dashing,
-			STATE.InAirCombo,
-			STATE.Attacking,
-			STATE.Casting,
-			STATE.Stunned,
-			STATE.Ragdolled,
-		}
-	elseif state == STATE.Blocking then
-		blockedStates = {
-			STATE.Attacking,
-			STATE.Blocking,
-			STATE.Casting,
-			STATE.Stunned,
-			STATE.Ragdolled,
-		}
-	elseif state == STATE.Attacking then
-		blockedStates = {
-			STATE.Blocking,
-			STATE.Casting,
-			STATE.AttackingHeavy,
-		}
-	elseif state == STATE.AttackingHeavy then
-		blockedStates = {
-			STATE.Casting,
-			STATE.Attacking,
-			STATE.AttackingHeavy,
-		}
-	elseif state == STATE.Casting then
-		blockedStates = {
-			STATE.Casting,
-			STATE.Stunned,
-		}
-	elseif state == STATE.SoulCasting then
-		blockedStates = {
-			STATE.Casting,
-			STATE.SoulCasting,
-		}
-	elseif state == STATE.Jumping then
-		blockedStates = {
-			STATE.Jumping,
-			STATE.Attacking,
-			STATE.AttackingHeavy,
-			STATE.Casting,
-			STATE.Stunned,
-			STATE.Ragdolled,
-		}
-	end
+	-- An action with no rule is unrestricted, same as the old if/elseif chain
+	-- falling through to an empty blockedStates table.
+	local blockedStates = ActionRules.For(ActionRules.client, state)
 
 	return not self:HasAny(blockedStates) and self.humanoid
 end
 
+local function bump(self, state)
+	local generation = (self._generations[state] or 0) + 1
+	self._generations[state] = generation
+	return generation
+end
+
+--[[
+	The single mutation point, so every path that changes a state bumps the
+	generation and fires Changed identically. Returns the new generation for
+	callers that need to arm a supersession-checked timer.
+]]
+local function setActive(self, state, active)
+	local generation = bump(self, state)
+	local wasActive = self.states[state] == true
+
+	self.states[state] = active or nil
+
+	if wasActive ~= active then
+		self.Changed:Fire(state, active)
+	end
+
+	return generation
+end
+
 -- Enables an input state
 function InputStateHandler:SetState(state)
-	self.states[state] = true
+	setActive(self, state, true)
+end
+
+--[[
+	Set a state and clear it after `duration`, unless something touches that
+	state first. Mirrors the server's StateHandler:SetFor.
+
+	A bare task.delay(d, function() RemoveState(X) end) cannot tell whether the X
+	it is clearing is the one it set, so an older timer can clear a state a newer
+	action established. Every mutation bumps the generation, so a superseded
+	timer sees the mismatch and does nothing.
+]]
+function InputStateHandler:SetFor(state, duration)
+	local generation = setActive(self, state, true)
+
+	task.delay(duration, function()
+		if self._generations[state] ~= generation then
+			return
+		end
+		self:RemoveState(state)
+	end)
 end
 
 -- Enables an input state
@@ -108,7 +106,7 @@ end
 
 -- Disables an input state
 function InputStateHandler:RemoveState(state)
-	self.states[state] = nil
+	setActive(self, state, false)
 end
 
 -- Checks if an input state is currently active
@@ -127,8 +125,14 @@ end
 
 -- Clears all current input states (useful on death or reset)
 function InputStateHandler:ClearStates()
-	for k in pairs(self.states) do
-		self.states[k] = nil
+	-- Snapshot first: setActive fires Changed, and a subscriber that mutates
+	-- state in response would otherwise be modifying the table mid-traversal.
+	local active = self:GetAllStates()
+
+	for _, state in active do
+		-- Goes through setActive so a SetFor expiry still in flight cannot
+		-- outlive the clear and then remove a state something set afterwards.
+		setActive(self, state, false)
 	end
 end
 
@@ -179,6 +183,15 @@ function InputStateHandler:ToggleHeldForFreecam()
 	for _, input in stale do
 		self.heldInputs[input] = nil
 	end
+end
+
+--[[
+	Releases the Changed subscriptions. inputHandler builds a fresh handler on
+	every spawn, so the previous one should be destroyed rather than left holding
+	subscriptions -- see the note on the ShiftlockModule unsubscribe there.
+]]
+function InputStateHandler:Destroy()
+	self.Changed:Destroy()
 end
 
 return InputStateHandler

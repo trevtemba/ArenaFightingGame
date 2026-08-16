@@ -18,6 +18,7 @@ local ServerStorage = Services.ServerStorage
 local Players = Services.Players
 
 local STATE = require(Services.Enums.State)
+local ActionRules = require(Services.Shared.ActionRules)
 
 local attackEvent =
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Client"):WaitForChild("attack")
@@ -91,14 +92,9 @@ function CombatHandler:CanAttack()
 		end
 	end
 
-	local stateHandler = self.owner.stateHandler
-	local blockedStates = {
-		STATE.Attacking,
-		STATE.Stunned,
-		STATE.Ragdolled,
-	}
+	local blockedStates = ActionRules.For(ActionRules.server, STATE.Attacking)
 
-	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+	return not self.owner.stateHandler:HasAny(blockedStates) and self.owner.alive
 end
 
 function CombatHandler:CanAttackHeavy()
@@ -110,15 +106,9 @@ function CombatHandler:CanAttackHeavy()
 		end
 	end
 
-	local stateHandler = self.owner.stateHandler
-	local blockedStates = {
-		STATE.Attacking,
-		STATE.AttackingHeavy,
-		STATE.Stunned,
-		STATE.Ragdolled,
-	}
+	local blockedStates = ActionRules.For(ActionRules.server, STATE.AttackingHeavy)
 
-	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+	return not self.owner.stateHandler:HasAny(blockedStates) and self.owner.alive
 end
 
 function CombatHandler:CanCast(abilitySlot)
@@ -130,39 +120,21 @@ function CombatHandler:CanCast(abilitySlot)
 		end
 	end
 
-	local stateHandler = self.owner.stateHandler
-	local blockedStates = {
-		STATE.Casting,
-		STATE.Stunned,
-		STATE.Ragdolled,
-	}
+	local blockedStates = ActionRules.For(ActionRules.server, STATE.Casting)
 
-	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+	return not self.owner.stateHandler:HasAny(blockedStates) and self.owner.alive
 end
 
 function CombatHandler:CanBlock()
-	local stateHandler = self.owner.stateHandler
+	local blockedStates = ActionRules.For(ActionRules.server, STATE.Blocking)
 
-	local blockedStates = {
-		STATE.Attacking,
-		STATE.AttackingHeavy,
-		STATE.Casting,
-		STATE.Stunned,
-		STATE.Ragdolled,
-	}
-
-	return not stateHandler:HasAny(blockedStates) and self.owner.alive
+	return not self.owner.stateHandler:HasAny(blockedStates) and self.owner.alive
 end
 
 function CombatHandler:CanStun()
-	local stateHandler = self.owner.stateHandler
+	local blockedStates = ActionRules.For(ActionRules.server, STATE.Stunned)
 
-	local blockedStates = {
-		STATE.Hyperarmor,
-		STATE.Ragdolled,
-	}
-
-	return not stateHandler:HasAny(blockedStates)
+	return not self.owner.stateHandler:HasAny(blockedStates)
 end
 
 function CombatHandler:Cast(abilitySlot)
@@ -521,9 +493,7 @@ function CombatHandler:AttackHeavy(jumping)
 			HitboxHandler:CreatePlrHitbox(params)
 		end)
 
-		task.delay(cooldown, function()
-			self.owner.stateHandler:RemoveState(STATE.AttackingHeavy)
-		end)
+		self.owner.stateHandler:RemoveStateAfter(STATE.AttackingHeavy, cooldown)
 	end
 end
 
