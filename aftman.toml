@@ -6,3 +6,5 @@
 # Must match the Rojo Studio plugin version, or the plugin fails the
 # protocol handshake with "attempt to index number with 'protocolVersion'".
 rojo = "rojo-rbx/rojo@7.7.0"
+stylua = "JohnnyMorganz/StyLua@2.0.2"
+selene = "Kampfkarren/selene@0.28.0"

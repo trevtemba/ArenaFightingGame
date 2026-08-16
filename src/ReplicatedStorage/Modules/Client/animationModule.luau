@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = require(ReplicatedStorage.Modules.Shared.Services)
 local Players = Services.Players
-local ContentProvider = game:GetService("ContentProvider")
 
 local animationModule = {}
 
@@ -11,22 +10,33 @@ local animator = nil
 local animFolder = nil
 local loadedForCharacter = nil
 
+local ANIM_FOLDER_TIMEOUT = 10
+
 --[[
-	Tracks are loaded on first use rather than all at once.
+	The only animations this module ever plays. Everything else in the rig's
+	Animations folder belongs to the server's AnimationHandler.
 
-	An Animator caps how many AnimationTracks it will hold, and the server's
-	AnimationHandler already loads every animation in the rig's Animations
-	folder onto this same Animator (it is the replicated one, so the client's
-	FindFirstChildOfClass returns it). Eagerly loading the whole folder here
-	loaded all of them a second time, and the rig's built-in Animate script adds
-	roughly eighteen more on top. That pushed the total past the cap, at which
-	point Roblox silently refuses to play anything further -- which surfaced as
-	attack and hit animations intermittently not appearing.
-
-	The client only ever plays a handful of these (movement, dashes, landing),
-	so loading on demand keeps the Animator well under the limit. The assets are
-	still downloaded up front by PreloadAll, so first use does not stall.
+	Keeping an explicit list matters because both sides load onto the same
+	Animator: it is the replicated one, so the client's FindFirstChildOfClass
+	returns the instance the server already loaded the whole folder onto, and the
+	rig's built-in Animate script adds roughly eighteen more. Loading the full
+	folder a second time here pushed the total past the Animator's track cap, at
+	which point Roblox silently refuses to play anything further. Ten tracks does
+	not.
 ]]
+local CLIENT_ANIMS = {
+	"walkForward",
+	"walkBack",
+	"walkLeft",
+	"walkRight",
+	"sprint",
+	"dashForward",
+	"dashBack",
+	"dashLeft",
+	"dashRight",
+	"landing",
+}
+
 local function getTrack(animName)
 	local existing = animations[animName]
 	if existing then
@@ -39,12 +49,33 @@ local function getTrack(animName)
 
 	local anim = animFolder:FindFirstChild(animName)
 	if not anim or not anim:IsA("Animation") then
+		warn(`animationModule: no Animation named "{animName}" in the character's Animations folder`)
 		return nil
 	end
 
 	local track = animator:LoadAnimation(anim)
 	track.Priority = Enum.AnimationPriority.Action
 	animations[animName] = track
+
+	--[[
+		Warm the track before anyone plays it for real.
+
+		LoadAnimation does not fetch the asset -- the first Play() does, and a
+		track whose asset has not arrived yet does not play, it just does
+		nothing. The server's AnimationHandler warms its tracks the same way at
+		spawn, which is why attacks kept working while sprint and the dashes
+		went dead once this module started creating tracks on demand.
+
+		ContentProvider:PreloadAsync does not substitute for this: it resolves
+		the asset for the content cache but never puts an AnimationTrack in a
+		playable state.
+
+		Play/Stop back to back is invisible -- the stop fade begins on the same
+		frame, while the track's weight is still ~0, so nothing renders.
+	]]
+	track:Play()
+	track:Stop()
+
 	return track
 end
 
@@ -87,26 +118,21 @@ function animationModule.PreloadAll()
 		animator.Parent = humanoid
 	end
 
-	animFolder = character:FindFirstChild("Animations")
+	-- WaitForChild, not FindFirstChild: the folder is part of the server's rig and
+	-- has no guaranteed replication order relative to the Humanoid. Missing it
+	-- used to leave animFolder nil for the rest of the character's life, since
+	-- nothing calls PreloadAll again.
+	animFolder = character:WaitForChild("Animations", ANIM_FOLDER_TIMEOUT)
 	if not animFolder then
+		warn("animationModule: character has no Animations folder; client animations are disabled")
 		return
 	end
 
-	-- Download the assets without creating tracks. The previous implementation
-	-- called Play() then Stop() on every track to force the download, which put
-	-- the entire folder on the Animator at once.
-	local assets = {}
-	for _, anim in animFolder:GetChildren() do
-		if anim:IsA("Animation") then
-			table.insert(assets, anim)
-		end
-	end
-
-	local ok, err = pcall(function()
-		ContentProvider:PreloadAsync(assets)
-	end)
-	if not ok then
-		warn("Animation preload failed:", err)
+	-- Warm this module's own tracks now rather than on first use. Doing it here
+	-- also gets them onto the Animator before the rig's Animate script fills it,
+	-- so they are never the ones the track cap rejects.
+	for _, animName in CLIENT_ANIMS do
+		getTrack(animName)
 	end
 
 	loadedForCharacter = character

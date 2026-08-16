@@ -22,6 +22,7 @@ Services.Animations = Services.ReplicatedStorage:WaitForChild("Animations")
 Services.Sounds = Services.ReplicatedStorage:WaitForChild("Sounds")
 Services.Assets = Services.ReplicatedStorage:WaitForChild("Assets")
 Services.BindableFunctions = Services.ReplicatedStorage:WaitForChild("BindableFunctions")
+Services.Packages = Services.ReplicatedStorage:WaitForChild("Packages")
 
 -- Server
 if Services.RunService:IsServer() then
@@ -47,5 +48,8 @@ Services.ClientEffects = Services.Client:WaitForChild("effects")
 Services.ClientAssets = Services.Client:WaitForChild("Assets")
 Services.ClientEffectsUtils = Services.ClientEffects:WaitForChild("Utils")
 Services.ClientEffectsUI = Services.ClientEffects:WaitForChild("UI")
+
+-- Packages
+Services.Trove = Services.Packages:WaitForChild("Trove")
 
 return Services

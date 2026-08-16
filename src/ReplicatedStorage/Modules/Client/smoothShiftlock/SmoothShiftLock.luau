@@ -18,6 +18,38 @@
 local SmoothShiftLock = {}
 SmoothShiftLock.__index = SmoothShiftLock
 
+--[[
+	Local additions to the upstream module.
+
+	This owns the Alt keybind through ContextActionService and sinks it, so it is
+	the only thing that actually knows whether the camera is locked. Anything
+	else that needs to branch on shift lock -- inputHandler picks a different
+	InputContext, and therefore different walk animations and different dash
+	bookkeeping -- used to keep its own parallel toggle and drift out of sync
+	with this one. Publish the state instead so there is a single source of truth.
+]]
+SmoothShiftLock.Active = nil
+local stateListeners = {}
+
+--// Subscribe to lock state changes. Returns a function that unsubscribes.
+function SmoothShiftLock.OnStateChanged(callback: (boolean) -> ())
+	table.insert(stateListeners, callback)
+
+	return function()
+		local index = table.find(stateListeners, callback)
+		if index then
+			table.remove(stateListeners, index)
+		end
+	end
+end
+
+local function publishState(enabled: boolean)
+	for _, callback in stateListeners do
+		-- Spawned so one bad listener cannot stop the camera from toggling.
+		task.spawn(callback, enabled)
+	end
+end
+
 --// [ Locals: ]
 
 --// Services
@@ -66,6 +98,8 @@ function SmoothShiftLock.new()
 
 	--// Setup
 	self:Enable()
+
+	SmoothShiftLock.Active = self
 
 	return self
 end
@@ -164,6 +198,7 @@ function SmoothShiftLock:ToggleShiftLock(Enable: boolean?)
 	self:_updateMouseState()
 	self:_updateMouseIcon()
 	self:_transitionLockOffset()
+	publishState(self.Enabled)
 	if self.Enabled then
 		self._shiftlockMaid:GiveTask(RunService.RenderStepped:Connect(function(Delta: number)
 			if self.Humanoid and self.RootPart then

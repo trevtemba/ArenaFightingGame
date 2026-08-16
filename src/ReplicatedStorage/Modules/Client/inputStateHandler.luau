@@ -163,11 +163,21 @@ function InputStateHandler:GetAllHeldInputs()
 	return self.heldInputs
 end
 
+-- Drop every hold except forward/shift, so switching movement contexts does not
+-- strand a direction that will never receive its Released event.
 function InputStateHandler:ToggleHeldForFreecam()
-	for _, v in pairs(self.heldInputs) do
-		if v ~= "forward" and v ~= "shift" then
-			self.heldInputs[v] = nil
+	-- Iterates keys. This used to walk the values, which are all `true`, so it
+	-- compared `true` against "forward" and then cleared self.heldInputs[true] --
+	-- a key that is never set. It silently freed nothing.
+	local stale = {}
+	for input in pairs(self.heldInputs) do
+		if input ~= "forward" and input ~= "shift" then
+			table.insert(stale, input)
 		end
+	end
+
+	for _, input in stale do
+		self.heldInputs[input] = nil
 	end
 end
 

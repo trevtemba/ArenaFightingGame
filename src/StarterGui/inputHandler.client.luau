@@ -11,6 +11,7 @@ local InputStateHandler = require(Services.Client.inputStateHandler)
 local camModule = require(Services.Client:WaitForChild("cameraModule"))
 local animationModule = require(Services.Client:WaitForChild("animationModule"))
 local physicsModule = require(Services.Client:WaitForChild("physicsModule"))
+local ShiftlockModule = require(Services.Client.smoothShiftlock.SmoothShiftLock)
 local STATE = require(Services.Enums.State)
 local TableToString = require(Services.SharedUtils.TableToString)
 
@@ -97,21 +98,50 @@ local function processCooldown(state, cooldown)
 	return
 end
 
-local function getDashDirection()
-	local activeKeys = inputStateHandler:GetAllHeldInputs()
-	local direction = "forward"
+--[[
+	Dash direction comes from the humanoid's actual movement input rather than
+	the heldInputs table.
 
-	if activeKeys["left"] and not activeKeys["right"] then
-		direction = "left"
-	elseif activeKeys["right"] and not activeKeys["left"] then
-		direction = "right"
-	elseif activeKeys["back"] and not activeKeys["left"] and not activeKeys["right"] then
-		direction = "back"
-	elseif activeKeys["back"] and activeKeys["left"] and activeKeys["right"] then
-		print()
-		direction = "back"
+	heldInputs only ever learns about left/right/back from the Shiftlocked
+	context's handlers; the Freecammed ones never call HeldOn(direction). Since
+	SmoothShiftLock owns the Alt keybind through ContextActionService and sinks
+	it, the camera can be shiftlocked while the enabled InputContext is still
+	Freecammed -- and then nothing records a direction and this fell through to
+	"forward" no matter what was held. That was the whole "shiftlock only ever
+	dashes forward" bug.
+
+	MoveDirection is set by the default control scripts and is correct in both
+	camera modes, so this needs no knowledge of which context is live. Dotting it
+	against the root part's axes yields a character-relative direction, which is
+	the frame physicsModule.Dash resolves against.
+
+	Freecam behaviour is unchanged by construction: AutoRotate keeps the
+	character facing MoveDirection there, so LookVector and MoveDirection agree
+	and this still answers "forward".
+]]
+local function getDashDirection()
+	local character = player.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not hrp or not humanoid then
+		return "forward"
 	end
-	return direction
+
+	local move = humanoid.MoveDirection
+	-- Standing still: dash the way the character faces.
+	if move.Magnitude < 0.1 then
+		return "forward"
+	end
+
+	local forwardDot = hrp.CFrame.LookVector:Dot(move)
+	local rightDot = hrp.CFrame.RightVector:Dot(move)
+
+	-- Ties go to the strafe, matching the old ordering where left/right were
+	-- tested before back: a diagonal like W+A side-dashes.
+	if math.abs(forwardDot) > math.abs(rightDot) then
+		return forwardDot >= 0 and "forward" or "back"
+	end
+	return rightDot >= 0 and "right" or "left"
 end
 
 -- Update this function
@@ -374,12 +404,50 @@ local function switchToContext(contextName)
 	end
 end
 
-local function toggledShiftlockContext()
-	ShiftlockedContext.Enabled = not ShiftlockedContext.Enabled
-	FreecamContext.Enabled = not FreecamContext.Enabled
-	if FreecamContext.Enabled == true then
+--[[
+	Which movement context is live is derived from the shift lock state, never
+	toggled independently.
+
+	The two used to be separate state machines that both keyed off Alt:
+	SmoothShiftLock binds Alt through ContextActionService and sinks it, while
+	this script blind-toggled the two contexts with `not` and never established a
+	baseline for Shiftlocked at startup. Nothing tied them together, so the camera
+	could be locked while the Freecammed context was still the live one. That is
+	why shift lock only ever dashed forward and why the left/right/back walk
+	animations never played -- the Freecammed handlers deliberately play
+	walkForward for every direction, which is right for that mode because
+	AutoRotate turns the character to face movement.
+
+	Setting both from one boolean makes the states unrepresentable rather than
+	merely unlikely.
+]]
+local movementContextShiftlocked = nil
+
+local function applyMovementContext(shiftlocked)
+	if movementContextShiftlocked == shiftlocked then
+		return
+	end
+	movementContextShiftlocked = shiftlocked
+
+	ShiftlockedContext.Enabled = shiftlocked
+	FreecamContext.Enabled = not shiftlocked
+
+	-- Anything still held belongs to the context being disabled, so its Released
+	-- handler will never fire. Drop those holds and the animations they started,
+	-- or a direction stays stuck on forever.
+	if inputStateHandler then
 		inputStateHandler:ToggleHeldForFreecam() -- only forward/shift remain held
 	end
+	for _, data in pairs(directions) do
+		animationModule.Stop(data.anim)
+	end
+
+	-- Only the Freecammed handlers keep this counter, so a key held across the
+	-- switch is counted once and never decremented -- which strands it above zero
+	-- and permanently defeats the `activeKeyCount == 0` guards that stop the walk
+	-- animation. Nothing from the incoming context is counted yet, so zero is the
+	-- honest value; the next press/release cycle re-syncs it.
+	activeKeyCount = 0
 end
 
 -- Directional Movement
@@ -555,9 +623,24 @@ for dir, info in pairs(directions) do
 	setupMovementActionFreecammed(dir, info)
 end
 
-CoreContext:WaitForChild("LockCam").Pressed:Connect(function()
-	toggledShiftlockContext()
-end)
+--[[
+	The context follows the camera, and nothing here toggles either one.
+
+	SmoothShiftLock's own ContextActionService binding is what actually toggles
+	shift lock today -- LockCam never did, it only flipped the contexts, which is
+	precisely how the two drifted apart. Having LockCam call ToggleShiftLock
+	instead would be a coin flip: it sinks Alt at Medium priority, so if LockCam
+	also carries Alt both would fire and the camera would toggle twice per press.
+
+	So the camera keeps its existing owner and the contexts subscribe to it.
+
+	Unsubscribed on destroy: this script lives in a ResetOnSpawn ScreenGui, so it
+	re-runs on every respawn. The listener list is module state and outlives the
+	script, so without this each spawn would stack another subscription whose
+	closure still points at the previous run's contexts and inputStateHandler.
+]]
+local unsubscribeShiftlock = ShiftlockModule.OnStateChanged(applyMovementContext)
+script.Destroying:Connect(unsubscribeShiftlock)
 
 switchContext.OnClientEvent:Connect(function(contextName)
 	switchToContext(contextName)
@@ -632,7 +715,18 @@ do
 
 	inputStateHandler = InputStateHandler.new(humanoid)
 	PlayerGui:FindFirstChild("Core").Enabled = true
-	PlayerGui:FindFirstChild("Freecammed").Enabled = true
+
+	--[[
+		Establish a known baseline for both contexts, rather than only enabling
+		Freecammed and leaving Shiftlocked on whatever it was saved as in Studio.
+
+		SmoothShiftLock always constructs with Enabled = false, and characterInitializer
+		builds it just after flipping CharacterReady, so "not shiftlocked" is the
+		correct starting state whether or not the instance exists yet. Any later
+		toggle arrives through OnStateChanged.
+	]]
+	local shiftlock = ShiftlockModule.Active
+	applyMovementContext(shiftlock ~= nil and shiftlock:IsEnabled() or false)
 	humanoid.StateChanged:Connect(function(_, newState)
 		if newState == Enum.HumanoidStateType.Landed then
 			inputStateHandler:RemoveState(STATE.Jumping)
