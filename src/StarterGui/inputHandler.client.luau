@@ -8,10 +8,13 @@ local PlayerGui = player:WaitForChild("PlayerGui")
 
 local hotbar = require(Services.ClientEffectsUI.hotbar)
 local InputStateHandler = require(Services.Client.inputStateHandler)
-local camModule = require(Services.Client:WaitForChild("cameraModule"))
+-- cameraModule is no longer required here: the sprint POV is a consequence of
+-- STATE.Sprinting and now lives in movementAnimator with the other consequences.
 local animationModule = require(Services.Client:WaitForChild("animationModule"))
 local physicsModule = require(Services.Client:WaitForChild("physicsModule"))
 local ShiftlockModule = require(Services.Client.smoothShiftlock.SmoothShiftLock)
+local movementAnimator = require(Services.Client:WaitForChild("movementAnimator"))
+local moveDirection = require(Services.Client:WaitForChild("moveDirection"))
 local STATE = require(Services.Enums.State)
 local TableToString = require(Services.SharedUtils.TableToString)
 
@@ -39,19 +42,53 @@ local unitRay = camera:ScreenPointToRay(mouse.X, mouse.Y)
 
 local DASH_COOLDOWN = 1
 local DEFAULT_JUMP_POWER = 80
+local JUMP_COOLDOWN = 1
+-- Backstop for a jump lock whose releasing remote never arrives. Long enough to
+-- never fire during a normal attack.
+local JUMP_LOCK_TIMEOUT = 5
 
+-- Keys must match the strings passed to processDebounce. `heavyAttack` and
+-- `sprint` were declared but never used, while attackHeavy/cast1/showSoul/
+-- soulAbility were created on first call -- so this table read as authoritative
+-- while not actually being the list. Movement debounces are per-direction
+-- ("walk_forward" and friends) so one direction cannot swallow another.
 local debounces = {
 	attack = false,
-	heavyAttack = false,
+	attackHeavy = false,
 	block = false,
+	cast1 = false,
 	dash = false,
-	sprint = false,
-	walk = false,
+	jump = false,
 	shift = false,
+	showSoul = false,
+	soulAbility = false,
+	walk_forward = false,
+	walk_back = false,
+	walk_left = false,
+	walk_right = false,
 }
 
-local activeKeyCount = 0
-local sprintingFromDoubleTap = false
+--[[
+	Whether the player is currently asking to sprint.
+
+	Edge-triggered, not a reading of whether Shift is down. Holding Shift is not
+	a standing request: landing revokes the request outright, and the sprint must
+	be asked for again even though the key never came up. That is what makes a
+	jump cost you the sprint rather than pause it -- momentum carries through the
+	air, and touching down ends it.
+
+	Set by:     a fresh Shift press, or a double-tap of forward.
+	Cleared by: landing, dashing, releasing Shift, or releasing all movement keys.
+]]
+local sprintRequested = false
+-- Declared up here rather than beside applyMovementContext because
+-- isMovingForSprint reads it, and that is defined earlier in the file.
+-- nil until the first applyMovementContext call establishes the baseline.
+local movementContextShiftlocked = nil
+local sprintHeartbeat = nil
+-- Forward momentum needed to sustain a shift lock sprint. A diagonal gives ~0.7,
+-- a pure strafe ~0, so anything between comfortably separates them.
+local SPRINT_FORWARD_THRESHOLD = 0.3
 local doubleTapThreshold = 0.35
 local lastForwardTapTime = 0
 
@@ -62,13 +99,54 @@ local directions = {
 	forward = { key = "WalkForward", anim = "walkForward", sprintAnim = "sprint" },
 }
 
+--[[
+	Every binding in this file is connected at file scope, but inputStateHandler
+	is only built once the character is ready, far below. An input arriving in
+	that window would index nil, so each handler drops it.
+
+	The contexts are supposed to be disabled until then, but their saved Enabled
+	state in Studio is not something this script controls, and Combat is switched
+	on by a server remote that can land at any time.
+]]
+local function notReady()
+	return inputStateHandler == nil
+end
+
+--[[
+	Jump is disabled during attacks and re-enabled by the matching *Done remote.
+	That made the remote a single point of failure: one dropped attackDone and
+	JumpPower stays 0 for the rest of the life, with nothing to notice.
+
+	The generation counter is the same trick StateHandler:SetFor uses -- the
+	safety restore only fires if nothing has touched the lock since, so a normal
+	remote-driven restore cancels it rather than racing it.
+]]
+local jumpLockGeneration = 0
+
 local function setCanJump(bool)
-	local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	jumpLockGeneration += 1
+
 	if bool then
 		humanoid.JumpPower = DEFAULT_JUMP_POWER
-	else
-		humanoid.JumpPower = 0
+		return
 	end
+
+	humanoid.JumpPower = 0
+
+	local generation = jumpLockGeneration
+	task.delay(JUMP_LOCK_TIMEOUT, function()
+		if jumpLockGeneration ~= generation then
+			return
+		end
+		warn("Jump stayed locked for", JUMP_LOCK_TIMEOUT, "s - a *Done remote never arrived; restoring")
+		setCanJump(true)
+	end)
 end
 local function processDebounce(name, duration)
 	if debounces[name] == true then
@@ -107,89 +185,126 @@ end
 	dashes forward" bug.
 
 	MoveDirection is set by the default control scripts and is correct in both
-	camera modes, so this needs no knowledge of which context is live. Dotting it
-	against the root part's axes yields a character-relative direction, which is
-	the frame physicsModule.Dash resolves against.
+	camera modes, so this needs no knowledge of which context is live. The math
+	lives in moveDirection because movementAnimator resolves walk animations
+	against exactly the same frame.
 
 	Freecam behaviour is unchanged by construction: AutoRotate keeps the
 	character facing MoveDirection there, so LookVector and MoveDirection agree
 	and this still answers "forward".
 ]]
 local function getDashDirection()
-	local character = player.Character
-	local hrp = character and character:FindFirstChild("HumanoidRootPart")
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not hrp or not humanoid then
-		return "forward"
-	end
-
-	local move = humanoid.MoveDirection
 	-- Standing still: dash the way the character faces.
-	if move.Magnitude < 0.1 then
-		return "forward"
-	end
-
-	local forwardDot = hrp.CFrame.LookVector:Dot(move)
-	local rightDot = hrp.CFrame.RightVector:Dot(move)
-
-	-- Ties go to the strafe, matching the old ordering where left/right were
-	-- tested before back: a diagonal like W+A side-dashes.
-	if math.abs(forwardDot) > math.abs(rightDot) then
-		return forwardDot >= 0 and "forward" or "back"
-	end
-	return rightDot >= 0 and "right" or "left"
+	return moveDirection.Relative(player.Character) or "forward"
 end
 
--- Update this function
+local MOVEMENT_INPUTS = { "forward", "left", "right", "back" }
+
+local function isAnyMovementHeld()
+	for _, input in MOVEMENT_INPUTS do
+		if inputStateHandler:IsHeld(input) then
+			return true
+		end
+	end
+	return false
+end
+
+--[[
+	Whether the character is actually moving in a way that should sustain a sprint.
+
+	Reads real movement rather than held keys, which is what makes opposing
+	inputs behave: holding W and S leaves both keys down but cancels
+	MoveDirection to zero, and sprinting on the spot is nonsense. Held-key
+	bookkeeping cannot see that -- only the resulting motion can.
+
+	Shift lock and freecam then disagree about what counts. Locked, the character
+	strafes because it keeps facing the camera, so sprinting sideways or
+	backwards is meaningless and sprint needs real forward momentum. In freecam
+	AutoRotate turns the character to face whatever is held, so every direction
+	is forward as far as the character is concerned.
+]]
+local function isMovingForSprint()
+	local character = player.Character
+
+	if not movementContextShiftlocked then
+		return moveDirection.Relative(character) ~= nil
+	end
+
+	-- A component test, not the discrete direction: W+D resolves to "right"
+	-- under Relative's tie-break, but ~0.7 of its momentum is still forward and
+	-- a diagonal should absolutely keep sprinting. The threshold sits well below
+	-- that 0.7 and well above the ~0 of a pure strafe or a W+S cancel.
+	return moveDirection.ForwardAmount(character) > SPRINT_FORWARD_THRESHOLD
+end
+
+--[[
+	Decides whether the sprint state should be on, and nothing else.
+
+	The animation, the camera POV and the OnSprint remote used to be spelled out
+	here too. They now hang off inputStateHandler.Changed in movementAnimator, so
+	they follow the state wherever it is set from rather than only when this
+	function happens to run. That also makes this safe to call redundantly: a
+	repeat SetState is a no-op and fires no signal.
+]]
 local function updateSprinting()
-	local shouldSprint = inputStateHandler:IsHeld("forward")
-		and inputStateHandler:CanDo(STATE.Sprinting)
-		and (inputStateHandler:IsHeld("shift") or sprintingFromDoubleTap)
+	local shouldSprint = sprintRequested and isMovingForSprint() and inputStateHandler:CanDo(STATE.Sprinting)
 
+	-- Letting go of every movement key ends the request. Not tied to the sprint
+	-- state: that can lapse while the player is still plainly asking -- W+S
+	-- cancelling out, or a shift lock strafe -- and should resume when it does.
+	if not isAnyMovementHeld() then
+		sprintRequested = false
+	end
+
+	-- Guarded because this now runs every frame: an unguarded RemoveState would
+	-- bump the state's generation 60 times a second for no reason.
 	if shouldSprint then
-		inputStateHandler:SetState(STATE.Sprinting)
+		if not inputStateHandler:HasState(STATE.Sprinting) then
+			inputStateHandler:SetState(STATE.Sprinting)
+		end
 		inputStateHandler.walking = "forward"
-		animationModule.Stop(directions.forward.anim)
-		animationModule.Play(directions.forward.sprintAnim, 0.1, true, "Action")
-		camModule.EnableSprintPOV()
-
-		local remote = ServerEvents:FindFirstChild("OnSprint")
-		if remote then
-			remote:FireServer("start")
-		end
-	elseif not shouldSprint then
+	elseif inputStateHandler:HasState(STATE.Sprinting) then
 		inputStateHandler:RemoveState(STATE.Sprinting)
-		animationModule.Stop(directions.forward.sprintAnim)
-		camModule.DisableSprintPOV()
-
-		local sprintRemote = ServerEvents:FindFirstChild("OnSprint")
-		if sprintRemote then
-			sprintRemote:FireServer("stop")
-		end
-		if inputStateHandler:IsHeld("forward") then
-			animationModule.Play(directions.forward.anim, 0.1, true, "Movement")
-			-- local walkRemote = ServerEvents:FindFirstChild("OnWalk")
-			-- if walkRemote then
-			-- 	walkRemote:FireServer("forward")
-			-- end
-		end
 	end
 end
 
 CoreContext:WaitForChild("Jump").Pressed:Connect(function()
-	inputStateHandler:HeldOn("space")
-	if processDebounce("dash", 0.2) or not inputStateHandler:CanDo(STATE.Jumping) then
+	if notReady() then
 		return
 	end
+	inputStateHandler:HeldOn("space")
+	-- Its own debounce key. This used to reuse "dash", so a jump blocked a dash
+	-- for 0.2s and vice versa -- two unrelated actions sharing one timer.
+	if processDebounce("jump", JUMP_COOLDOWN) or not inputStateHandler:CanDo(STATE.Jumping) then
+		return
+	end
+
+	--[[
+		STATE.Jumping is only cleared by the Landed transition, so setting it
+		when the character cannot leave the ground strands it -- and because
+		Jumping blocks itself in ActionRules, that would end jumping for good.
+		JumpPower is zeroed by setCanJump during attacks and air combos.
+	]]
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.JumpPower <= 0 then
+		return
+	end
+
 	inputStateHandler:SetState(STATE.Jumping)
 	--setCanJump(false)
 end)
 
 CoreContext:WaitForChild("Jump").Released:Connect(function()
+	if notReady() then
+		return
+	end
 	inputStateHandler:HeldOff("space")
 end)
 
 CoreContext:WaitForChild("Dash").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	if processDebounce("dash", 0.2) then
 		return
 	end
@@ -218,16 +333,37 @@ CoreContext:WaitForChild("Dash").Pressed:Connect(function()
 
 	animationModule.Play(animName, 0.1, false, "Action2")
 	physicsModule.Dash(walkingDir, 12)
-	inputStateHandler:HeldOff("forward")
-	sprintingFromDoubleTap = false
+	-- No HeldOff("forward") here any more: it reported a key as up while it was
+	-- physically down, and clearing sprintRequested already ends the sprint.
+	sprintRequested = false
 	updateSprinting()
 end)
 
+--[[
+	Attacking, heavy attacking and casting all break a block on the server --
+	CombatHandler:Attack, :AttackHeavy and :Cast each call DisableBlock.
+
+	DisableBlock only broadcasts the VFX event; it never tells inputStateHandler.
+	So the client has to drop its own Blocking state or the two disagree, and a
+	stale client-side block would then make CanDo(Blocking) refuse the tryBlock
+	that attackDone uses to resume it -- leaving the player unblocked with F
+	still held.
+]]
+local function breakBlock()
+	if inputStateHandler:HasState(STATE.Blocking) then
+		inputStateHandler:RemoveState(STATE.Blocking)
+	end
+end
+
 CombatContext:WaitForChild("Attack").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	if processDebounce("attack", 0.05) or not inputStateHandler:CanDo(STATE.Attacking) then
 		return
 	end
 	inputStateHandler:SetState(STATE.Attacking)
+	breakBlock()
 	updateSprinting()
 
 	setCanJump(false)
@@ -239,10 +375,14 @@ CombatContext:WaitForChild("Attack").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("AttackHeavy").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	if processDebounce("attackHeavy", 0.2) or not inputStateHandler:CanDo(STATE.AttackingHeavy) then
 		return
 	end
 	inputStateHandler:SetState(STATE.AttackingHeavy)
+	breakBlock()
 	updateSprinting()
 	setCanJump(false)
 
@@ -255,25 +395,45 @@ CombatContext:WaitForChild("AttackHeavy").Pressed:Connect(function()
 	end
 end)
 
+--[[
+	The single way a block starts, whether from the keypress or from resuming one
+	that was interrupted by an attack.
+
+	It used to only fire the remote. The resume paths below call it whenever F is
+	still down, so the server would start blocking while the client never set
+	STATE.Blocking -- CanDo(Attacking) then failed to see the block, and the
+	eventual Block.Released cleared a state that was never set. Setting the state
+	here keeps the two ends agreeing however the block began.
+]]
 local function tryBlock()
+	if not inputStateHandler:CanDo(STATE.Blocking) then
+		return
+	end
+
+	inputStateHandler:SetState(STATE.Blocking)
+
 	local remote = ServerEvents:FindFirstChild("OnBlock")
 	if remote then
-		print("pressing block")
 		remote:FireServer(true)
 	end
 end
 CombatContext.Block.Pressed:Connect(function()
-	print("pressed f")
-	inputStateHandler:HeldOn("f")
-	if processDebounce("block", 0.2) or not inputStateHandler:CanDo(STATE.Blocking) then
-		print("canDoBlock: ", inputStateHandler:CanDo(STATE.Blocking))
+	if notReady() then
 		return
 	end
-	inputStateHandler:SetState(STATE.Blocking)
+	-- Above the debounce on purpose: "f is down" is true whether or not the
+	-- block itself is allowed, and the resume paths key off it.
+	inputStateHandler:HeldOn("f")
+	if processDebounce("block", 0.2) then
+		return
+	end
 	tryBlock()
 end)
 
 CombatContext:WaitForChild("Block").Released:Connect(function()
+	if notReady() then
+		return
+	end
 	inputStateHandler:RemoveState(STATE.Blocking)
 	inputStateHandler:HeldOff("f")
 	local remote = ServerEvents:FindFirstChild("OnBlock")
@@ -283,6 +443,9 @@ CombatContext:WaitForChild("Block").Released:Connect(function()
 end)
 
 CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	local slot = 1 -- placeholder for when i add all hotbar actions
 	local abilityInfo = TableAttributes.Get(player.Character, string.format("ability%dInfo", slot))
 	if processDebounce("cast1", 0.1) or not inputStateHandler:CanDo(STATE.Casting) then
@@ -303,6 +466,7 @@ CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
 		end
 	else
 		inputStateHandler:SetState(STATE.Casting)
+		breakBlock()
 		hotbar.Cast({ abilitySlot = 1 })
 		hotbar.Cooldown({ cooldown = abilityInfo.cooldown, abilitySlot = 1 })
 		local remote = ServerEvents:FindFirstChild("OnCast")
@@ -314,6 +478,9 @@ CombatContext:WaitForChild("Ability1").Pressed:Connect(function()
 end)
 
 CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	local soulAbilityInfo = TableAttributes.Get(player.Character, "soulAbilityInfo")
 	if processDebounce("soulAbility", 0.1) or not inputStateHandler:CanDo(STATE.SoulCasting) then
 		return
@@ -347,6 +514,9 @@ CombatContext:WaitForChild("SoulAbility").Pressed:Connect(function()
 end)
 
 CoreContext:WaitForChild("ShowSoul").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	if processDebounce("showSoul", 1) then
 		return
 	end
@@ -361,25 +531,30 @@ CoreContext:WaitForChild("ShowSoul").Pressed:Connect(function()
 end)
 
 CoreContext:WaitForChild("Shift").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	if processDebounce("shift", 0.1) then
 		return
 	end
 	inputStateHandler:HeldOn("shift")
+	sprintRequested = true
 	updateSprinting()
-	if inputStateHandler:HasState(STATE.Sprinting) then
-		activeKeyCount += 1
-	end
 end)
 
 CoreContext:WaitForChild("Shift").Released:Connect(function()
-	inputStateHandler:HeldOff("shift")
-	updateSprinting()
-	if activeKeyCount > 0 then
-		activeKeyCount -= 1
+	if notReady() then
+		return
 	end
+	inputStateHandler:HeldOff("shift")
+	sprintRequested = false
+	updateSprinting()
 end)
 
 CoreContext:WaitForChild("stateShow").Pressed:Connect(function()
+	if notReady() then
+		return
+	end
 	print("CLIENT STATES: " .. TableToString(inputStateHandler:GetAllStates()))
 	local remote = ServerEvents:FindFirstChild("OnDev")
 	if remote then
@@ -417,8 +592,6 @@ end
 	Setting both from one boolean makes the states unrepresentable rather than
 	merely unlikely.
 ]]
-local movementContextShiftlocked = nil
-
 local function applyMovementContext(shiftlocked)
 	if movementContextShiftlocked == shiftlocked then
 		return
@@ -434,16 +607,8 @@ local function applyMovementContext(shiftlocked)
 	if inputStateHandler then
 		inputStateHandler:ToggleHeldForFreecam() -- only forward/shift remain held
 	end
-	for _, data in pairs(directions) do
-		animationModule.Stop(data.anim)
-	end
-
-	-- Only the Freecammed handlers keep this counter, so a key held across the
-	-- switch is counted once and never decremented -- which strands it above zero
-	-- and permanently defeats the `activeKeyCount == 0` guards that stop the walk
-	-- animation. Nothing from the incoming context is counted yet, so zero is the
-	-- honest value; the next press/release cycle re-syncs it.
-	activeKeyCount = 0
+	-- No animation sweep needed: movementAnimator re-resolves from the character's
+	-- actual movement, so a direction cannot be left playing across the switch.
 end
 
 -- Directional Movement
@@ -452,13 +617,22 @@ local function setupMovementActionShiftLocked(direction, data)
 
 	if direction == "forward" then
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
+			if notReady() then
+				return
+			end
+			-- Recorded before the debounce. The key is physically down either
+			-- way, and Released clears it unconditionally -- gating only the
+			-- press meant a swallowed press left a hold that was never set but
+			-- still got cleared.
+			inputStateHandler:HeldOn("forward")
+
+			if processDebounce("walk_" .. direction, 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
 			local currentTime = tick()
 			if currentTime - lastForwardTapTime <= doubleTapThreshold then
-				sprintingFromDoubleTap = true
+				sprintRequested = true
 			end
 			lastForwardTapTime = currentTime
 
@@ -466,36 +640,33 @@ local function setupMovementActionShiftLocked(direction, data)
 				inputStateHandler:SetState(STATE.Walking)
 			end
 
-			inputStateHandler:HeldOn("forward")
 			updateSprinting()
 
 			if not inputStateHandler:HasState(STATE.Sprinting) then
 				inputStateHandler.walking = "forward"
-				animationModule.Play(data.anim, 0.1, true, "Movement")
-
-				-- local remote = ServerEvents:FindFirstChild("OnWalk")
-				-- if remote then
-				-- 	remote:FireServer("forward")
-				-- end
 			end
 		end)
 
 		inputAction.Released:Connect(function()
+			if notReady() then
+				return
+			end
 			inputStateHandler:HeldOff("forward")
-			sprintingFromDoubleTap = false
 			updateSprinting()
 
 			if inputStateHandler.walking == "forward" then
 				inputStateHandler.walking = nil
 				inputStateHandler:RemoveState(STATE.Walking)
 			end
-
-			animationModule.Stop(data.anim)
-			animationModule.Stop(data.sprintAnim)
 		end)
 	else
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
+			if notReady() then
+				return
+			end
+			inputStateHandler:HeldOn(direction)
+
+			if processDebounce("walk_" .. direction, 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
@@ -503,24 +674,21 @@ local function setupMovementActionShiftLocked(direction, data)
 				inputStateHandler:SetState(STATE.Walking)
 			end
 
-			inputStateHandler:HeldOn(direction)
 			inputStateHandler.walking = direction
-			animationModule.Play(data.anim, 0.1, true, "Movement")
-
-			-- local remote = ServerEvents:FindFirstChild("OnWalk")
-			-- if remote then
-			-- 	remote:FireServer(direction)
-			-- end
+			updateSprinting()
 		end)
 
 		inputAction.Released:Connect(function()
+			if notReady() then
+				return
+			end
 			if inputStateHandler.walking == direction then
 				inputStateHandler:RemoveState(STATE.Walking)
 				inputStateHandler.walking = nil
 			end
 
 			inputStateHandler:HeldOff(direction)
-			animationModule.Stop(data.anim)
+			updateSprinting()
 		end)
 	end
 end
@@ -531,39 +699,34 @@ local function setupMovementActionFreecammed(direction, data)
 
 	if direction == "forward" then
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
+			if notReady() then
+				return
+			end
+			inputStateHandler:HeldOn("forward")
+
+			if processDebounce("walk_" .. direction, 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
 			local currentTime = tick()
 			if currentTime - lastForwardTapTime <= doubleTapThreshold then
-				sprintingFromDoubleTap = true
+				sprintRequested = true
 			end
 			lastForwardTapTime = currentTime
 
-			inputStateHandler:HeldOn("forward")
 			updateSprinting()
-
-			activeKeyCount += 1
 
 			if not inputStateHandler:HasState(STATE.Sprinting) then
 				inputStateHandler.walking = "forward"
 				if not inputStateHandler:HasState(STATE.Walking) then
 					inputStateHandler:SetState(STATE.Walking)
-					animationModule.Play(data.anim, 0.1, true, "Movement")
 				end
-
-				-- local remote = ServerEvents:FindFirstChild("OnWalk")
-				-- if remote then
-				-- 	remote:FireServer("forward")
-				-- end
 			end
-			--print(activeKeyCount)
 		end)
 
 		inputAction.Released:Connect(function()
-			if activeKeyCount > 0 then
-				activeKeyCount -= 1
+			if notReady() then
+				return
 			end
 			inputStateHandler:HeldOff("forward")
 
@@ -571,39 +734,42 @@ local function setupMovementActionFreecammed(direction, data)
 				inputStateHandler.walking = nil
 			end
 
-			if activeKeyCount == 0 then
-				updateSprinting()
-				inputStateHandler:RemoveState(STATE.Walking)
-				animationModule.Stop(data.anim)
-			end
-			sprintingFromDoubleTap = false
+			updateSprinting()
 
-			--print(activeKeyCount)
+			if not isAnyMovementHeld() then
+				inputStateHandler:RemoveState(STATE.Walking)
+			end
 		end)
 	else
 		inputAction.Pressed:Connect(function()
-			if processDebounce("walk", 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
+			if notReady() then
+				return
+			end
+			-- Freecam used to skip this, so heldInputs could not answer "is any
+			-- movement key down" -- which is exactly what the sprint condition
+			-- needs in this mode.
+			inputStateHandler:HeldOn(direction)
+
+			if processDebounce("walk_" .. direction, 0.05) or not inputStateHandler:CanDo(STATE.Walking) then
 				return
 			end
 
 			if not inputStateHandler:HasState(STATE.Walking) then
 				inputStateHandler:SetState(STATE.Walking)
-				animationModule.Play("walkForward", 0.1, true, "Movement")
 			end
-			activeKeyCount += 1
 
-			--print(activeKeyCount)
+			updateSprinting()
 		end)
 
 		inputAction.Released:Connect(function()
-			if activeKeyCount > 0 then
-				activeKeyCount -= 1
+			if notReady() then
+				return
 			end
+			inputStateHandler:HeldOff(direction)
+			updateSprinting()
 
-			if activeKeyCount == 0 then
-				updateSprinting()
+			if not isAnyMovementHeld() then
 				inputStateHandler:RemoveState(STATE.Walking)
-				animationModule.Stop("walkForward")
 			end
 		end)
 	end
@@ -636,7 +802,19 @@ end
 	closure still points at the previous run's contexts and inputStateHandler.
 ]]
 local unsubscribeShiftlock = ShiftlockModule.OnStateChanged(applyMovementContext)
-script.Destroying:Connect(unsubscribeShiftlock)
+script.Destroying:Connect(function()
+	unsubscribeShiftlock()
+	-- Same reasoning: the animator holds a Heartbeat connection and a Changed
+	-- subscription on this run's handler, both of which outlive the script.
+	movementAnimator.Stop()
+	if sprintHeartbeat then
+		sprintHeartbeat:Disconnect()
+		sprintHeartbeat = nil
+	end
+	if inputStateHandler then
+		inputStateHandler:Destroy()
+	end
+end)
 
 switchContext.OnClientEvent:Connect(function(contextName)
 	switchToContext(contextName)
@@ -644,6 +822,9 @@ switchContext.OnClientEvent:Connect(function(contextName)
 end)
 
 attackDone.OnClientEvent:Connect(function()
+	if notReady() then
+		return
+	end
 	inputStateHandler:RemoveState(STATE.Attacking)
 	if inputStateHandler:IsHeld("f") then
 		tryBlock()
@@ -653,6 +834,9 @@ attackDone.OnClientEvent:Connect(function()
 end)
 
 attackHeavyDone.OnClientEvent:Connect(function()
+	if notReady() then
+		return
+	end
 	inputStateHandler:RemoveState(STATE.AttackingHeavy)
 	if inputStateHandler:IsHeld("f") then
 		tryBlock()
@@ -662,6 +846,9 @@ attackHeavyDone.OnClientEvent:Connect(function()
 end)
 
 castDone.OnClientEvent:Connect(function()
+	if notReady() then
+		return
+	end
 	inputStateHandler:RemoveState(STATE.Casting)
 	if inputStateHandler:IsHeld("f") then
 		tryBlock()
@@ -670,12 +857,18 @@ castDone.OnClientEvent:Connect(function()
 end)
 
 soulCastDone.OnClientEvent:Connect(function()
+	if notReady() then
+		return
+	end
 	inputStateHandler:RemoveState(STATE.SoulCasting)
 	setCanJump(true)
 	print("done soulcasting")
 end)
 
 inAir.OnClientEvent:Connect(function(isActive)
+	if notReady() then
+		return
+	end
 	if isActive then
 		inputStateHandler:SetState(STATE.InAirCombo)
 		setCanJump(false)
@@ -710,6 +903,21 @@ do
 	local humanoid = char:WaitForChild("Humanoid")
 
 	inputStateHandler = InputStateHandler.new(humanoid)
+	-- Subscribes to inputStateHandler.Changed, so it has to come after the handler
+	-- exists and be torn down with it -- see the Destroying hook below.
+	movementAnimator.Start(inputStateHandler, char)
+
+	--[[
+		Sprint is re-decided every frame, not only on key events.
+
+		Movement is a continuous quantity: pressing S while W is held cancels
+		MoveDirection to zero without any single event meaning "stopped", and at
+		the instant a key event fires MoveDirection still holds the previous
+		frame's value. Sampling on events alone would read stale input and miss
+		the standing-still case entirely. updateSprinting is a no-op when nothing
+		changed.
+	]]
+	sprintHeartbeat = Services.RunService.Heartbeat:Connect(updateSprinting)
 	PlayerGui:FindFirstChild("Core").Enabled = true
 
 	--[[
@@ -726,9 +934,14 @@ do
 	humanoid.StateChanged:Connect(function(_, newState)
 		if newState == Enum.HumanoidStateType.Landed then
 			inputStateHandler:RemoveState(STATE.Jumping)
-			inputStateHandler:RemoveState(STATE.InAirCombo)
+			-- InAirCombo is not cleared here. CombatHandler owns it and ends it
+			-- over the inAir remote; clearing it locally too gave one state two
+			-- writers with nothing reconciling them.
+			-- Touching down ends the sprint outright rather than suppressing it
+			-- for a window: the request is revoked, so it stays off until the
+			-- player asks again, even if Shift never came up.
+			sprintRequested = false
 			animationModule.Play("landing", 0.1, false, "Action")
-			-- Trigger landing animation or reset jump state
 		end
 	end)
 	char:GetAttributeChangedSignal("Stunned"):Connect(function()

@@ -62,22 +62,22 @@ function physicModule.Dash(direction, defaultSpeed)
 	end)
 end
 
+-- Was nested inside itself, so the first call only reassigned the field and did
+-- nothing: the dash ran an extra frame, and an external StopDash was a no-op.
 function physicModule.StopDash()
-	function physicModule.StopDash()
-		if dashConnection then
-			dashConnection:Disconnect()
-			dashConnection = nil
+	if dashConnection then
+		dashConnection:Disconnect()
+		dashConnection = nil
 
-			-- kill leftover velocity
-			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			if hrp then
-				hrp.AssemblyLinearVelocity = Vector3.zero
-			end
-
-			task.delay(SLOWDOWN_DURATION, function()
-				isDashing = false
-			end)
+		-- kill leftover velocity
+		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			hrp.AssemblyLinearVelocity = Vector3.zero
 		end
+
+		task.delay(SLOWDOWN_DURATION, function()
+			isDashing = false
+		end)
 	end
 end
 

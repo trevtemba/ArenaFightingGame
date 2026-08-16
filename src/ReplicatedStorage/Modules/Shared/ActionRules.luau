@@ -17,12 +17,9 @@ local STATE = require(script.Parent.Enums.State)
 	merged list, because the two genuinely differ and the differences are
 	intentional:
 
-	  - The server lets you attack out of a block (Attack calls DisableBlock), so
-	    Blocking is absent from its Attacking list. The client refuses, because
-	    predicting that transition looks wrong locally.
-	  - The client self-blocks re-entry on Sprinting, Dashing, Jumping and
-	    SoulCasting so a repeated keypress cannot restart an action already in
-	    flight. The server has no reason to care.
+	  - The client self-blocks re-entry on Dashing, Jumping and SoulCasting so a
+	    repeated keypress cannot restart an action already in flight. The server
+	    has no reason to care. Sprinting is the exception -- see its entry.
 	  - The client omits Stunned from several lists because CanDo checks the
 	    character's Stunned attribute up front, which already covers every
 	    action.
@@ -39,7 +36,10 @@ local ActionRules = {}
 -- Evaluated by inputStateHandler:CanDo against client-predicted state.
 ActionRules.client = {
 	[STATE.Attacking] = {
-		STATE.Blocking,
+		-- Blocking is deliberately absent, matching the server. Attacking out of
+		-- a block is intended: the player should not have to release F first.
+		-- inputHandler drops its own Blocking state to match, and attackDone
+		-- resumes the block if F is still down.
 		STATE.Casting,
 		STATE.AttackingHeavy,
 	},
@@ -64,7 +64,15 @@ ActionRules.client = {
 		STATE.Ragdolled,
 	},
 	[STATE.Sprinting] = {
-		STATE.Sprinting,
+		-- Deliberately NOT self-blocking. It used to list Sprinting, so any
+		-- updateSprinting() call during a sprint evaluated shouldSprint = false
+		-- and removed the state -- which stopped the sprint animation while the
+		-- player was still sprinting. Re-entry is now a silent no-op instead.
+		-- Jumping is deliberately absent: sprint speed carries through the air.
+		-- The sprint *animation* still yields mid-air, but that is handled by
+		-- movementAnimator's airborne check, not by dropping the state.
+		-- Landing ends the sprint by revoking the request in inputHandler, not
+		-- by blocking the state here.
 		STATE.InAirCombo,
 		STATE.Attacking,
 		STATE.AttackingHeavy,

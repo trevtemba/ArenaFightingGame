@@ -39,7 +39,8 @@ end
 function InputStateHandler:CanDo(state)
 	local stunned = self.humanoid.Parent:GetAttribute("Stunned")
 	if stunned then
-		print("cant do, your stunned")
+		-- No logging here: CanDo is on the per-frame sprint path now, so a print
+		-- would spam the output for the whole duration of every stun.
 		return false
 	end
 
