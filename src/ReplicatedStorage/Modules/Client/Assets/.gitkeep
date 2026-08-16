@@ -1,0 +1,3 @@
+Runtime cache. SoulHandler clones soul rigs into this folder at runtime
+(SoulHandler.luau) and client effects read them back out (loveTap.luau).
+It must exist and start empty -- this file only keeps git from dropping it.

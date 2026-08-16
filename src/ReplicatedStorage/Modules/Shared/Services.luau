@@ -43,7 +43,6 @@ Services.ServerEvents = Services.ReplicatedStorage:WaitForChild("RemoteEvents"):
 
 -- Client
 Services.Client = Services.Modules:WaitForChild("Client")
-Services.ClientUtils = Services.Client:WaitForChild("Utils")
 Services.ClientEffects = Services.Client:WaitForChild("effects")
 Services.ClientAssets = Services.Client:WaitForChild("Assets")
 Services.ClientEffectsUtils = Services.ClientEffects:WaitForChild("Utils")
