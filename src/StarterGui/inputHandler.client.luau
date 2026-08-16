@@ -31,7 +31,6 @@ local attackHeavyDone = ClientEvents:WaitForChild("attackHeavyDone")
 local castDone = ClientEvents:WaitForChild("castDone")
 local soulCastDone = ClientEvents:WaitForChild("soulCastDone")
 local inAir = ClientEvents:WaitForChild("inAir")
-local isCharLoaded = Services.BindableFunctions:WaitForChild("charLoaded")
 
 local camera = Services.Workspace.CurrentCamera
 local mouse = player:GetMouse()
@@ -608,10 +607,28 @@ inAir.OnClientEvent:Connect(function(isActive)
 	print(inputStateHandler:HasState(STATE.InAirCombo))
 end)
 
-if isCharLoaded:Invoke() then
+--[[
+	characterInitializer only flips CharacterReady after it has preloaded
+	animations, which happens after a yield. This script therefore always
+	observed `false` on its single isCharLoaded:Invoke() poll, and the old else
+	branch merely logged "waiting for signal" without waiting for anything --
+	so inputStateHandler stayed nil and every binding above was dead on arrival.
+
+	Wait on the attribute instead. Checking before arming the signal is safe:
+	nothing yields between the two, so the value cannot change in between.
+]]
+local function waitForCharacterReady()
+	while player:GetAttribute("CharacterReady") ~= true do
+		player:GetAttributeChangedSignal("CharacterReady"):Wait()
+	end
+end
+
+waitForCharacterReady()
+
+do
 	print("CHARACTER IS READY")
-	local humanoid = player.Character.Humanoid
 	local char = player.Character
+	local humanoid = char:WaitForChild("Humanoid")
 
 	inputStateHandler = InputStateHandler.new(humanoid)
 	PlayerGui:FindFirstChild("Core").Enabled = true
@@ -639,6 +656,4 @@ if isCharLoaded:Invoke() then
 			setCanJump(true)
 		end
 	end)
-else
-	print("CHARACTER IS NOT READY YET — waiting for signal")
 end

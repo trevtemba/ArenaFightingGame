@@ -17,17 +17,31 @@ isCharLoaded.OnInvoke = function()
 	return charLoaded
 end
 
+--[[
+	Readiness is published as an attribute as well as through the charLoaded
+	BindableFunction. The BindableFunction can only be polled, and everything
+	below PreloadAll happens after a yield, so a consumer that polls at the
+	wrong moment gets `false` and has no way to find out when that changes.
+	inputHandler lost that race on every spawn. The attribute gives consumers
+	something they can actually wait on.
+]]
+local function setCharacterReady(ready)
+	charLoaded = ready
+	player:SetAttribute("CharacterReady", ready)
+end
+
 -- Function to process the character if it has the "player" tag
 local function processCharacter(character)
 	if CollectionService:HasTag(character, "Player") then
 		print("Processing tagged player character:", character.Name)
 		local humanoid = character:WaitForChild("Humanoid")
-		local animator = humanoid:WaitForChild("Animator")
+		-- Barrier, not a value: PreloadAll below needs the Animator to exist.
+		humanoid:WaitForChild("Animator")
 		humanoid.JumpPower = 80
 		humanoid.CameraOffset = Vector3.new(0, 1.5, 0)
 		-- Your initialization logic here
 		AnimationHandler.PreloadAll()
-		charLoaded = true
+		setCharacterReady(true)
 		ShiftlockModule.new()
 		cameraModule.normCam()
 		viewportHandler.InitCoin()
@@ -38,6 +52,10 @@ end
 
 -- Wait for the character and run the check
 local function onCharacterAdded(character)
+	-- The old character's handlers no longer apply; clear readiness so anything
+	-- waiting blocks until this one is actually initialized.
+	setCharacterReady(false)
+
 	if character:IsDescendantOf(game) then
 		processCharacter(character)
 	else
